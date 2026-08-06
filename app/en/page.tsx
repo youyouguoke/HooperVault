@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
@@ -11,6 +12,12 @@ import {
   ChevronRight,
   Flame,
 } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Build Your Legacy",
+  description:
+    "Combine legendary basketball skills, build your dream Hooper, simulate an entire career, and share your unique legacy with the world.",
+};
 
 function FeaturedPlayerCard() {
   return (
@@ -37,7 +44,7 @@ function FeaturedPlayerCard() {
           {[
             { label: "Scoring", value: 95 },
             { label: "Defense", value: 88 },
-            { label: "Agility", value: 92 },
+            { label: "Speed", value: 92 },
           ].map((stat) => (
             <div key={stat.label} className="bg-[#1a1c20] p-2 rounded flex flex-col items-center">
               <span className="font-[family-name:var(--font-space-grotesk)] text-[10px] uppercase tracking-wider text-[#A8A8B3]">{stat.label}</span>

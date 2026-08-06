@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
@@ -12,13 +13,21 @@ import {
   Flame,
 } from "lucide-react";
 
+export const metadata: Metadata = {
+  title: "打造你的传奇",
+  description:
+    "融合传奇篮球技能，创建你的梦想 Hooper，模拟整个职业生涯，并与世界分享你的独特传奇。",
+};
+
 function FeaturedPlayerCard() {
   return (
     <div className="legendary-card rounded-xl p-4 w-full max-w-md transform rotate-y-[-10deg] hover:rotate-y-0 transition-transform duration-500 hover:scale-105 cursor-pointer perspective-1000 mx-auto">
-      <div className="relative h-80 rounded-lg overflow-hidden mb-4 border border-white/10 bg-gradient-to-br from-[#333539] to-[#1a1c20] flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-8xl">🏀</div>
-        </div>
+      <div className="relative h-80 rounded-lg overflow-hidden mb-4 border border-white/10 bg-gradient-to-br from-[#333539] to-[#1a1c20]">
+        <img
+          src="/images/hero-card.jpg"
+          alt="一张高度细致的未来风篮球运动员扣篮插画，配有戏剧性的场馆灯光。"
+          className="w-full h-full object-cover opacity-90 mix-blend-luminosity"
+        />
         <div className="absolute top-4 right-4 bg-[#333539]/90 backdrop-blur border border-[#F2CA50]/50 text-[#F2CA50] font-[family-name:var(--font-space-grotesk)] text-2xl font-bold px-3 py-1 rounded">
           98
         </div>
@@ -35,7 +44,7 @@ function FeaturedPlayerCard() {
           {[
             { label: "得分", value: 95 },
             { label: "防守", value: 88 },
-            { label: "敏捷", value: 92 },
+            { label: "速度", value: 92 },
           ].map((stat) => (
             <div key={stat.label} className="bg-[#1a1c20] p-2 rounded flex flex-col items-center">
               <span className="font-[family-name:var(--font-space-grotesk)] text-[10px] uppercase tracking-wider text-[#A8A8B3]">{stat.label}</span>

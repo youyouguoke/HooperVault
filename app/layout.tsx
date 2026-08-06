@@ -22,8 +22,20 @@ const hankenGrotesk = Hanken_Grotesk({
   weight: ["400", "600", "700"],
 });
 
+const siteUrl = "https://hoopervault.com";
+const ogImage = `${siteUrl}/images/og-default.jpg`;
+const ogImageMeta = {
+  url: "/images/og-default.jpg",
+  width: 1200,
+  height: 630,
+  alt: "HooperVault - Build your dream basketball player with legendary skills",
+};
+
 export const metadata: Metadata = {
-  title: "HooperVault - Build Your Ultimate Hooper",
+  title: {
+    default: "HooperVault - Build Your Ultimate Hooper",
+    template: "%s | HooperVault",
+  },
   description:
     "Combine legendary basketball skills, build your dream player, simulate your career, and create a shareable legacy. The basketball build simulator for NBA fans.",
   keywords: [
@@ -33,8 +45,60 @@ export const metadata: Metadata = {
     "basketball build generator",
     "basketball legacy simulator",
   ],
+  metadataBase: new URL(siteUrl),
   alternates: {
-    canonical: "https://hoopervault.com/en",
+    canonical: "/en",
+    languages: {
+      en: "/en",
+      "zh-CN": "/zh-CN",
+    },
+  },
+  openGraph: {
+    type: "website",
+    siteName: "HooperVault",
+    title: "HooperVault - Build Your Ultimate Hooper",
+    description:
+      "Combine legendary basketball skills, build your dream player, simulate your career, and create a shareable legacy.",
+    url: "/en",
+    images: [ogImageMeta],
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@hoopervault",
+    title: "HooperVault - Build Your Ultimate Hooper",
+    description:
+      "Combine legendary basketball skills, build your dream player, simulate your career, and create a shareable legacy.",
+    images: [ogImage],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  icons: {
+    icon: "/favicon.ico",
+  },
+};
+
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "HooperVault",
+  url: siteUrl,
+  description:
+    "A basketball build simulator where you draft legendary skills, create your dream Hooper, and simulate a shareable legacy.",
+  inLanguage: ["en", "zh-CN"],
+  potentialAction: {
+    "@type": "SearchAction",
+    target: `${siteUrl}/en/hooper?slug={{search_term_string}}`,
+    "query-input": "required name=search_term_string",
   },
 };
 
@@ -44,6 +108,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${anton.variable} ${spaceGrotesk.variable} ${hankenGrotesk.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-[#0B0B12] text-white">
         <Header />
         <main className="flex-1">{children}</main>
