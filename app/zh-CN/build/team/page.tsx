@@ -39,17 +39,16 @@ function TeamPageInner() {
   const [selectedTeam, setSelectedTeam] = useState<HistoricTeam | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [displayIndex, setDisplayIndex] = useState(0);
-
   useEffect(() => {
     if (!spinning) return;
     let frame = 0;
     const totalFrames = 45;
-    const targetIndex = hashString(`${seed}:${mode}`) % pool.length;
+    const targetIndex = Math.floor(Math.random() * pool.length);
     const interval = setInterval(() => {
       frame += 1;
       const progress = frame / totalFrames;
-      const current = Math.floor(progress * pool.length + frame * 0.5) % pool.length;
-      setDisplayIndex(current);
+      const speed = Math.max(1, Math.floor((1 - progress) * 8));
+      setDisplayIndex((d) => (d + speed) % pool.length);
       if (frame >= totalFrames) {
         clearInterval(interval);
         setDisplayIndex(targetIndex);
@@ -58,7 +57,7 @@ function TeamPageInner() {
       }
     }, 80);
     return () => clearInterval(interval);
-  }, [spinning, pool, seed, mode]);
+  }, [spinning, pool]);
 
   const handleSpin = () => {
     if (spinning) return;
