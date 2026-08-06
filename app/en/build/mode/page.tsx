@@ -1,0 +1,118 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Container } from "@/components/ui/Container";
+import { Button } from "@/components/ui/Button";
+import { Section } from "@/components/ui/Section";
+import { Eye, EyeOff, Zap, ChevronRight, Info } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Choose Your Draft Mode | HooperVault",
+  description: "Select Classic, Blind, or Chaos draft mode to build your ultimate basketball player in HooperVault.",
+};
+
+const modes = [
+  {
+    id: "classic",
+    title: "Classic Draft",
+    description: "See your choices. Build with strategy.",
+    details: "Pick legendary skills with full transparency. Perfect for first-time players and strategic builders.",
+    icon: Eye,
+    badge: "Recommended",
+    difficulty: "Normal",
+    href: "/en/build/position?mode=classic",
+  },
+  {
+    id: "blind",
+    title: "Blind Draft",
+    description: "Choose by ability, not reputation.",
+    details: "Legend names are hidden. Focus purely on skill bonuses and surprise synergies.",
+    icon: EyeOff,
+    badge: "P1",
+    difficulty: "Hard",
+    href: "/en/build/position?mode=blind",
+  },
+  {
+    id: "chaos",
+    title: "Chaos Draft",
+    description: "Unexpected skills. Unexpected legends.",
+    details: "Random modifiers shake up every round. High risk, high reward, infinite replayability.",
+    icon: Zap,
+    badge: "P1",
+    difficulty: "Wild",
+    href: "/en/build/position?mode=chaos",
+  },
+];
+
+export default function ModePage() {
+  return (
+    <>
+      <div className="relative overflow-hidden border-b border-white/8 bg-[#111317] pt-16 pb-8">
+        <div className="stadium-glow" />
+        <Container>
+          <div className="text-center max-w-2xl mx-auto relative z-10">
+            <p className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#F2CA50] font-bold mb-3">
+              Step 1 of 5
+            </p>
+            <h1 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl text-white uppercase tracking-wide mb-4">
+              Choose Draft Mode
+            </h1>
+            <p className="text-lg text-[#A8A8B3]">
+              How do you want to build your Hooper?
+            </p>
+          </div>
+        </Container>
+      </div>
+
+      <Section className="relative">
+        <Container>
+          <div className="grid gap-6 md:grid-cols-3 max-w-6xl mx-auto">
+            {modes.map((mode) => (
+              <div
+                key={mode.id}
+                className={`glass-card rounded-2xl p-8 flex flex-col hover:bg-white/5 transition-all duration-300 ${
+                  mode.id === "classic"
+                    ? "border-[#F2CA50]/30 shadow-[0_0_30px_rgba(242,202,80,0.08)]"
+                    : ""
+                }`}
+              >
+                <div className="flex items-start justify-between mb-6">
+                  <div className="h-14 w-14 rounded-xl bg-[#F2CA50]/10 border border-[#F2CA50]/20 flex items-center justify-center">
+                    <mode.icon className="h-7 w-7 text-[#F2CA50]" />
+                  </div>
+                  <span className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-wider px-2 py-1 rounded bg-[#1a1c20] text-[#A8A8B3]">
+                    {mode.badge}
+                  </span>
+                </div>
+                <h2 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-2">
+                  {mode.title}
+                </h2>
+                <p className="text-[#A8A8B3] mb-4">{mode.description}</p>
+                <div className="flex items-center gap-2 text-sm text-[#F2CA50] mb-6">
+                  <Info className="h-4 w-4" />
+                  <span>{mode.details}</span>
+                </div>
+                <div className="mt-auto space-y-4">
+                  <div className="flex items-center justify-between text-sm border-t border-white/8 pt-4">
+                    <span className="text-[#A8A8B3]">Difficulty</span>
+                    <span className="font-[family-name:var(--font-space-grotesk)] font-bold text-white">{mode.difficulty}</span>
+                  </div>
+                  <Button
+                    asChild
+                    href={mode.href}
+                    variant={mode.id === "classic" ? "primary" : "outline"}
+                    fullWidth
+                    size="lg"
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      Start {mode.title} <ChevronRight className="h-5 w-5" />
+                    </span>
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Container>
+      </Section>
+    </>
+  );
+}

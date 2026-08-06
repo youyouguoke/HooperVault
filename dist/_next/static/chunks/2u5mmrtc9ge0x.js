@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,70476,c=>{"use strict";var i=c.i(43476),t=c.i(47163);c.s(["Section",0,function({children:c,className:e,id:s}){return(0,i.jsx)("section",{id:s,className:(0,t.cn)("py-16 sm:py-20 lg:py-24",e),children:c})}])}]);

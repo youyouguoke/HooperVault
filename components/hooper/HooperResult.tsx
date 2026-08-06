@@ -1,0 +1,483 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { Container } from "@/components/ui/Container";
+import { Button } from "@/components/ui/Button";
+import { Section } from "@/components/ui/Section";
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  ATTRIBUTES,
+  type Attribute,
+  POSITION_MODIFIERS,
+  getSkillById,
+  type Skill,
+} from "@/data/legends";
+import {
+  Trophy,
+  Share2,
+  RefreshCw,
+  Swords,
+  Zap,
+  Shield,
+  Star,
+  Dices,
+  Flame,
+} from "lucide-react";
+
+const ATTRIBUTE_LABELS: Record<Attribute, string> = {
+  shooting: "3PT",
+  mid_range: "Mid",
+  finishing: "Finishing",
+  dunk: "Dunk",
+  passing: "Passing",
+  ball_handle: "Handle",
+  perimeter_defense: "Perim D",
+  interior_defense: "Interior D",
+  block: "Block",
+  rebound: "Rebound",
+  speed: "Speed",
+  strength: "Strength",
+  clutch: "Clutch",
+};
+
+const ARCHETYPES = [
+  {
+    name: "Two-Way Superstar",
+    icon: Shield,
+    desc: "Elite on both ends of the floor.",
+    conditions: (attrs: Record<Attribute, number>) =>
+      (attrs.perimeter_defense >= 80 || attrs.interior_defense >= 80 || attrs.block >= 80) &&
+      (attrs.shooting >= 80 || attrs.finishing >= 80 || attrs.mid_range >= 80),
+  },
+  {
+    name: "Legendary Slasher",
+    icon: Swords,
+    desc: "Unstoppable at the rim.",
+    conditions: (attrs: Record<Attribute, number>) =>
+      attrs.finishing >= 85 && attrs.dunk >= 80 && attrs.speed >= 75,
+  },
+  {
+    name: "Floor General",
+    icon: Zap,
+    desc: "Controls the tempo.",
+    conditions: (attrs: Record<Attribute, number>) =>
+      attrs.passing >= 85 && attrs.ball_handle >= 80 && attrs.speed >= 75,
+  },
+  {
+    name: "Splash Legend",
+    icon: Star,
+    desc: "Elite perimeter threat.",
+    conditions: (attrs: Record<Attribute, number>) =>
+      attrs.shooting >= 85 && attrs.mid_range >= 75,
+  },
+  {
+    name: "Rim Protector",
+    icon: Shield,
+    desc: "Anchor of the defense.",
+    conditions: (attrs: Record<Attribute, number>) =>
+      attrs.block >= 85 && (attrs.interior_defense >= 80 || attrs.rebound >= 80),
+  },
+  {
+    name: "Versatile Wing",
+    icon: Swords,
+    desc: "No weaknesses, all-around threat.",
+    conditions: (attrs: Record<Attribute, number>) => {
+      const vals = Object.values(attrs);
+      return vals.every((v) => v >= 70) && vals.reduce((a, b) => a + b, 0) / vals.length >= 78;
+    },
+  },
+];
+
+const FIRST_NAMES = [
+  "Orion", "Jax", "Kai", "Mason", "Eli", "Titan", "Duke", "Cade", "Axel", "Blaze",
+  "Ryder", "Knox", "Zane", "Crew", "Jett", "Rhett", "Kash", "Slate", "Vance", "Dray",
+  "Tate", "Miles", "Leo", "Finn", "Kobe", "Kyrie", "Giannis", "Luka", "Jalen", "Zion",
+];
+const LAST_NAMES = [
+  "Steele", "Vale", "Cross", "Knight", "Storm", "Frost", "Holt", "Reign", "Brooks", "Prime",
+  "Blaze", "King", "Ward", "Dane", "Cruz", "Hale", "Stone", "Fox", "Graves", "Mercer",
+  "Wright", "Young", "Carter", "Davis", "Evans", "Green", "Hall", "Lewis", "Morgan", "Parker",
+];
+
+function deterministicIndex(seed: number, position: string, length: number): number {
+  const combined = `${seed}:${position}`;
+  let hash = 0;
+  for (let i = 0; i < combined.length; i++) {
+    hash = (hash << 5) - hash + combined.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash) % length;
+}
+
+function generatePlayerName(seed: number, position: string): string {
+  const posKey = (position || "SG").toUpperCase();
+  const first = FIRST_NAMES[deterministicIndex(seed, posKey, FIRST_NAMES.length)];
+  const last = LAST_NAMES[deterministicIndex(seed * 7 + posKey.length, posKey, LAST_NAMES.length)];
+  return `${first} ${last}`;
+}
+
+type HooperApiData = {
+  slug: string;
+  position: string;
+  mode: string;
+  seed: number;
+  history: string;
+  overall: number;
+  archetype: string;
+  first_name: string | null;
+  last_name: string | null;
+  created_at: string;
+};
+
+function parseHistory(history: string): (Skill & { legendName: string; legendCategory: string })[] {
+  return history
+    .split(",")
+    .map((id) => getSkillById(id))
+    .filter(Boolean) as (Skill & { legendName: string; legendCategory: string })[];
+}
+
+const UI = {
+  legendSecured: { en: "Legend Secured", "zh-CN": "传奇已锁定" },
+  yourHooperLegacy: { en: "Your Hooper Legacy", "zh-CN": "你的 Hooper 传奇" },
+  loading: { en: "Loading Hooper legacy...", "zh-CN": "正在加载 Hooper 传奇..." },
+  notFound: { en: "Hooper Not Found", "zh-CN": "未找到 Hooper" },
+  notFoundDesc: { en: "We couldn't find a build with that slug in the vault.", "zh-CN": "在 Vault 中找不到该编号的构建。" },
+  buildAnother: { en: "Build Another", "zh-CN": "重新构建" },
+  errorLoading: { en: "Error Loading Legacy", "zh-CN": "加载传奇时出错" },
+  tryAgain: { en: "Try Again", "zh-CN": "重试" },
+  ovr: { en: "OVR", "zh-CN": "总评" },
+  archetype: { en: "Archetype", "zh-CN": "球风" },
+  fin: { en: "FIN", "zh-CN": "终结" },
+  sht: { en: "SHT", "zh-CN": "投射" },
+  ply: { en: "PLY", "zh-CN": "组织" },
+  def: { en: "DEF", "zh-CN": "防守" },
+  legacyStory: { en: "Legacy Story", "zh-CN": "传奇故事" },
+  hofBadges: { en: "Hall of Fame Badges", "zh-CN": "名人堂徽章" },
+  attributeRadar: { en: "Attribute Radar", "zh-CN": "属性雷达" },
+  noBadges: { en: "No badges earned. Build again for greatness.", "zh-CN": "尚未获得徽章。再次构建，追求卓越。" },
+  shareLegacy: { en: "Share Legacy", "zh-CN": "分享传奇" },
+  emergedAs: { en: "emerged as a", "zh-CN": "成长为一名" },
+  blending: { en: "blending the", "zh-CN": "融合了" },
+  ofGreatest: { en: "of the greatest to ever play. With a", "zh-CN": "等伟大球员的特质。总评" },
+  statusMark: { en: "OVR rating and", "zh-CN": "分，" },
+  permanentMark: { en: "status, this build leaves a permanent mark on the HooperVault archives.", "zh-CN": "级别，这一构建将在 HooperVault 档案中留下永久印记。" },
+} as const;
+
+function t(key: keyof typeof UI, lang: "en" | "zh-CN"): string {
+  return UI[key][lang];
+}
+
+export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" | "zh-CN" }) {
+  const [data, setData] = useState<HooperApiData | null>(null);
+  const [loading, setLoading] = useState(Boolean(slug));
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch(`/api/hoopers/${encodeURIComponent(slug)}`)
+      .then(async (res) => {
+        if (res.status === 404) {
+          throw new Error("NOT_FOUND");
+        }
+        if (!res.ok) {
+          throw new Error("Failed to load Hooper data");
+        }
+        const json = await res.json();
+        if (!cancelled) setData(json);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err.message || "Failed to load Hooper data");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  const position = (data?.position || "SG") as keyof typeof POSITION_MODIFIERS;
+  const mode = data?.mode || "classic";
+  const seed = data?.seed ?? 1;
+  const skills = useMemo(() => parseHistory(data?.history || ""), [data]);
+
+  const attributes: Record<Attribute, number> = useMemo(() => {
+    const attrs: Record<Attribute, number> = {
+      shooting: 55, mid_range: 55, finishing: 55, dunk: 55, passing: 55,
+      ball_handle: 55, perimeter_defense: 55, interior_defense: 55, block: 55,
+      rebound: 55, speed: 55, strength: 55, clutch: 55,
+    };
+    const modifiers = POSITION_MODIFIERS[position] || {};
+    Object.entries(modifiers).forEach(([key, value]) => {
+      attrs[key as Attribute] += value;
+    });
+    skills.forEach((skill) => {
+      attrs[skill.attribute as Attribute] = Math.min(99, attrs[skill.attribute as Attribute] + skill.bonus);
+    });
+    return attrs;
+  }, [position, skills]);
+
+  const overall = useMemo(() => {
+    return Math.round(Object.values(attributes).reduce((a, b) => a + b, 0) / 13);
+  }, [attributes]);
+
+  const archetype = useMemo(() => {
+    return ARCHETYPES.find((a) => a.conditions(attributes)) || { name: "Rising Prospect", icon: Dices, desc: "A solid foundation with room to grow." };
+  }, [attributes]);
+
+  const playerName = useMemo(() => {
+    if (data?.first_name && data?.last_name) {
+      return `${data.first_name} ${data.last_name}`;
+    }
+    return generatePlayerName(seed, position);
+  }, [data, seed, position]);
+
+  const radarData = useMemo(() => {
+    return ATTRIBUTES.map((attr) => ({
+      attribute: ATTRIBUTE_LABELS[attr],
+      fullMark: 100,
+      value: attributes[attr],
+    }));
+  }, [attributes]);
+
+  const badges = useMemo(() => {
+    const list = [];
+    if (overall >= 95) list.push("Hall of Fame");
+    if (overall >= 90) list.push("Legendary Tier");
+    if (attributes.clutch >= 90) list.push("Clutch King");
+    if (attributes.dunk >= 90) list.push("Posterizer");
+    if (attributes.shooting >= 90) list.push("Range Chef");
+    if (attributes.passing >= 85) list.push("Court Vision");
+    if (attributes.block >= 90) list.push("Rim Protector");
+    if (attributes.perimeter_defense >= 85) list.push("Clamps");
+    return list;
+  }, [attributes, overall]);
+
+  const tier = overall >= 95 ? "Legendary" : overall >= 90 ? "Elite" : overall >= 80 ? "Star" : "Rising";
+  const tierColor = overall >= 95 ? "#F2CA50" : overall >= 90 ? "#6CB9FF" : overall >= 80 ? "#FF5E07" : "#A8A8B3";
+
+  const handleShare = () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    if (navigator.share) {
+      navigator.share({
+        title: `HooperVault - ${playerName}`,
+        text: lang === "zh-CN"
+          ? `我在 HooperVault 打造了一名总评 ${overall} 的 ${archetype.name}！`
+          : `I built a ${overall} OVR ${archetype.name} in HooperVault!`,
+        url,
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(url);
+      alert(lang === "zh-CN" ? "链接已复制到剪贴板！" : "Link copied to clipboard!");
+    }
+  };
+
+  const buildModeHref = lang === "zh-CN" ? "/zh-CN/build/mode" : "/en/build/mode";
+
+  return (
+    <>
+      <div className="relative overflow-hidden border-b border-white/8 bg-[#111317] pt-16 pb-6">
+        <div className="stadium-glow" />
+        <Container>
+          <div className="relative z-10 text-center">
+            <p className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#F2CA50] font-bold mb-2">
+              {t("legendSecured", lang)}
+            </p>
+            <h1 className="font-[family-name:var(--font-anton)] text-3xl md:text-5xl text-white uppercase tracking-wide">
+              {t("yourHooperLegacy", lang)}
+            </h1>
+          </div>
+        </Container>
+      </div>
+
+      <Section className="relative">
+        <Container>
+          {loading && (
+            <div className="max-w-4xl mx-auto text-center py-24">
+              <div className="h-12 w-12 border-4 border-[#F2CA50]/20 border-t-[#F2CA50] rounded-full animate-spin mx-auto mb-6" />
+              <p className="text-[#A8A8B3] text-lg">{t("loading", lang)}</p>
+            </div>
+          )}
+
+          {!loading && error === "NOT_FOUND" && (
+            <div className="max-w-4xl mx-auto text-center py-24">
+              <h2 className="font-[family-name:var(--font-anton)] text-3xl text-white uppercase tracking-wide mb-4">
+                {t("notFound", lang)}
+              </h2>
+              <p className="text-[#A8A8B3] text-lg mb-8">
+                {t("notFoundDesc", lang)}
+              </p>
+              <Button asChild href={buildModeHref} variant="secondary" size="xl">
+                <span className="flex items-center justify-center gap-2">
+                  <RefreshCw className="h-5 w-5" /> {t("buildAnother", lang)}
+                </span>
+              </Button>
+            </div>
+          )}
+
+          {!loading && error && error !== "NOT_FOUND" && (
+            <div className="max-w-4xl mx-auto text-center py-24">
+              <h2 className="font-[family-name:var(--font-anton)] text-3xl text-white uppercase tracking-wide mb-4">
+                {t("errorLoading", lang)}
+              </h2>
+              <p className="text-[#A8A8B3] text-lg mb-8">{error}</p>
+              <Button
+                variant="secondary"
+                size="xl"
+                onClick={() => window.location.reload()}
+              >
+                {t("tryAgain", lang)}
+              </Button>
+            </div>
+          )}
+
+          {!loading && !error && data && (
+            <div className="max-w-6xl mx-auto grid gap-8 lg:grid-cols-12">
+              <div className="lg:col-span-5">
+                <div className="legendary-card rounded-2xl overflow-hidden relative">
+                  <div className="h-[420px] relative bg-gradient-to-br from-[#333539] via-[#1a1c20] to-[#111317] flex items-center justify-center overflow-hidden">
+                    <img
+                      src="/images/result-card.jpg"
+                      alt="A highly stylized, premium 3D render of a basketball player in a dynamic action pose mid-dunk."
+                      className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#111317] via-transparent to-transparent" />
+                    <div
+                      className="absolute left-0 top-0 bottom-0 w-2 z-20"
+                      style={{ backgroundColor: tierColor, boxShadow: `0 0 15px ${tierColor}` }}
+                    />
+                    <div className="absolute top-4 right-4 z-20">
+                      <span
+                        className="px-3 py-1 rounded-full font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-wider border"
+                        style={{ color: tierColor, borderColor: `${tierColor}50`, backgroundColor: `${tierColor}15` }}
+                      >
+                        <Trophy className="h-3 w-3 inline mr-1" /> {tier}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-6 relative z-10 bg-[#111317]/80">
+                    <div className="flex justify-between items-end mb-4">
+                      <div>
+                        <h2 className="font-[family-name:var(--font-anton)] text-4xl text-white uppercase tracking-wide leading-none">
+                          {playerName}
+                        </h2>
+                        <p className="font-[family-name:var(--font-space-grotesk)] text-sm uppercase tracking-wider text-[#F2CA50] mt-2">
+                          {archetype.name}
+                        </p>
+                      </div>
+                      <div className="bg-[#1a1c20] border border-[#F2CA50]/30 rounded-lg px-3 py-2 text-center">
+                        <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">{t("ovr", lang)}</div>
+                        <div className="font-[family-name:var(--font-space-grotesk)] text-3xl font-bold text-[#F2CA50]">{overall}</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-2">
+                      <div className="bg-[#1a1c20] rounded p-2 text-center border border-white/5">
+                        <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">{t("fin", lang)}</div>
+                        <div className="font-[family-name:var(--font-space-grotesk)] font-bold text-white">{attributes.finishing}</div>
+                      </div>
+                      <div className="bg-[#1a1c20] rounded p-2 text-center border border-white/5">
+                        <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">{t("sht", lang)}</div>
+                        <div className="font-[family-name:var(--font-space-grotesk)] font-bold text-white">{attributes.shooting}</div>
+                      </div>
+                      <div className="bg-[#1a1c20] rounded p-2 text-center border border-white/5">
+                        <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">{t("ply", lang)}</div>
+                        <div className="font-[family-name:var(--font-space-grotesk)] font-bold text-white">{attributes.passing}</div>
+                      </div>
+                      <div className="bg-[#1a1c20] rounded p-2 text-center border border-white/5">
+                        <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">{t("def", lang)}</div>
+                        <div className="font-[family-name:var(--font-space-grotesk)] font-bold text-[#6CB9FF]">{attributes.perimeter_defense}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-7 space-y-6">
+                <div className="glass-card rounded-2xl p-6 md:p-8">
+                  <h3 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-4 border-b border-white/10 pb-2">
+                    {t("legacyStory", lang)}
+                  </h3>
+                  <p className="text-[#A8A8B3] text-lg leading-relaxed">
+                    {lang === "zh-CN"
+                      ? `${playerName} ${t("emergedAs", lang)} ${archetype.name.toLowerCase()}，${t("blending", lang)} ${Object.entries(attributes)
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 2)
+                          .map(([k]) => ATTRIBUTE_LABELS[k as Attribute])
+                          .join(" 与 ")}${t("ofGreatest", lang)} ${overall} ${t("statusMark", lang)}${tier} ${t("permanentMark", lang)}`
+                      : `${playerName} ${t("emergedAs", lang)} ${archetype.name.toLowerCase()}, ${t("blending", lang)} the ${Object.entries(attributes)
+                          .sort((a, b) => b[1] - a[1])
+                          .slice(0, 2)
+                          .map(([k]) => ATTRIBUTE_LABELS[k as Attribute])
+                          .join(" and ")} ${t("ofGreatest", lang)} ${overall} ${t("statusMark", lang)} ${tier} ${t("permanentMark", lang)}`}
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="glass-card rounded-2xl p-6">
+                    <h4 className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#A8A8B3] mb-4 flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-[#F2CA50]" /> {t("hofBadges", lang)}
+                    </h4>
+                    <ul className="space-y-2">
+                      {badges.map((badge) => (
+                        <li key={badge} className="flex items-center gap-3 bg-[#1a1c20]/50 p-3 rounded-lg border border-white/5">
+                          <Flame className="h-4 w-4 text-[#F2CA50]" />
+                          <span className="text-white">{badge}</span>
+                        </li>
+                      ))}
+                      {badges.length === 0 && (
+                        <li className="text-[#A8A8B3]">{t("noBadges", lang)}</li>
+                      )}
+                    </ul>
+                  </div>
+                  <div className="glass-card rounded-2xl p-6">
+                    <h4 className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#A8A8B3] mb-4 flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-[#F2CA50]" /> {t("attributeRadar", lang)}
+                    </h4>
+                    <div className="h-56">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RadarChart data={radarData}>
+                          <PolarGrid stroke="rgba(255,255,255,0.1)" />
+                          <PolarAngleAxis
+                            dataKey="attribute"
+                            tick={{ fill: "#A8A8B3", fontSize: 10, fontFamily: "var(--font-space-grotesk)" }}
+                          />
+                          <Radar
+                            name="Attributes"
+                            dataKey="value"
+                            stroke="#F2CA50"
+                            strokeWidth={2}
+                            fill="#F2CA50"
+                            fillOpacity={0.25}
+                          />
+                        </RadarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button variant="secondary" fullWidth size="xl" onClick={handleShare}>
+                    <Share2 className="h-5 w-5 mr-2" /> {t("shareLegacy", lang)}
+                  </Button>
+                  <Button asChild href={buildModeHref} variant="outline" fullWidth size="xl">
+                    <span className="flex items-center justify-center gap-2">
+                      <RefreshCw className="h-5 w-5" /> {t("buildAnother", lang)}
+                    </span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </Container>
+      </Section>
+    </>
+  );
+}

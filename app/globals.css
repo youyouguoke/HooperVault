@@ -1,26 +1,121 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: #111317;
+  --color-foreground: #e2e2e8;
+  --color-muted: #99907c;
+  --color-on-surface-variant: #d0c5af;
+  --color-gold: #f2ca50;
+  --color-gold-dim: #d4af37;
+  --color-orange: #ff5e07;
+  --color-orange-hover: #ff752b;
+  --color-surface: #111317;
+  --color-surface-raised: #1a1c20;
+  --color-surface-high: #282a2e;
+  --color-surface-highest: #333539;
+  --color-border: rgba(255, 255, 255, 0.1);
+  --color-tertiary: #a9d3ff;
+  --color-tertiary-container: #6cb9ff;
+  --font-display: var(--font-anton);
+  --font-headline: var(--font-anton);
+  --font-body: var(--font-hanken-grotesk);
+  --font-label: var(--font-space-grotesk);
+  --font-stat: var(--font-space-grotesk);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --background: #111317;
+  --foreground: #e2e2e8;
+  --gold: #f2ca50;
+  --gold-dim: #d4af37;
+  --orange: #ff5e07;
+  --orange-hover: #ff752b;
+  --surface: #111317;
+  --surface-raised: #1a1c20;
+  --surface-high: #282a2e;
+  --surface-highest: #333539;
+  --border: rgba(255, 255, 255, 0.1);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), system-ui, -apple-system, sans-serif;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+.font-label, .font-stat {
+  font-family: var(--font-label), system-ui, sans-serif;
+}
+
+.floor-texture {
+  background-image: 
+    linear-gradient(rgba(17, 19, 23, 0.95), rgba(17, 19, 23, 0.95)),
+    repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.02) 10px, rgba(255,255,255,0.02) 20px);
+}
+
+.glass-card {
+  background: rgba(51, 53, 57, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.legendary-card {
+  background: linear-gradient(145deg, rgba(212, 175, 55, 0.1) 0%, rgba(17, 19, 23, 0.8) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.15), inset 0 0 20px rgba(212, 175, 55, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.legendary-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transform: skewX(-20deg);
+  animation: cardShine 8s infinite;
+}
+
+@keyframes cardShine {
+  0% { left: -100%; }
+  20% { left: 200%; }
+  100% { left: 200%; }
+}
+
+.stadium-glow {
+  position: absolute;
+  width: 60vw;
+  height: 60vw;
+  background: radial-gradient(circle, rgba(255, 94, 7, 0.15) 0%, transparent 70%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.bg-court {
+  background-image: linear-gradient(to bottom, rgba(17, 19, 23, 0.92), rgba(17, 19, 23, 0.75)), url('/images/simulation-court.jpg');
+  background-size: cover;
+  background-position: center;
 }
