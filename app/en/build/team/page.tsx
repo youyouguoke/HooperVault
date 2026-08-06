@@ -6,19 +6,9 @@ import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Section } from "@/components/ui/Section";
 import { HISTORIC_TEAMS, getDailyTeamPool, type HistoricTeam } from "@/data/teams";
-import { Dices, ChevronRight, Trophy } from "lucide-react";
+import { Dices, ChevronRight, Trophy, RefreshCw } from "lucide-react";
 
 const DAILY_SEED = 20260805;
-
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0;
-  }
-  return Math.abs(hash);
-}
 
 export default function TeamPage() {
   return (
@@ -37,18 +27,17 @@ function TeamPageInner() {
 
   const pool = useMemo(() => getDailyTeamPool(seed, 3), [seed]);
   const [selectedTeam, setSelectedTeam] = useState<HistoricTeam | null>(null);
-  const [spinning, setSpinning] = useState(false);
+  const [spinning, setSpinning] = useState(true);
   const [displayIndex, setDisplayIndex] = useState(0);
 
   useEffect(() => {
-    if (!spinning) return;
     let frame = 0;
-    const totalFrames = 45;
+    const totalFrames = 60;
     const targetIndex = Math.floor(Math.random() * pool.length);
     const interval = setInterval(() => {
       frame += 1;
       const progress = frame / totalFrames;
-      const speed = Math.max(1, Math.floor((1 - progress) * 8));
+      const speed = Math.max(1, Math.floor((1 - progress) * 6));
       setDisplayIndex((d) => (d + speed) % pool.length);
       if (frame >= totalFrames) {
         clearInterval(interval);
@@ -58,12 +47,28 @@ function TeamPageInner() {
       }
     }, 80);
     return () => clearInterval(interval);
-  }, [spinning, pool]);
+  }, [pool]);
 
-  const handleSpin = () => {
+  const handleRespin = () => {
     if (spinning) return;
     setSpinning(true);
     setSelectedTeam(null);
+
+    let frame = 0;
+    const totalFrames = 60;
+    const targetIndex = Math.floor(Math.random() * pool.length);
+    const interval = setInterval(() => {
+      frame += 1;
+      const progress = frame / totalFrames;
+      const speed = Math.max(1, Math.floor((1 - progress) * 6));
+      setDisplayIndex((d) => (d + speed) % pool.length);
+      if (frame >= totalFrames) {
+        clearInterval(interval);
+        setDisplayIndex(targetIndex);
+        setSelectedTeam(pool[targetIndex]);
+        setSpinning(false);
+      }
+    }, 80);
   };
 
   const handleConfirm = () => {
@@ -87,10 +92,10 @@ function TeamPageInner() {
               Step 2 of 5
             </p>
             <h1 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl text-white uppercase tracking-wide mb-4">
-              Draft a Legendary Team
+              Drafting Your Legendary Team
             </h1>
             <p className="text-lg text-[#A8A8B3]">
-              Spin the wheel to reveal your historic team. Today’s pool is locked by the Daily Challenge seed.
+              Today’s pool is locked by the Daily Challenge seed. The wheel is spinning...
             </p>
           </div>
         </Container>
@@ -115,7 +120,7 @@ function TeamPageInner() {
             </div>
 
             <div className="grid grid-cols-3 gap-4 mb-8">
-              {pool.map((t, idx) => (
+              {pool.map((t) => (
                 <div
                   key={t.id}
                   className={`rounded-xl p-4 border text-center transition-all ${
@@ -132,23 +137,23 @@ function TeamPageInner() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button
-                variant="primary"
+                variant="outline"
                 size="xl"
-                onClick={handleSpin}
+                onClick={handleRespin}
                 disabled={spinning}
               >
-                <Dices className="h-5 w-5 mr-2" />
-                {spinning ? "Spinning..." : "Spin the Wheel"}
+                <RefreshCw className={`h-5 w-5 mr-2 ${spinning ? "animate-spin" : ""}`} />
+                {spinning ? "Spinning..." : "Respin"}
               </Button>
-              {selectedTeam && (
-                <Button
-                  variant="secondary"
-                  size="xl"
-                  onClick={handleConfirm}
-                >
-                  Draft from {selectedTeam.teamShortName} <ChevronRight className="h-5 w-5" />
-                </Button>
-              )}
+              <Button
+                variant={selectedTeam ? "primary" : "outline"}
+                size="xl"
+                onClick={handleConfirm}
+                disabled={!selectedTeam || spinning}
+              >
+                <Dices className="h-5 w-5 mr-2" />
+                Draft from {team.teamShortName} <ChevronRight className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         </Container>
