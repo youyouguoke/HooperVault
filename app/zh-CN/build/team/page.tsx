@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useEffect, useMemo, useState, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
@@ -25,12 +25,11 @@ import {
   EyeOff,
   Dices,
   Lock,
-  RefreshCw,
+  X,
 } from "lucide-react";
 
 const DAILY_SEED = 20260805;
 const TOTAL_ROUNDS = 13;
-const MAX_TEAM_RESETS = 3;
 
 const positions = [
   { id: "PG", name: "控球后卫", role: "组织者", description: "球场指挥官。拥有顶级的传球、控球和速度。", icon: Zap, strengths: ["传球", "控球", "速度"], weakness: "内线防守" },
@@ -62,7 +61,7 @@ interface StolenSkill extends PlayerSkill {
 }
 
 function playerOvr(player: LegendaryPlayer): number {
-  return Math.round(player.skills.reduce((sum, s) => sum + s.bonus, 0) / player.skills.length);
+  return Math.round(player.skills.reduce((sum, s) => sum + s.value, 0) / player.skills.length);
 }
 
 export default function TeamPage() {
@@ -89,16 +88,14 @@ function TeamPageInner() {
   const [round, setRound] = useState(1);
   const [selectedPlayer, setSelectedPlayer] = useState<LegendaryPlayer | null>(null);
   const [history, setHistory] = useState<StolenSkill[]>([]);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [teamResetsLeft, setTeamResetsLeft] = useState(MAX_TEAM_RESETS);
+  const [isSpinning, setIsSpinning] = useState(false);
 
-  const startSpin = () => {
+  const startSpin = useCallback((targetPhase: "select-position" | "drafting") => {
+    setIsSpinning(true);
     setPhase("spinning");
-    setSelectedTeam(null);
     setSelectedPlayer(null);
-    setHistory([]);
-    setRound(1);
-    setPosition(null);
+    setSelectedTeam(null);
+
     let frame = 0;
     const totalFrames = 60;
     const targetIndex = Math.floor(Math.random() * pool.length);
@@ -110,44 +107,39 @@ function TeamPageInner() {
       if (frame >= totalFrames) {
         clearInterval(interval);
         setDisplayIndex(targetIndex);
-        setSelectedTeam(pool[targetIndex]);
-        setPhase("select-position");
+        const newTeam = pool[targetIndex];
+        setSelectedTeam(newTeam);
+        setPhase(targetPhase);
+        setIsSpinning(false);
       }
     }, 80);
-  };
+  }, [pool]);
 
   useEffect(() => {
-    startSpin();
+    startSpin(position ? "drafting" : "select-position");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pool]);
+  }, []);
 
   const handlePositionSelect = (posId: string) => {
     setPosition(posId);
-    setPhase("drafting");
-  };
-
-  const handleResetTeam = () => {
-    if (teamResetsLeft > 0) {
-      setTeamResetsLeft((r) => r - 1);
-      startSpin();
-    }
+    startSpin("drafting");
   };
 
   const currentAttributes = useMemo(() => {
     const attrs: Record<Attribute, number> = {
-      shooting: 55,
-      mid_range: 55,
-      finishing: 55,
-      dunk: 55,
-      passing: 55,
-      ball_handle: 55,
-      perimeter_defense: 55,
-      interior_defense: 55,
-      block: 55,
-      rebound: 55,
-      speed: 55,
-      strength: 55,
-      clutch: 55,
+      shooting: 45,
+      mid_range: 45,
+      finishing: 45,
+      dunk: 45,
+      passing: 45,
+      ball_handle: 45,
+      perimeter_defense: 45,
+      interior_defense: 45,
+      block: 45,
+      rebound: 45,
+      speed: 45,
+      strength: 45,
+      clutch: 45,
     };
     const modifiers = POSITION_MODIFIERS[position as keyof typeof POSITION_MODIFIERS] || {};
     for (const [key, value] of Object.entries(modifiers)) {
@@ -160,24 +152,22 @@ function TeamPageInner() {
   }, [position, history]);
 
   const handlePlayerClick = (player: LegendaryPlayer) => {
-    if (phase !== "drafting" || isAnimating || round > TOTAL_ROUNDS) return;
+    if (phase !== "drafting" || isSpinning) return;
     setSelectedPlayer((prev) => (prev?.id === player.id ? null : player));
   };
 
   const handleStealSkill = (skill: PlayerSkill) => {
-    if (!selectedTeam || !selectedPlayer || isAnimating || round > TOTAL_ROUNDS) return;
-    if (history.some((s) => s.id === skill.id)) return;
-    setIsAnimating(true);
+    if (!selectedTeam || !selectedPlayer || isSpinning || history.some((s) => s.id === skill.id)) return;
     setHistory((prev) => [...prev, { ...skill, player: selectedPlayer, team: selectedTeam }]);
-    setTimeout(() => {
-      setSelectedPlayer(null);
-      if (round < TOTAL_ROUNDS) {
+    setSelectedPlayer(null);
+    if (round < TOTAL_ROUNDS) {
+      setTimeout(() => {
         setRound((r) => r + 1);
-      } else {
-        setPhase("completed");
-      }
-      setIsAnimating(false);
-    }, 450);
+        startSpin("drafting");
+      }, 400);
+    } else {
+      setPhase("completed");
+    }
   };
 
   const handlePreview = () => {
@@ -196,10 +186,6 @@ function TeamPageInner() {
   const progress = ((round - 1) / TOTAL_ROUNDS) * 100;
   const overall = Math.round(Object.values(currentAttributes).reduce((a, b) => a + b, 0) / 13);
 
-  const availableSkillsCount = selectedTeam
-    ? selectedTeam.players.reduce((acc, p) => acc + p.skills.filter((s) => !history.some((h) => h.id === s.id)).length, 0)
-    : 0;
-
   return (
     <>
       <div className="relative overflow-hidden border-b border-white/8 bg-[#111317] pt-16 pb-6">
@@ -208,7 +194,7 @@ function TeamPageInner() {
           <div className="relative z-10">
             <div className="text-center mb-6">
               <p className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#F2CA50] font-bold mb-2">
-                {phase === "completed" ? "第 4 步 / 共 5 步" : phase === "drafting" ? "第 3 步 / 共 5 步" : "第 2 步 / 共 5 步"}
+                {phase === "completed" ? "第 4 步 / 共 5 步" : "第 2 步 / 共 5 步"}
               </p>
               <h1 className="font-[family-name:var(--font-anton)] text-3xl md:text-5xl text-white uppercase tracking-wide">
                 {phase === "spinning" && "抽取传奇球队"}
@@ -219,12 +205,12 @@ function TeamPageInner() {
               <p className="text-[#A8A8B3] mt-2 max-w-2xl mx-auto">
                 {phase === "spinning" && "转盘正在转动..."}
                 {phase === "select-position" && "选择一个位置作为你的基础定位。"}
-                {phase === "drafting" && "选择一名球员和一个技能。已偷取的技能会锁定。"}
+                {phase === "drafting" && `第 ${round} / ${TOTAL_ROUNDS} 轮。选择一名球员和一个技能。已偷取的技能会锁定。`}
                 {phase === "completed" && "已偷取 13 个传奇技能。保存前先查看你的最终构建。"}
               </p>
             </div>
 
-            {phase === "drafting" && (
+            {(phase === "drafting" || phase === "spinning") && (
               <div className="max-w-2xl mx-auto">
                 <div className="flex justify-between text-xs uppercase tracking-wider text-[#A8A8B3] mb-2">
                   <span>第 {round} / {TOTAL_ROUNDS} 轮</span>
@@ -326,115 +312,100 @@ function TeamPageInner() {
             {phase === "drafting" && selectedTeam && (
               <div className="grid gap-6 lg:grid-cols-12">
                 <div className="lg:col-span-8 space-y-6">
-                  <div className="flex items-center justify-between">
-                    <Button
-                      variant="outline"
-                      size="md"
-                      onClick={handleResetTeam}
-                      disabled={teamResetsLeft === 0 || isAnimating}
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      重置球队 · 剩余 {teamResetsLeft} 次
-                    </Button>
-                    <span className="text-xs uppercase tracking-wider text-[#A8A8B3]">
-                      {availableSkillsCount} 个可用技能
-                    </span>
-                  </div>
-
-                  {availableSkillsCount === 0 ? (
-                    <div className="text-center py-12 glass-card rounded-2xl">
-                      <p className="text-[#A8A8B3] text-lg mb-4">该球队所有技能已被偷取。</p>
-                      <Button variant="secondary" size="lg" onClick={() => setPhase("completed")}>
-                        查看构建总结
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="grid gap-4 md:grid-cols-3">
-                      {selectedTeam.players.map((player) => {
-                        const isSelected = selectedPlayer?.id === player.id;
-                        const Icon = showNames ? Star : EyeOff;
-                        const hasAvailable = player.skills.some((s) => !history.some((h) => h.id === s.id));
-                        const ovr = playerOvr(player);
-                        return (
-                          <div
-                            key={player.id}
-                            onClick={() => handlePlayerClick(player)}
-                            className={`cursor-pointer rounded-2xl border transition-all duration-300 flex flex-col ${
-                              isSelected
-                                ? "bg-[#F2CA50]/10 border-[#F2CA50]/40 shadow-[0_0_30px_rgba(242,202,80,0.12)]"
-                                : hasAvailable
-                                ? "bg-[#1a1c20]/60 border-white/10 hover:border-white/20 hover:bg-[#1a1c20]"
-                                : "bg-[#1a1c20]/30 border-white/5 opacity-60"
-                            }`}
-                          >
-                            <div className="p-5 flex-1">
-                              <div className="flex items-start justify-between mb-4">
-                                <div className="w-10 h-10 rounded-full bg-[#111317]/80 border border-white/10 flex items-center justify-center">
-                                  <Icon className="h-5 w-5 text-[#F2CA50]" />
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[10px] uppercase tracking-wider text-[#A8A8B3] bg-[#111317]/80 px-2 py-1 rounded border border-white/10">
-                                    {player.position}
-                                  </span>
-                                  <span className="text-[10px] uppercase tracking-wider text-[#F2CA50] bg-[#F2CA50]/10 px-2 py-1 rounded border border-[#F2CA50]/30 font-bold">
-                                    评分 {ovr}
-                                  </span>
-                                </div>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {selectedTeam.players.map((player) => {
+                      const isSelected = selectedPlayer?.id === player.id;
+                      const Icon = showNames ? Star : EyeOff;
+                      const ovr = playerOvr(player);
+                      return (
+                        <div
+                          key={player.id}
+                          onClick={() => handlePlayerClick(player)}
+                          className={`cursor-pointer rounded-2xl border transition-all duration-300 flex flex-col ${
+                            isSelected
+                              ? "bg-[#F2CA50]/10 border-[#F2CA50]/40 shadow-[0_0_30px_rgba(242,202,80,0.12)]"
+                              : "bg-[#1a1c20]/60 border-white/10 hover:border-white/20 hover:bg-[#1a1c20]"
+                          }`}
+                        >
+                          <div className="p-5 flex-1">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="w-10 h-10 rounded-full bg-[#111317]/80 border border-white/10 flex items-center justify-center">
+                                <Icon className="h-5 w-5 text-[#F2CA50]" />
                               </div>
-                              <h3 className="font-[family-name:var(--font-anton)] text-xl text-white uppercase tracking-wide">
-                                {showNames ? player.fullName : "???"}
-                              </h3>
-                              <p className="text-[#F2CA50] text-sm font-medium">{showNames ? player.nickname : "隐藏传奇"}</p>
-                              <p className="text-[#A8A8B3] text-xs mt-2">{showNames ? player.tagline : "点击后揭示技能"}</p>
-                              <div className="mt-4 flex items-center text-xs text-[#A8A8B3]">
-                                <span className={isSelected ? "text-[#F2CA50]" : ""}>
-                                  {!hasAvailable ? "无剩余技能" : isSelected ? "选择一个技能偷取" : "点击查看技能"}
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] uppercase tracking-wider text-[#A8A8B3] bg-[#111317]/80 px-2 py-1 rounded border border-white/10">
+                                  {player.position}
+                                </span>
+                                <span className="text-[10px] uppercase tracking-wider text-[#F2CA50] bg-[#F2CA50]/10 px-2 py-1 rounded border border-[#F2CA50]/30 font-bold">
+                                  评分 {ovr}
                                 </span>
                               </div>
                             </div>
-
-                            {isSelected && hasAvailable && (
-                              <div className="border-t border-white/10 p-4 bg-[#111317]/40">
-                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                                  {player.skills.map((skill) => {
-                                    const stolen = history.some((s) => s.id === skill.id);
-                                    const isLegendary = skill.rarity === "legendary";
-                                    return (
-                                      <button
-                                        key={skill.id}
-                                        disabled={stolen || isAnimating}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleStealSkill(skill);
-                                        }}
-                                        className={`relative rounded-lg border p-2 text-center transition-all ${
-                                          stolen
-                                            ? "bg-[#1a1c20]/40 border-white/5 opacity-40 cursor-not-allowed"
-                                            : isLegendary
-                                            ? "bg-[#F2CA50]/10 border-[#F2CA50]/40 hover:bg-[#F2CA50]/20 hover:scale-[1.02]"
-                                            : "bg-[#1a1c20] border-white/10 hover:bg-white/5 hover:border-white/20 hover:scale-[1.02]"
-                                        }`}
-                                      >
-                                        {stolen && (
-                                          <div className="absolute inset-0 flex items-center justify-center">
-                                            <Lock className="h-4 w-4 text-[#A8A8B3]" />
-                                          </div>
-                                        )}
-                                        <div className={`text-[10px] uppercase tracking-wider ${isLegendary ? "text-[#F2CA50]" : "text-[#A8A8B3]"}`}>
-                                          {ATTRIBUTE_LABELS[skill.attribute]}
-                                        </div>
-                                        <div className={`font-[family-name:var(--font-space-grotesk)] font-bold text-sm ${isLegendary ? "text-[#F2CA50]" : "text-white"}`}>
-                                          +{skill.bonus}
-                                        </div>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              </div>
-                            )}
+                            <h3 className="font-[family-name:var(--font-anton)] text-xl text-white uppercase tracking-wide">
+                              {showNames ? player.fullName : "???"}
+                            </h3>
+                            <p className="text-[#F2CA50] text-sm font-medium">{showNames ? player.nickname : "隐藏传奇"}</p>
+                            <p className="text-[#A8A8B3] text-xs mt-2">{showNames ? player.tagline : "点击后揭示技能"}</p>
+                            <div className="mt-4 flex items-center text-xs text-[#A8A8B3]">
+                              <span className={isSelected ? "text-[#F2CA50]" : ""}>
+                                {isSelected ? "在下方选择技能" : "点击查看技能"}
+                              </span>
+                            </div>
                           </div>
-                        );
-                      })}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {selectedPlayer && (
+                    <div className="glass-card rounded-2xl p-6 md:p-8 border border-[#F2CA50]/30 relative">
+                      <button
+                        onClick={() => setSelectedPlayer(null)}
+                        className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 text-[#A8A8B3] hover:text-white transition-colors"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                      <div className="mb-6">
+                        <h3 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide">
+                          {showNames ? selectedPlayer.fullName : "???"}
+                        </h3>
+                        <p className="text-[#F2CA50] text-sm font-medium">
+                          {showNames ? selectedPlayer.nickname : "隐藏传奇"} · {selectedPlayer.position} · 评分 {playerOvr(selectedPlayer)}
+                        </p>
+                        <p className="text-[#A8A8B3] text-xs mt-1">{showNames ? selectedPlayer.tagline : ""}</p>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        {selectedPlayer.skills.map((skill) => {
+                          const stolen = history.some((s) => s.id === skill.id);
+                          const isLegendary = skill.rarity === "legendary";
+                          return (
+                            <button
+                              key={skill.id}
+                              disabled={stolen || isSpinning}
+                              onClick={() => handleStealSkill(skill)}
+                              className={`relative rounded-xl border p-3 text-center transition-all ${
+                                stolen
+                                  ? "bg-[#1a1c20]/40 border-white/5 opacity-40 cursor-not-allowed"
+                                  : isLegendary
+                                  ? "bg-[#F2CA50]/10 border-[#F2CA50]/40 hover:bg-[#F2CA50]/20 hover:scale-[1.02]"
+                                  : "bg-[#1a1c20] border-white/10 hover:bg-white/5 hover:border-white/20 hover:scale-[1.02]"
+                              }`}
+                            >
+                              {stolen && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <Lock className="h-5 w-5 text-[#A8A8B3]" />
+                                </div>
+                              )}
+                              <div className={`text-[10px] uppercase tracking-wider ${isLegendary ? "text-[#F2CA50]" : "text-[#A8A8B3]"}`}>
+                                {ATTRIBUTE_LABELS[skill.attribute]}
+                              </div>
+                              <div className={`font-[family-name:var(--font-space-grotesk)] font-bold text-xl ${isLegendary ? "text-[#F2CA50]" : "text-white"}`}>
+                                {skill.value}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -465,7 +436,7 @@ function TeamPageInner() {
                             <div>
                               <div className="text-white font-medium text-sm">{skill.name}</div>
                               <div className="text-[10px] tracking-wider text-[#A8A8B3]">
-                                {showNames ? skill.player.fullName : "???"} · {ATTRIBUTE_LABELS[skill.attribute]} +{skill.bonus}
+                                {showNames ? skill.player.fullName : "???"} · {ATTRIBUTE_LABELS[skill.attribute]} {skill.value}
                               </div>
                             </div>
                           </div>
