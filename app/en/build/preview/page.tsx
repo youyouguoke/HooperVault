@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useMemo, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { Container } from "@/components/ui/Container";
@@ -10,12 +10,15 @@ import {
   ATTRIBUTES,
   type Attribute,
   POSITION_MODIFIERS,
-  getDraftRound,
-  getSkillById,
-  type Skill,
 } from "@/data/legends";
 import {
-  Dices,
+  getTeamById,
+  getSkillById as getTeamSkillById,
+  type HistoricTeam,
+  type LegendaryPlayer,
+  type PlayerSkill,
+} from "@/data/teams";
+import {
   Swords,
   ChevronRight,
   Trophy,
@@ -116,16 +119,6 @@ const ARCHETYPES = [
   },
 ];
 
-function generateRandomSkills(position: string, seed = 0) {
-  const history = [];
-  for (let round = 1; round <= 13; round++) {
-    const { optionA, optionB } = getDraftRound(round, seed + round * 7);
-    const pick = (round + seed) % 2 === 0 ? optionA : optionB;
-    history.push(pick);
-  }
-  return history;
-}
-
 export default function PreviewPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#111317]" />}>
@@ -139,18 +132,21 @@ function PreviewPageInner() {
   const searchParams = useSearchParams();
   const position = (searchParams.get("position") || "SG") as keyof typeof POSITION_MODIFIERS;
   const mode = searchParams.get("mode") || "classic";
+  const teamId = searchParams.get("team") || "95-96-bulls";
   const seedParam = parseInt(searchParams.get("seed") || "1", 10);
   const historyParam = searchParams.get("history") || "";
+
+  const team = useMemo(() => getTeamById(teamId), [teamId]);
 
   const skills = useMemo(() => {
     if (historyParam) {
       return historyParam
         .split(",")
-        .map((id) => getSkillById(id))
-        .filter(Boolean) as (Skill & { legendName: string; legendCategory: string })[];
+        .map((id) => getTeamSkillById(id))
+        .filter(Boolean) as (PlayerSkill & { player: LegendaryPlayer; team: HistoricTeam })[];
     }
-    return generateRandomSkills(position, seedParam);
-  }, [historyParam, position, seedParam]);
+    return [];
+  }, [historyParam, team]);
 
   const [saving, setSaving] = useState(false);
 
@@ -213,7 +209,7 @@ function PreviewPageInner() {
         <Container>
           <div className="relative z-10 text-center">
             <p className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#F2CA50] font-bold mb-2">
-              Step 4 of 5
+              Step 5 of 5
             </p>
             <h1 className="font-[family-name:var(--font-anton)] text-3xl md:text-5xl text-white uppercase tracking-wide">
               Build Preview
@@ -232,6 +228,11 @@ function PreviewPageInner() {
                     <p className="text-[#A8A8B3] font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-wider mb-1">
                       {positionNames[position]}
                     </p>
+                    {team && (
+                      <p className="text-[#F2CA50] text-xs uppercase tracking-wider font-bold mb-2">
+                        {team.season} {team.teamName} · {team.record}
+                      </p>
+                    )}
                     <h2 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl text-white uppercase tracking-wide">
                       {archetype.name}
                     </h2>
@@ -309,7 +310,7 @@ function PreviewPageInner() {
                         <div>
                           <div className="text-white font-medium text-sm">{skill.name}</div>
                           <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">
-                            {skill.legendName} &middot; {ATTRIBUTE_LABELS[skill.attribute as Attribute]} +{skill.bonus}
+                            {skill.player.fullName} &middot; {ATTRIBUTE_LABELS[skill.attribute as Attribute]} +{skill.bonus}
                           </div>
                         </div>
                       </div>
@@ -346,6 +347,7 @@ function PreviewPageInner() {
                         body: JSON.stringify({
                           position,
                           mode,
+                          team: teamId,
                           seed: seedParam,
                           history: historyParam || skills.map((s) => s.id).join(","),
                           overall,
@@ -356,7 +358,7 @@ function PreviewPageInner() {
                       });
                       const data = await res.json();
                       if (data.slug) {
-                        router.push(`/en/simulate?position=${position}&mode=${mode}&seed=${seedParam}&slug=${data.slug}&history=${encodeURIComponent(historyParam || skills.map((s) => s.id).join(","))}`);
+                        router.push(`/en/simulate?position=${position}&mode=${mode}&team=${teamId}&seed=${seedParam}&slug=${data.slug}&history=${encodeURIComponent(historyParam || skills.map((s) => s.id).join(","))}`);
                       }
                     } finally {
                       setSaving(false);

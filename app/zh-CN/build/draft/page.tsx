@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Section } from "@/components/ui/Section";
@@ -10,21 +9,26 @@ import {
   ATTRIBUTES,
   type Attribute,
   POSITION_MODIFIERS,
-  getDraftRound,
-  type Skill,
 } from "@/data/legends";
+import {
+  getTeamById,
+  getDraftRoundFromTeam,
+  type HistoricTeam,
+  type LegendaryPlayer,
+  type PlayerSkill,
+} from "@/data/teams";
 import {
   RefreshCw,
   ChevronRight,
   Zap,
   Star,
   Trophy,
-  Eye,
   EyeOff,
 } from "lucide-react";
 
 const TOTAL_ROUNDS = 13;
 const MAX_REROLLS = 2;
+const DEFAULT_TEAM_ID = "95-96-bulls";
 
 function hashString(str: string): number {
   let hash = 0;
@@ -37,19 +41,19 @@ function hashString(str: string): number {
 }
 
 const ATTRIBUTE_LABELS: Record<Attribute, string> = {
-  shooting: "3PT",
-  mid_range: "Mid",
-  finishing: "Finishing",
-  dunk: "Dunk",
-  passing: "Passing",
-  ball_handle: "Handle",
-  perimeter_defense: "Perimeter D",
-  interior_defense: "Interior D",
-  block: "Block",
-  rebound: "Rebound",
-  speed: "Speed",
-  strength: "Strength",
-  clutch: "Clutch",
+  shooting: "三分",
+  mid_range: "中距离",
+  finishing: "终结",
+  dunk: "扣篮",
+  passing: "传球",
+  ball_handle: "控球",
+  perimeter_defense: "外线防守",
+  interior_defense: "内线防守",
+  block: "盖帽",
+  rebound: "篮板",
+  speed: "速度",
+  strength: "力量",
+  clutch: "关键球",
 };
 
 export default function DraftPage() {
@@ -65,11 +69,15 @@ function DraftPageInner() {
   const searchParams = useSearchParams();
   const position = (searchParams.get("position") || "SG") as keyof typeof POSITION_MODIFIERS;
   const mode = searchParams.get("mode") || "classic";
+  const teamId = searchParams.get("team") || DEFAULT_TEAM_ID;
+  const seed = parseInt(searchParams.get("seed") || "20260805", 10);
+
+  const team = useMemo(() => getTeamById(teamId) || getTeamById(DEFAULT_TEAM_ID)!, [teamId]);
 
   const [round, setRound] = useState(1);
   const [rerollsLeft, setRerollsLeft] = useState(MAX_REROLLS);
   const [rerollKey, setRerollKey] = useState(0);
-  const [history, setHistory] = useState<Skill[]>([]);
+  const [history, setHistory] = useState<(PlayerSkill & { player: LegendaryPlayer; team: HistoricTeam })[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
 
   const baseAttributes = useMemo(() => {
@@ -105,11 +113,11 @@ function DraftPageInner() {
   }, [baseAttributes, history]);
 
   const { optionA, optionB } = useMemo(
-    () => getDraftRound(round, rerollKey + round * 11),
-    [round, rerollKey]
+    () => getDraftRoundFromTeam(team, round, rerollKey + round * 11 + seed),
+    [team, round, rerollKey, seed]
   );
 
-  const handlePick = (skill: Skill) => {
+  const handlePick = (skill: PlayerSkill & { player: LegendaryPlayer; team: HistoricTeam }) => {
     if (isAnimating) return;
     setIsAnimating(true);
     setHistory((prev) => [...prev, skill]);
@@ -131,15 +139,16 @@ function DraftPageInner() {
   useEffect(() => {
     if (history.length >= TOTAL_ROUNDS) {
       const skillIds = history.map((s) => s.id).join(",");
-      const seed = hashString(`${position}:${mode}:${skillIds}`);
+      const resultSeed = hashString(`${team.id}:${position}:${mode}:${skillIds}`);
       const params = new URLSearchParams();
       params.set("position", position);
       params.set("mode", mode);
-      params.set("seed", seed.toString());
+      params.set("team", team.id);
+      params.set("seed", resultSeed.toString());
       params.set("history", skillIds);
       router.push(`/zh-CN/build/preview?${params.toString()}`);
     }
-  }, [history, position, mode, router]);
+  }, [history, position, mode, team, router]);
 
   const progress = (round / TOTAL_ROUNDS) * 100;
 
@@ -151,13 +160,19 @@ function DraftPageInner() {
           <div className="relative z-10">
             <div className="text-center mb-6">
               <p className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#F2CA50] font-bold mb-2">
-                Step 3 of 5
+                第 4 步（共 5 步）
               </p>
               <h1 className="font-[family-name:var(--font-anton)] text-3xl md:text-5xl text-white uppercase tracking-wide">
                 抽取传奇技能
               </h1>
             </div>
             <div className="max-w-2xl mx-auto">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <span className="px-3 py-1 rounded-full bg-[#F2CA50]/10 border border-[#F2CA50]/30 text-[#F2CA50] text-xs uppercase tracking-wider font-bold">
+                  {team.season} {team.teamName}
+                </span>
+                <span className="text-[#A8A8B3] text-xs uppercase tracking-wider">{team.record}</span>
+              </div>
               <div className="flex justify-between text-xs uppercase tracking-wider text-[#A8A8B3] mb-2">
                 <span>第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS} 轮</span>
                 <span>已完成 {Math.round(progress)}%</span>
@@ -240,7 +255,7 @@ function DraftCard({
   onPick,
   isAnimating,
 }: {
-  skill: Skill & { legendName: string; legendCategory: string };
+  skill: PlayerSkill & { player: LegendaryPlayer; team: HistoricTeam };
   mode: string;
   onPick: () => void;
   isAnimating: boolean;
@@ -288,8 +303,9 @@ function DraftCard({
           </div>
           <div className="absolute bottom-4 left-4 z-10">
             <h2 className="font-[family-name:var(--font-anton)] text-3xl text-white uppercase drop-shadow-md leading-none">
-              {skill.name}
+              {showName ? skill.player.fullName : "???"}
             </h2>
+            <p className="text-[#A8A8B3] text-sm mt-1">{skill.name}</p>
           </div>
         </div>
 
@@ -303,9 +319,9 @@ function DraftCard({
               </span>
             </div>
             <div className="bg-[#1a1c20] rounded-lg p-3 border border-white/5">
-              <span className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">类别</span>
+              <span className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">招牌</span>
               <span className="font-[family-name:var(--font-space-grotesk)] text-sm font-bold text-white block">
-                {skill.legendCategory}
+                {skill.name}
               </span>
             </div>
           </div>
@@ -314,14 +330,14 @@ function DraftCard({
             <div className="w-10 h-10 rounded-full overflow-hidden border border-[#F2CA50]/20 flex-shrink-0">
               <img
                 src={showName ? iconImage : undefined}
-                alt={showName ? `${skill.legendName} 灵感肖像` : "隐藏传奇"}
+                alt={showName ? `${skill.player.fullName} 灵感肖像` : "隐藏传奇"}
                 className="w-full h-full object-cover opacity-90"
               />
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">灵感来源</div>
               <div className="text-sm text-white font-medium">
-                {showName ? skill.legendName : "???"}
+                {showName ? `${skill.player.fullName}, ${skill.team.season} ${skill.team.teamName}` : "???"}
               </div>
             </div>
           </div>

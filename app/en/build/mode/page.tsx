@@ -19,7 +19,7 @@ const modes = [
     icon: Eye,
     badge: "Recommended",
     difficulty: "Normal",
-    href: "/en/build/position?mode=classic",
+    href: "/en/build/team?mode=classic",
   },
   {
     id: "blind",
@@ -29,7 +29,7 @@ const modes = [
     icon: EyeOff,
     badge: "P1",
     difficulty: "Hard",
-    href: "/en/build/position?mode=blind",
+    href: "/en/build/team?mode=blind",
   },
   {
     id: "chaos",
@@ -39,7 +39,7 @@ const modes = [
     icon: Zap,
     badge: "P1",
     difficulty: "Wild",
-    href: "/en/build/position?mode=chaos",
+    href: "/en/build/team?mode=chaos",
   },
 ];
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, Suspense } from "react";
+import { useMemo, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { Container } from "@/components/ui/Container";
@@ -10,12 +10,15 @@ import {
   ATTRIBUTES,
   type Attribute,
   POSITION_MODIFIERS,
-  getDraftRound,
-  getSkillById,
-  type Skill,
 } from "@/data/legends";
 import {
-  Dices,
+  getTeamById,
+  getSkillById as getTeamSkillById,
+  type HistoricTeam,
+  type LegendaryPlayer,
+  type PlayerSkill,
+} from "@/data/teams";
+import {
   Swords,
   ChevronRight,
   Trophy,
@@ -53,26 +56,26 @@ function generatePlayerName(seed: number, position: string): { firstName: string
 }
 
 const ATTRIBUTE_LABELS: Record<Attribute, string> = {
-  shooting: "3PT",
-  mid_range: "Mid",
-  finishing: "Finishing",
-  dunk: "Dunk",
-  passing: "Passing",
-  ball_handle: "Handle",
-  perimeter_defense: "Perim D",
-  interior_defense: "Interior D",
-  block: "Block",
-  rebound: "Rebound",
-  speed: "Speed",
-  strength: "Strength",
-  clutch: "Clutch",
+  shooting: "三分",
+  mid_range: "中距离",
+  finishing: "终结",
+  dunk: "扣篮",
+  passing: "传球",
+  ball_handle: "控球",
+  perimeter_defense: "外线防守",
+  interior_defense: "内线防守",
+  block: "盖帽",
+  rebound: "篮板",
+  speed: "速度",
+  strength: "力量",
+  clutch: "关键球",
 };
 
 const ARCHETYPES = [
   {
     name: "Two-Way Superstar",
     icon: Shield,
-    desc: "Elite on both ends of the floor.",
+    desc: "攻防两端都 elite 的全能球星。",
     conditions: (attrs: Record<Attribute, number>) =>
       (attrs.perimeter_defense >= 80 || attrs.interior_defense >= 80 || attrs.block >= 80) &&
       (attrs.shooting >= 80 || attrs.finishing >= 80 || attrs.mid_range >= 80),
@@ -80,51 +83,41 @@ const ARCHETYPES = [
   {
     name: "Legendary Slasher",
     icon: Swords,
-    desc: "Unstoppable at the rim.",
+    desc: "篮下不可阻挡。",
     conditions: (attrs: Record<Attribute, number>) =>
       attrs.finishing >= 85 && attrs.dunk >= 80 && attrs.speed >= 75,
   },
   {
     name: "Floor General",
     icon: Zap,
-    desc: "Controls the tempo.",
+    desc: "掌控比赛节奏。",
     conditions: (attrs: Record<Attribute, number>) =>
       attrs.passing >= 85 && attrs.ball_handle >= 80 && attrs.speed >= 75,
   },
   {
     name: "Splash Legend",
     icon: Trophy,
-    desc: "Elite perimeter threat.",
+    desc: "精英级外线威胁。",
     conditions: (attrs: Record<Attribute, number>) =>
       attrs.shooting >= 85 && attrs.mid_range >= 75,
   },
   {
     name: "Rim Protector",
     icon: Shield,
-    desc: "Anchor of the defense.",
+    desc: "防守支柱。",
     conditions: (attrs: Record<Attribute, number>) =>
       attrs.block >= 85 && (attrs.interior_defense >= 80 || attrs.rebound >= 80),
   },
   {
     name: "Versatile Wing",
     icon: Swords,
-    desc: "No weaknesses, all-around threat.",
+    desc: "没有明显弱点，全面威胁。",
     conditions: (attrs: Record<Attribute, number>) => {
       const vals = Object.values(attrs);
       return vals.every((v) => v >= 70) && vals.reduce((a, b) => a + b, 0) / vals.length >= 78;
     },
   },
 ];
-
-function generateRandomSkills(position: string, seed = 0) {
-  const history = [];
-  for (let round = 1; round <= 13; round++) {
-    const { optionA, optionB } = getDraftRound(round, seed + round * 7);
-    const pick = (round + seed) % 2 === 0 ? optionA : optionB;
-    history.push(pick);
-  }
-  return history;
-}
 
 export default function PreviewPage() {
   return (
@@ -139,18 +132,21 @@ function PreviewPageInner() {
   const searchParams = useSearchParams();
   const position = (searchParams.get("position") || "SG") as keyof typeof POSITION_MODIFIERS;
   const mode = searchParams.get("mode") || "classic";
+  const teamId = searchParams.get("team") || "95-96-bulls";
   const seedParam = parseInt(searchParams.get("seed") || "1", 10);
   const historyParam = searchParams.get("history") || "";
+
+  const team = useMemo(() => getTeamById(teamId), [teamId]);
 
   const skills = useMemo(() => {
     if (historyParam) {
       return historyParam
         .split(",")
-        .map((id) => getSkillById(id))
-        .filter(Boolean) as (Skill & { legendName: string; legendCategory: string })[];
+        .map((id) => getTeamSkillById(id))
+        .filter(Boolean) as (PlayerSkill & { player: LegendaryPlayer; team: HistoricTeam })[];
     }
-    return generateRandomSkills(position, seedParam);
-  }, [historyParam, position, seedParam]);
+    return [];
+  }, [historyParam, team]);
 
   const [saving, setSaving] = useState(false);
 
@@ -213,7 +209,7 @@ function PreviewPageInner() {
         <Container>
           <div className="relative z-10 text-center">
             <p className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#F2CA50] font-bold mb-2">
-              Step 4 of 5
+              第 5 步（共 5 步）
             </p>
             <h1 className="font-[family-name:var(--font-anton)] text-3xl md:text-5xl text-white uppercase tracking-wide">
               构建预览
@@ -232,6 +228,11 @@ function PreviewPageInner() {
                     <p className="text-[#A8A8B3] font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-wider mb-1">
                       {positionNames[position]}
                     </p>
+                    {team && (
+                      <p className="text-[#F2CA50] text-xs uppercase tracking-wider font-bold mb-2">
+                        {team.season} {team.teamName} · {team.record}
+                      </p>
+                    )}
                     <h2 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl text-white uppercase tracking-wide">
                       {archetype.name}
                     </h2>
@@ -239,7 +240,7 @@ function PreviewPageInner() {
                   </div>
                   <div className="text-center bg-[#F2CA50]/10 border border-[#F2CA50]/30 rounded-xl px-4 py-3">
                     <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">总评</div>
-                    <div className="font-[family-name:var(--font-space-grotesk)] text-4xl font-bold text-[#F2CA50]">
+                    <div className="font-[family-name:var(--space-grotesk)] text-4xl font-bold text-[#F2CA50]">
                       {overall}
                     </div>
                   </div>
@@ -309,7 +310,7 @@ function PreviewPageInner() {
                         <div>
                           <div className="text-white font-medium text-sm">{skill.name}</div>
                           <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">
-                            {skill.legendName} &middot; {ATTRIBUTE_LABELS[skill.attribute as Attribute]} +{skill.bonus}
+                            {skill.player.fullName} &middot; {ATTRIBUTE_LABELS[skill.attribute as Attribute]} +{skill.bonus}
                           </div>
                         </div>
                       </div>
@@ -346,6 +347,7 @@ function PreviewPageInner() {
                         body: JSON.stringify({
                           position,
                           mode,
+                          team: teamId,
                           seed: seedParam,
                           history: historyParam || skills.map((s) => s.id).join(","),
                           overall,
@@ -356,7 +358,7 @@ function PreviewPageInner() {
                       });
                       const data = await res.json();
                       if (data.slug) {
-                        router.push(`/zh-CN/simulate?position=${position}&mode=${mode}&seed=${seedParam}&slug=${data.slug}&history=${encodeURIComponent(historyParam || skills.map((s) => s.id).join(","))}`);
+                        router.push(`/zh-CN/simulate?position=${position}&mode=${mode}&team=${teamId}&seed=${seedParam}&slug=${data.slug}&history=${encodeURIComponent(historyParam || skills.map((s) => s.id).join(","))}`);
                       }
                     } finally {
                       setSaving(false);

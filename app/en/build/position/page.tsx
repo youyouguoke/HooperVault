@@ -1,14 +1,11 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
-import { Button } from "@/components/ui/Button";
 import { Section } from "@/components/ui/Section";
 import { ChevronRight, Users, Zap, Shield, Target, ArrowUpRight } from "lucide-react";
-
-export const metadata: Metadata = {
-  title: "Choose Position | HooperVault",
-  description: "Select your Hooper's position: Point Guard, Shooting Guard, Small Forward, Power Forward, or Center.",
-};
 
 const positions = [
   {
@@ -60,13 +57,35 @@ const positions = [
 
 export default function PositionPage() {
   return (
+    <Suspense fallback={<div className="min-h-screen bg-[#111317]" />}>
+      <PositionPageInner />
+    </Suspense>
+  );
+}
+
+function PositionPageInner() {
+  const searchParams = useSearchParams();
+  const mode = searchParams.get("mode") || "classic";
+  const team = searchParams.get("team") || "";
+  const seed = searchParams.get("seed") || "20260805";
+
+  const buildHref = (positionId: string) => {
+    const params = new URLSearchParams();
+    params.set("position", positionId);
+    params.set("mode", mode);
+    if (team) params.set("team", team);
+    params.set("seed", seed);
+    return `/en/build/draft?${params.toString()}`;
+  };
+
+  return (
     <>
       <div className="relative overflow-hidden border-b border-white/8 bg-[#111317] pt-16 pb-8">
         <div className="stadium-glow" />
         <Container>
           <div className="text-center max-w-2xl mx-auto relative z-10">
             <p className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#F2CA50] font-bold mb-3">
-              Step 2 of 5
+              Step 3 of 5
             </p>
             <h1 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl text-white uppercase tracking-wide mb-4">
               Pick Your Position
@@ -84,7 +103,7 @@ export default function PositionPage() {
             {positions.map((pos) => (
               <Link
                 key={pos.id}
-                href={`/en/build/draft?position=${pos.id}`}
+                href={buildHref(pos.id)}
                 className="group glass-card rounded-2xl p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-6 hover:bg-white/5 hover:border-[#F2CA50]/30 transition-all duration-300"
               >
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#F2CA50]/20 to-[#FF5E07]/10 border border-[#F2CA50]/20">
