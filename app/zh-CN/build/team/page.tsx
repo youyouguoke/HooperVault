@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, Suspense } from "react";
+import { useEffect, useMemo, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
@@ -31,6 +31,9 @@ import {
 
 const DAILY_SEED = 20260805;
 const TOTAL_ROUNDS = 13;
+const POOL_SIZE = 8;
+const TOTAL_FRAMES = 40;
+const SPIN_INTERVAL_MS = 60;
 
 const ATTRIBUTE_LABELS: Record<Attribute, string> = {
   shooting: "3分",
@@ -80,8 +83,9 @@ function TeamPageInner() {
   const seedParam = parseInt(searchParams.get("seed") || "0", 10);
   const seed = seedParam || DAILY_SEED;
   const showNames = mode !== "blind";
+  const startedRef = useRef(false);
 
-  const pool = useMemo(() => getDailyTeamPool(seed, 3), [seed]);
+  const pool = useMemo(() => getDailyTeamPool(seed, POOL_SIZE), [seed]);
   const [phase, setPhase] = useState<"spinning" | "drafting" | "completed">("spinning");
   const [selectedTeam, setSelectedTeam] = useState<HistoricTeam | null>(null);
   const [displayIndex, setDisplayIndex] = useState(0);
@@ -89,34 +93,41 @@ function TeamPageInner() {
   const [selectedPlayer, setSelectedPlayer] = useState<LegendaryPlayer | null>(null);
   const [history, setHistory] = useState<StolenSkill[]>([]);
   const [isSpinning, setIsSpinning] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startSpin = useCallback(() => {
+  const startSpin = () => {
+    if (isSpinning) return;
+    if (intervalRef.current) clearInterval(intervalRef.current);
     setIsSpinning(true);
     setPhase("spinning");
     setSelectedPlayer(null);
     setSelectedTeam(null);
 
     let frame = 0;
-    const totalFrames = 60;
     const targetIndex = Math.floor(Math.random() * pool.length);
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       frame += 1;
-      const progress = frame / totalFrames;
+      const progress = frame / TOTAL_FRAMES;
       const speed = Math.max(1, Math.floor((1 - progress) * 6));
       setDisplayIndex((d) => (d + speed) % pool.length);
-      if (frame >= totalFrames) {
-        clearInterval(interval);
+      if (frame >= TOTAL_FRAMES) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
         setDisplayIndex(targetIndex);
-        const newTeam = pool[targetIndex];
-        setSelectedTeam(newTeam);
+        setSelectedTeam(pool[targetIndex]);
         setPhase("drafting");
         setIsSpinning(false);
       }
-    }, 80);
-  }, [pool]);
+    }, SPIN_INTERVAL_MS);
+  };
 
   useEffect(() => {
-    startSpin();
+    if (!startedRef.current) {
+      startedRef.current = true;
+      startSpin();
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

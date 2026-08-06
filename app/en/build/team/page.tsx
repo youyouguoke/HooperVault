@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, Suspense } from "react";
+import { useEffect, useMemo, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
@@ -23,14 +23,15 @@ import {
   Swords,
   Zap,
   Shield,
-  Target,
-  Users,
   Flame,
   Footprints,
 } from "lucide-react";
 
 const DAILY_SEED = 20260805;
 const TOTAL_ROUNDS = 13;
+const POOL_SIZE = 8;
+const TOTAL_FRAMES = 40;
+const SPIN_INTERVAL_MS = 60;
 
 const ATTRIBUTE_LABELS: Record<Attribute, string> = {
   shooting: "3PT",
@@ -80,8 +81,9 @@ function TeamPageInner() {
   const seedParam = parseInt(searchParams.get("seed") || "0", 10);
   const seed = seedParam || DAILY_SEED;
   const showNames = mode !== "blind";
+  const startedRef = useRef(false);
 
-  const pool = useMemo(() => getDailyTeamPool(seed, 3), [seed]);
+  const pool = useMemo(() => getDailyTeamPool(seed, POOL_SIZE), [seed]);
   const [phase, setPhase] = useState<"spinning" | "drafting" | "completed">("spinning");
   const [selectedTeam, setSelectedTeam] = useState<HistoricTeam | null>(null);
   const [displayIndex, setDisplayIndex] = useState(0);
@@ -89,36 +91,41 @@ function TeamPageInner() {
   const [selectedPlayer, setSelectedPlayer] = useState<LegendaryPlayer | null>(null);
   const [history, setHistory] = useState<StolenSkill[]>([]);
   const [isSpinning, setIsSpinning] = useState(false);
-  const [justCompleted, setJustCompleted] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startSpin = useCallback(() => {
+  const startSpin = () => {
+    if (isSpinning) return;
+    if (intervalRef.current) clearInterval(intervalRef.current);
     setIsSpinning(true);
     setPhase("spinning");
     setSelectedPlayer(null);
     setSelectedTeam(null);
-    setJustCompleted(false);
 
     let frame = 0;
-    const totalFrames = 60;
     const targetIndex = Math.floor(Math.random() * pool.length);
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       frame += 1;
-      const progress = frame / totalFrames;
+      const progress = frame / TOTAL_FRAMES;
       const speed = Math.max(1, Math.floor((1 - progress) * 6));
       setDisplayIndex((d) => (d + speed) % pool.length);
-      if (frame >= totalFrames) {
-        clearInterval(interval);
+      if (frame >= TOTAL_FRAMES) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
         setDisplayIndex(targetIndex);
-        const newTeam = pool[targetIndex];
-        setSelectedTeam(newTeam);
+        setSelectedTeam(pool[targetIndex]);
         setPhase("drafting");
         setIsSpinning(false);
       }
-    }, 80);
-  }, [pool]);
+    }, SPIN_INTERVAL_MS);
+  };
 
   useEffect(() => {
-    startSpin();
+    if (!startedRef.current) {
+      startedRef.current = true;
+      startSpin();
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -160,7 +167,6 @@ function TeamPageInner() {
         startSpin();
       }, 400);
     } else {
-      setJustCompleted(true);
       setTimeout(() => setPhase("completed"), 800);
     }
   };
@@ -168,7 +174,6 @@ function TeamPageInner() {
   const handlePlayAgain = () => {
     setHistory([]);
     setRound(1);
-    setJustCompleted(false);
     startSpin();
   };
 
@@ -252,18 +257,18 @@ function TeamPageInner() {
             </div>
 
             {phase === "spinning" && (
-              <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-4 sm:grid-cols-4 gap-3 mb-8">
                 {pool.map((t) => (
                   <div
                     key={t.id}
-                    className={`rounded-xl p-4 border text-center transition-all ${
+                    className={`rounded-xl p-3 border text-center transition-all ${
                       t.id === team.id
                         ? "bg-[#FF5E07]/10 border-[#FF5E07]/50 text-white"
                         : "bg-[#1a1c20] border-white/10 text-[#A8A8B3]"
                     }`}
                   >
-                    <div className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-wider">{t.season}</div>
-                    <div className="font-[family-name:var(--font-anton)] text-sm uppercase mt-1">{t.teamShortName}</div>
+                    <div className="font-[family-name:var(--font-space-grotesk)] text-[10px] uppercase tracking-wider">{t.season}</div>
+                    <div className="font-[family-name:var(--font-anton)] text-xs uppercase mt-1">{t.teamShortName}</div>
                   </div>
                 ))}
               </div>
