@@ -29,7 +29,7 @@ import {
 
 const DAILY_SEED = 20260805;
 const TOTAL_ROUNDS = 13;
-const TOTAL_FRAMES = 40;
+const TOTAL_FRAMES = 16;
 const SPIN_INTERVAL_MS = 60;
 
 const ATTRIBUTE_LABELS: Record<Attribute, string> = {
@@ -257,19 +257,27 @@ function TeamPageInner() {
 
             {phase === "spinning" && (
               <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 mb-8">
-                {pool.map((t) => (
-                  <div
-                    key={t.id}
-                    className={`rounded-xl p-3 border text-center transition-all ${
-                      t.id === team.id
-                        ? "bg-[#FF5E07]/10 border-[#FF5E07]/50 text-white"
-                        : "bg-[#1a1c20] border-white/10 text-[#A8A8B3]"
-                    }`}
-                  >
-                    <div className="font-[family-name:var(--font-space-grotesk)] text-[10px] uppercase tracking-wider">{t.season}</div>
-                    <div className="font-[family-name:var(--font-anton)] text-xs uppercase mt-1">{t.teamShortName}</div>
-                  </div>
-                ))}
+                {pool.map((t) => {
+                  const isActive = t.id === team.id;
+                  return (
+                    <div
+                      key={t.id}
+                      className={`rounded-xl p-3 border text-center transition-all flex flex-col items-center justify-center ${
+                        isActive
+                          ? "bg-[#FF5E07]/10 border-[#FF5E07]/50 text-white"
+                          : "bg-[#1a1c20] border-white/10 text-[#A8A8B3]"
+                      }`}
+                    >
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-2 border ${
+                        isActive ? "bg-[#FF5E07] text-white border-[#FF5E07]" : "bg-[#111317] text-[#A8A8B3] border-white/10"
+                      }`}>
+                        {t.teamShortName.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="font-[family-name:var(--font-space-grotesk)] text-[10px] uppercase tracking-wider">{t.season}</div>
+                      <div className="font-[family-name:var(--font-anton)] text-[10px] uppercase mt-0.5">{t.teamShortName}</div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
