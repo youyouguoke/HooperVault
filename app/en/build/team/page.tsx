@@ -29,7 +29,6 @@ import {
 
 const DAILY_SEED = 20260805;
 const TOTAL_ROUNDS = 13;
-const POOL_SIZE = 8;
 const TOTAL_FRAMES = 40;
 const SPIN_INTERVAL_MS = 60;
 
@@ -83,7 +82,7 @@ function TeamPageInner() {
   const showNames = mode !== "blind";
   const startedRef = useRef(false);
 
-  const pool = useMemo(() => getDailyTeamPool(seed, POOL_SIZE), [seed]);
+  const pool = useMemo(() => HISTORIC_TEAMS, []);
   const [phase, setPhase] = useState<"spinning" | "drafting" | "completed">("spinning");
   const [selectedTeam, setSelectedTeam] = useState<HistoricTeam | null>(null);
   const [displayIndex, setDisplayIndex] = useState(0);
@@ -257,7 +256,7 @@ function TeamPageInner() {
             </div>
 
             {phase === "spinning" && (
-              <div className="grid grid-cols-4 sm:grid-cols-4 gap-3 mb-8">
+              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 mb-8">
                 {pool.map((t) => (
                   <div
                     key={t.id}
