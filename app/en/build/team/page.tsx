@@ -6,7 +6,7 @@ import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } fro
 import { Button } from "@/components/ui/Button";
 import { HISTORIC_TEAMS, type HistoricTeam, type LegendaryPlayer, type PlayerSkill } from "@/data/teams";
 import { ATTRIBUTES, type Attribute } from "@/data/legends";
-import { Trophy, Star, EyeOff, Lock, RefreshCw, ChevronRight, Zap } from "lucide-react";
+import { Trophy, Star, EyeOff, Lock, RefreshCw, Zap } from "lucide-react";
 
 const DAILY_SEED = 20260805;
 const TOTAL_ROUNDS = 13;
@@ -69,7 +69,6 @@ function TeamPageInner() {
   const [displayIndex, setDisplayIndex] = useState(0);
   const [round, setRound] = useState(1);
   const [selectedPlayer, setSelectedPlayer] = useState<LegendaryPlayer | null>(null);
-  const [selectedSkill, setSelectedSkill] = useState<PlayerSkill | null>(null);
   const [history, setHistory] = useState<StolenSkill[]>([]);
   const [isSpinning, setIsSpinning] = useState(false);
   const [teamResetsLeft, setTeamResetsLeft] = useState(3);
@@ -82,7 +81,6 @@ function TeamPageInner() {
     setIsSpinning(true);
     setState("draw");
     setSelectedPlayer(null);
-    setSelectedSkill(null);
     setAcquiredSkill(null);
 
     let frame = 0;
@@ -95,8 +93,12 @@ function TeamPageInner() {
       if (frame >= TOTAL_FRAMES) {
         if (intervalRef.current) clearInterval(intervalRef.current);
         setDisplayIndex(targetIndex);
-        setSelectedTeam(pool[targetIndex]);
+        const drawnTeam = pool[targetIndex];
+        setSelectedTeam(drawnTeam);
         setIsSpinning(false);
+        setTimeout(() => {
+          setState("player");
+        }, 600);
       }
     }, SPIN_INTERVAL_MS);
   };
@@ -154,29 +156,16 @@ function TeamPageInner() {
     }
   };
 
-  const handleContinueToPlayers = () => {
-    if (selectedTeam) setState("player");
-  };
-
   const handleSelectPlayer = (player: LegendaryPlayer) => {
     setSelectedPlayer(player);
-    setSelectedSkill(null);
+    setState("skill");
   };
 
-  const handleContinueToSkill = () => {
-    if (selectedPlayer) setState("skill");
-  };
-
-  const handleSelectSkill = (skill: PlayerSkill) => {
+  const handleStealSkill = (skill: PlayerSkill) => {
+    if (!selectedTeam || !selectedPlayer || isSpinning) return;
     if (history.some((s) => s.id === skill.id)) return;
-    setSelectedSkill(skill);
-  };
-
-  const handleStealSkill = () => {
-    if (!selectedTeam || !selectedPlayer || !selectedSkill || isSpinning) return;
-    if (history.some((s) => s.id === selectedSkill.id)) return;
-    const stolen: StolenSkill = { ...selectedSkill, player: selectedPlayer, team: selectedTeam };
-    setAcquiredSkill(selectedSkill);
+    const stolen: StolenSkill = { ...skill, player: selectedPlayer, team: selectedTeam };
+    setAcquiredSkill(skill);
     setHistory((prev) => [...prev, stolen]);
 
     setTimeout(() => {
@@ -186,7 +175,7 @@ function TeamPageInner() {
       } else {
         setState("completed");
       }
-    }, 900);
+    }, 800);
   };
 
   const handlePlayAgain = () => {
@@ -195,7 +184,6 @@ function TeamPageInner() {
     setTeamResetsLeft(3);
     setSelectedTeam(null);
     setSelectedPlayer(null);
-    setSelectedSkill(null);
     setAcquiredSkill(null);
     startSpin();
   };
@@ -226,27 +214,19 @@ function TeamPageInner() {
 
   return (
     <main className="bg-[#0B0B12] min-h-screen lg:h-screen lg:overflow-hidden text-white font-sans selection:bg-[#F2CA50]/30">
-      {/* Top game bar */}
       <header className="h-14 border-b border-white/8 bg-[#0B0B12] flex items-center justify-between px-6 lg:px-10 shrink-0">
-        <div className="font-[family-name:var(--font-anton)] text-lg uppercase tracking-wider text-white">
-          HooperVault
-        </div>
+        <div className="font-[family-name:var(--font-anton)] text-lg uppercase tracking-wider text-white">HooperVault</div>
         <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">
           Round {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}
         </div>
-        <div className="text-xs text-[#A8A8B3] uppercase tracking-wider">
-          {mode === "blind" ? "Blind Draft" : "Classic Draft"}
-        </div>
+        <div className="text-xs text-[#A8A8B3] uppercase tracking-wider">{mode === "blind" ? "Blind Draft" : "Classic Draft"}</div>
       </header>
 
-      {/* Completed overlay */}
       {state === "completed" && (
         <div className="absolute inset-x-0 top-14 bottom-0 z-30 flex items-center justify-center bg-[#0B0B12]/95 backdrop-blur-sm px-8">
           <div className="glass-card rounded-2xl p-10 md:p-14 text-center max-w-2xl w-full border border-[#F2CA50]/20">
             <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-3">Build Complete</div>
-            <h2 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl uppercase tracking-wide mb-8">
-              Legendary Build
-            </h2>
+            <h2 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl uppercase tracking-wide mb-8">Legendary Build</h2>
             <div className="flex items-center justify-center gap-10 mb-10">
               <div className="text-center">
                 <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3] mb-1">Overall</div>
@@ -265,23 +245,16 @@ function TeamPageInner() {
         </div>
       )}
 
-      {/* Main fixed two-column layout */}
-      <div className="grid lg:grid-cols-[1fr_360px] h-[calc(100vh-56px)]">
+      <div className="grid lg:grid-cols-[1fr_540px] h-[calc(100vh-56px)]">
         {/* LEFT GAMEPLAY AREA */}
         <section className="relative p-6 lg:p-10 overflow-hidden flex flex-col">
           {/* STATE 01: DRAW TEAM */}
           {state === "draw" && (
             <div className="h-full flex flex-col">
               <div className="mb-6">
-                <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">
-                  Round {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}
-                </div>
-                <h1 className="font-[family-name:var(--font-anton)] text-4xl lg:text-5xl uppercase tracking-wide">
-                  Draw Your Legendary Team
-                </h1>
-                <p className="text-[#A8A8B3] text-sm mt-2">
-                  Your journey starts with a legendary basketball era.
-                </p>
+                <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">Round {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}</div>
+                <h1 className="font-[family-name:var(--font-anton)] text-4xl lg:text-5xl uppercase tracking-wide">Draw Your Legendary Team</h1>
+                <p className="text-[#A8A8B3] text-sm mt-2">Your journey starts with a legendary basketball era.</p>
               </div>
 
               <div className="flex-1 flex flex-col items-center justify-center">
@@ -301,9 +274,7 @@ function TeamPageInner() {
                               active ? "bg-[#FF5E07]/10 border-[#FF5E07] text-white scale-105" : "bg-[#111317] border-white/10 text-[#A8A8B3] opacity-60"
                             }`}
                           >
-                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold mx-auto mb-2 ${
-                              active ? "bg-[#FF5E07] text-white" : "bg-[#1a1c20] text-[#A8A8B3]"
-                            }`}>
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold mx-auto mb-2 ${active ? "bg-[#FF5E07] text-white" : "bg-[#1a1c20] text-[#A8A8B3]"}`}>
                               {teamLogo(t)}
                             </div>
                             <div className="text-[9px] uppercase tracking-wider truncate">{t.teamShortName}</div>
@@ -326,9 +297,6 @@ function TeamPageInner() {
                       <div className="text-[#F2CA50] text-sm font-bold uppercase tracking-widest mb-1">{selectedTeam!.season}</div>
                       <h2 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide mb-2">{selectedTeam!.teamName}</h2>
                       <p className="text-[#A8A8B3] text-sm mb-6">{selectedTeam!.note}</p>
-                      <Button variant="secondary" size="xl" fullWidth onClick={handleContinueToPlayers}>
-                        Continue <ChevronRight className="h-5 w-5" />
-                      </Button>
                     </div>
                   </div>
                 )}
@@ -341,44 +309,35 @@ function TeamPageInner() {
             <div className="h-full flex flex-col">
               <div className="mb-5">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">
-                    Round {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}
-                  </span>
+                  <span className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">Round {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}</span>
                   <Button variant="outline" size="sm" onClick={handleResetTeam} disabled={teamResetsLeft === 0 || isSpinning}>
                     <RefreshCw className="h-3.5 w-3.5 mr-2" /> Reset Team · {teamResetsLeft} Left
                   </Button>
                 </div>
                 <div className="text-[#F2CA50] text-sm font-bold uppercase tracking-widest mb-1">{selectedTeam.season}</div>
-                <h1 className="font-[family-name:var(--font-anton)] text-3xl lg:text-4xl uppercase tracking-wide">
-                  Choose a Legend From {selectedTeam.teamName}
-                </h1>
+                <h1 className="font-[family-name:var(--font-anton)] text-3xl lg:text-4xl uppercase tracking-wide">Choose a Legend From {selectedTeam.teamName}</h1>
                 <p className="text-[#A8A8B3] text-sm mt-1">Choose one legendary player to inherit a skill from.</p>
               </div>
 
-              <div className="flex gap-4 overflow-x-auto pb-3 mb-5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+              <div className="flex gap-3 overflow-x-auto pb-3 mb-5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
                 {selectedTeam.players.map((player) => {
-                  const selected = selectedPlayer?.id === player.id;
                   const Icon = showNames ? Star : EyeOff;
                   return (
                     <button
                       key={player.id}
                       onClick={() => handleSelectPlayer(player)}
-                      className={`flex-shrink-0 rounded-2xl border p-4 min-w-[180px] text-left transition-all ${
-                        selected
-                          ? "bg-[#F2CA50]/10 border-[#F2CA50] shadow-[0_0_24px_rgba(242,202,80,0.18)]"
-                          : "bg-[#111317] border-white/10 hover:border-white/20"
-                      }`}
+                      className="flex-shrink-0 rounded-xl border p-3 min-w-[160px] text-left transition-all bg-[#111317] border-white/10 hover:border-[#F2CA50]/40 hover:bg-[#F2CA50]/5"
                     >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-12 h-12 rounded-full bg-[#0B0B12] border border-white/10 flex items-center justify-center">
-                          <Icon className="h-5 w-5 text-[#F2CA50]" />
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-[#0B0B12] border border-white/10 flex items-center justify-center">
+                          <Icon className="h-4 w-4 text-[#F2CA50]" />
                         </div>
                         <div>
-                          <div className="font-[family-name:var(--font-anton)] text-sm uppercase leading-none">{showNames ? player.fullName : "???"}</div>
-                          <div className="text-[10px] text-[#A8A8B3] mt-1">{showNames ? player.nickname : "Hidden Legend"}</div>
+                          <div className="font-[family-name:var(--font-anton)] text-xs uppercase leading-none">{showNames ? player.fullName : "???"}</div>
+                          <div className="text-[9px] text-[#A8A8B3] mt-0.5">{showNames ? player.nickname : "Hidden Legend"}</div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between text-[10px] uppercase tracking-wider">
+                      <div className="flex items-center justify-between text-[9px] uppercase tracking-wider">
                         <span className="text-[#A8A8B3]">{player.position}</span>
                         <span className="text-[#F2CA50] font-bold">OVR {playerOvr(player)}</span>
                       </div>
@@ -387,43 +346,8 @@ function TeamPageInner() {
                 })}
               </div>
 
-              <div className="flex-1 min-h-0">
-                {selectedPlayer ? (
-                  <div className="glass-card rounded-2xl p-6 h-full border border-white/10 flex flex-col">
-                    <div className="flex items-center gap-4 mb-5">
-                      <div className="w-16 h-16 rounded-full bg-[#111317] border border-[#F2CA50]/30 flex items-center justify-center">
-                        <Star className="h-7 w-7 text-[#F2CA50]" />
-                      </div>
-                      <div>
-                        <h3 className="font-[family-name:var(--font-anton)] text-2xl uppercase tracking-wide">{showNames ? selectedPlayer.fullName : "???"}</h3>
-                        <p className="text-[#F2CA50] text-sm font-medium">{showNames ? selectedPlayer.nickname : "Hidden Legend"} · {selectedPlayer.position} · OVR {playerOvr(selectedPlayer)}</p>
-                      </div>
-                    </div>
-                    <p className="text-[#A8A8B3] text-sm mb-4">{showNames ? selectedPlayer.tagline : ""}</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 overflow-y-auto pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                      {selectedPlayer.skills.map((skill) => (
-                        <div key={skill.id} className="bg-[#111317] rounded-lg p-3 border border-white/10">
-                          <div className="flex items-center justify-between text-xs mb-1.5">
-                            <span className="uppercase tracking-wider text-[#A8A8B3]">{ATTRIBUTE_LABELS[skill.attribute]}</span>
-                            <span className="font-bold" style={{ color: rarityColor(skill.rarity) }}>{skill.value}</span>
-                          </div>
-                          <div className="h-1.5 bg-[#1a1c20] rounded-full overflow-hidden">
-                            <div className="h-full rounded-full" style={{ width: `${skill.value}%`, backgroundColor: rarityColor(skill.rarity) }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-5 flex justify-end">
-                      <Button variant="secondary" size="lg" onClick={handleContinueToSkill}>
-                        Continue to Skill Theft <ChevronRight className="h-5 w-5" />
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-center">
-                    <p className="text-[#A8A8B3] text-sm">Select a player card above to preview their skills.</p>
-                  </div>
-                )}
+              <div className="flex items-center justify-center h-full text-center">
+                <p className="text-[#A8A8B3] text-sm">Select a player card above to steal a skill.</p>
               </div>
             </div>
           )}
@@ -431,41 +355,36 @@ function TeamPageInner() {
           {/* STATE 03: STEAL SKILL */}
           {state === "skill" && selectedTeam && selectedPlayer && (
             <div className="h-full flex flex-col">
-              <div className="mb-5">
-                <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">
-                  Round {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}
-                </div>
-                <h1 className="font-[family-name:var(--font-anton)] text-3xl lg:text-4xl uppercase tracking-wide">
-                  Steal a Skill From {showNames ? selectedPlayer.fullName : "???"}
-                </h1>
-                <p className="text-[#A8A8B3] text-sm mt-1">Choose one of their legendary abilities. Already-used skills are locked.</p>
+              <div className="mb-4">
+                <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">Round {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}</div>
+                <h1 className="font-[family-name:var(--font-anton)] text-3xl lg:text-4xl uppercase tracking-wide">Steal a Skill From {showNames ? selectedPlayer.fullName : "???"}</h1>
+                <p className="text-[#A8A8B3] text-sm mt-1">Click a skill to steal it. Already-used skills are locked.</p>
               </div>
 
-              {/* Selected player compact */}
-              <div className="flex items-center gap-4 mb-5 p-4 bg-[#111317] rounded-xl border border-white/10">
-                <div className="w-12 h-12 rounded-full bg-[#0B0B12] border border-[#F2CA50]/30 flex items-center justify-center">
+              <div className="flex items-center gap-3 mb-4 p-3 bg-[#111317] rounded-xl border border-white/10">
+                <div className="w-10 h-10 rounded-full bg-[#0B0B12] border border-[#F2CA50]/30 flex items-center justify-center">
                   <Star className="h-5 w-5 text-[#F2CA50]" />
                 </div>
                 <div>
-                  <div className="font-[family-name:var(--font-anton)] text-lg uppercase tracking-wide">{showNames ? selectedPlayer.fullName : "???"}</div>
-                  <div className="text-[10px] text-[#A8A8B3]">{showNames ? selectedPlayer.nickname : "Hidden Legend"} · {selectedPlayer.position} · OVR {playerOvr(selectedPlayer)}</div>
+                  <div className="font-[family-name:var(--font-anton)] text-base uppercase tracking-wide">{showNames ? selectedPlayer.fullName : "???"}</div>
+                  <div className="text-[9px] text-[#A8A8B3]">{showNames ? selectedPlayer.nickname : "Hidden Legend"} · {selectedPlayer.position} · OVR {playerOvr(selectedPlayer)}</div>
                 </div>
               </div>
 
               <div className="flex-1 min-h-0 overflow-y-auto pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
                   {selectedPlayer.skills.map((skill) => {
                     const stolen = history.some((s) => s.id === skill.id);
-                    const selected = selectedSkill?.id === skill.id;
+                    const justGot = acquiredSkill?.id === skill.id;
                     const color = rarityColor(skill.rarity);
                     return (
                       <button
                         key={skill.id}
-                        disabled={stolen}
-                        onClick={() => handleSelectSkill(skill)}
-                        className={`relative rounded-xl border p-4 text-left transition-all ${
-                          selected
-                            ? "bg-[#F2CA50]/10 border-[#F2CA50] shadow-[0_0_24px_rgba(242,202,80,0.18)] scale-[1.02]"
+                        disabled={stolen || justGot || isSpinning}
+                        onClick={() => handleStealSkill(skill)}
+                        className={`relative rounded-lg border p-2 text-left transition-all ${
+                          justGot
+                            ? "bg-[#F2CA50]/20 border-[#F2CA50] shadow-[0_0_24px_rgba(242,202,80,0.22)] scale-[1.02]"
                             : stolen
                             ? "bg-[#1a1c20]/40 border-white/5 opacity-40 cursor-not-allowed"
                             : "bg-[#111317] border-white/10 hover:border-[#F2CA50]/40 hover:scale-[1.02]"
@@ -473,55 +392,44 @@ function TeamPageInner() {
                       >
                         {stolen && (
                           <div className="absolute inset-0 flex items-center justify-center z-10">
-                            <Lock className="h-6 w-6 text-[#A8A8B3]" />
+                            <Lock className="h-5 w-5 text-[#A8A8B3]" />
                           </div>
                         )}
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color }}>{skill.rarity}</span>
-                          <span className="text-xs text-[#A8A8B3] uppercase tracking-wider">{ATTRIBUTE_LABELS[skill.attribute]}</span>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[8px] uppercase tracking-wider font-bold" style={{ color }}>{skill.rarity}</span>
+                          <span className="text-[9px] text-[#A8A8B3] uppercase tracking-wider">{ATTRIBUTE_LABELS[skill.attribute]}</span>
                         </div>
-                        <div className="font-[family-name:var(--font-anton)] text-lg uppercase tracking-wide mb-1">{skill.name}</div>
-                        <div className="flex items-center gap-2">
-                          <Zap className="h-3.5 w-3.5" style={{ color }} />
-                          <span className="font-[family-name:var(--font-space-grotesk)] font-bold" style={{ color }}>+{skill.value}</span>
+                        <div className="font-[family-name:var(--font-anton)] text-sm uppercase tracking-wide mb-1 leading-tight">{skill.name}</div>
+                        <div className="flex items-center gap-1.5">
+                          <Zap className="h-3 w-3" style={{ color }} />
+                          <span className="font-[family-name:var(--font-space-grotesk)] text-sm font-bold" style={{ color }}>+{skill.value}</span>
                         </div>
                       </button>
                     );
                   })}
                 </div>
               </div>
-
-              <div className="mt-5 flex justify-end">
-                <Button
-                  variant="secondary"
-                  size="xl"
-                  disabled={!selectedSkill || acquiredSkill !== null}
-                  onClick={handleStealSkill}
-                >
-                  {acquiredSkill ? "Skill Acquired" : "Steal This Skill"} <ChevronRight className="h-5 w-5" />
-                </Button>
-              </div>
             </div>
           )}
         </section>
 
         {/* RIGHT HOOPER PANEL — FIXED */}
-        <aside className="border-l border-white/8 bg-[#111317]/60 p-6 flex flex-col items-center text-center shrink-0">
+        <aside className="border-l border-white/8 bg-[#111317]/60 p-8 flex flex-col items-center text-center shrink-0">
           <div className="w-full">
             <div className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold mb-1">Your Hooper</div>
-            <h2 className="font-[family-name:var(--font-anton)] text-2xl uppercase tracking-wide">Custom Build</h2>
+            <h2 className="font-[family-name:var(--font-anton)] text-3xl uppercase tracking-wide">Custom Build</h2>
             <div className="text-[10px] text-[#A8A8B3] mt-1">BAH-{String(round).padStart(2, "0")}</div>
           </div>
 
-          <div className="my-6 text-center">
+          <div className="my-8 text-center">
             <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3] mb-1">Overall</div>
-            <div className={`font-[family-name:var(--font-space-grotesk)] text-7xl font-bold ${overall !== null ? "text-[#F2CA50]" : "text-[#A8A8B3]/30"}`}>
+            <div className={`font-[family-name:var(--font-space-grotesk)] text-8xl font-bold ${overall !== null ? "text-[#F2CA50]" : "text-[#A8A8B3]/30"}`}>
               {overall ?? "--"}
             </div>
           </div>
 
           {/* 13 Skills Radar */}
-          <div className="h-56 w-full mb-6 relative">
+          <div className="h-80 w-full mb-8 relative">
             {history.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                 <div className="text-center">
@@ -533,7 +441,7 @@ function TeamPageInner() {
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData}>
                 <PolarGrid stroke="rgba(255,255,255,0.08)" />
-                <PolarAngleAxis dataKey="attribute" tick={{ fill: "#A8A8B3", fontSize: 9, fontFamily: "var(--font-space-grotesk)" }} />
+                <PolarAngleAxis dataKey="attribute" tick={{ fill: "#A8A8B3", fontSize: 10, fontFamily: "var(--font-space-grotesk)" }} />
                 <Radar
                   name="Hooper"
                   dataKey="value"
