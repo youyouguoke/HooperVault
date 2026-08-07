@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/Button";
 import { HISTORIC_TEAMS, type HistoricTeam, type LegendaryPlayer, type PlayerSkill } from "@/data/teams";
 import { ATTRIBUTES, type Attribute } from "@/data/legends";
@@ -44,6 +43,80 @@ function teamLogo(team: HistoricTeam): string {
 
 function rarityColor(rarity: string): string {
   return rarity === "legendary" ? "#F2CA50" : rarity === "epic" ? "#6CB9FF" : "#A8A8B3";
+}
+
+function CustomRadar({ data }: { data: { attribute: string; value: number | null }[] }) {
+  const size = 320;
+  const cx = size / 2;
+  const cy = size / 2;
+  const radius = 110;
+  const levels = 4;
+  const active = data.filter((d) => d.value !== null) as { attribute: string; value: number }[];
+  if (active.length < 2) return null;
+  const angleFor = (index: number, total: number) => (Math.PI * 2 * index) / total - Math.PI / 2;
+  const pointFor = (index: number, total: number, value: number) => {
+    const angle = angleFor(index, total);
+    const r = (value / 100) * radius;
+    return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
+  };
+  const path = active
+    .map(({ value }, i) => {
+      // find original index to place on correct axis
+      const idx = data.findIndex((d) => d.value === value && d.attribute === active[i].attribute);
+      const [x, y] = pointFor(idx, data.length, value);
+      return `${i === 0 ? "M" : "L"} ${x} ${y}`;
+    })
+    .join(" ");
+  const closedPath = `${path} Z`;
+  return (
+    <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
+      {[...Array(levels)].map((_, i) => {
+        const r = ((i + 1) / levels) * radius;
+        return (
+          <circle
+            key={i}
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill="none"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth={1}
+          />
+        );
+      })}
+      {data.map((d, i) => {
+        const angle = angleFor(i, data.length);
+        const x1 = cx;
+        const y1 = cy;
+        const x2 = cx + radius * Math.cos(angle);
+        const y2 = cy + radius * Math.sin(angle);
+        const lx = cx + (radius + 18) * Math.cos(angle);
+        const ly = cy + (radius + 18) * Math.sin(angle);
+        return (
+          <g key={d.attribute}>
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+            <text
+              x={lx}
+              y={ly}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="#A8A8B3"
+              fontSize={10}
+              fontFamily="var(--font-space-grotesk)"
+            >
+              {d.attribute}
+            </text>
+          </g>
+        );
+      })}
+      <path d={closedPath} fill="#F2CA50" fillOpacity={0.22} stroke="#F2CA50" strokeWidth={2} />
+      {active.map(({ value, attribute }) => {
+        const idx = data.findIndex((d) => d.attribute === attribute && d.value === value);
+        const [x, y] = pointFor(idx, data.length, value);
+        return <circle key={attribute} cx={x} cy={y} r={3} fill="#F2CA50" />;
+      })}
+    </svg>
+  );
 }
 
 export default function TeamPage() {
@@ -415,7 +488,8 @@ function TeamPageInner() {
               <div className="flex-1 min-h-0 overflow-y-auto pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
                 <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
                   {selectedPlayer.skills.map((skill) => {
-                    const stolen = stolenSkillKeys.has(skillKey(skill));
+                    const key = skillKey(skill);
+                    const stolen = history.some((h) => h.attribute === skill.attribute && h.value === skill.value) || stolenSkillKeys.has(key);
                     const justGot = acquiredSkill?.id === skill.id;
                     const color = rarityColor(skill.rarity);
                     return (
@@ -480,21 +554,7 @@ function TeamPageInner() {
                 </div>
               </div>
             )}
-            <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData}>
-                <PolarGrid stroke="rgba(255,255,255,0.08)" />
-                <PolarAngleAxis dataKey="attribute" tick={{ fill: "#A8A8B3", fontSize: 10, fontFamily: "var(--font-space-grotesk)" }} />
-                <Radar
-                  name="Hooper"
-                  dataKey="value"
-                  stroke={history.length > 0 ? "#F2CA50" : "rgba(255,255,255,0.1)"}
-                  strokeWidth={2}
-                  fill={history.length > 0 ? "#F2CA50" : "transparent"}
-                  fillOpacity={history.length > 0 ? 0.22 : 0}
-                  connectNulls={false}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+            <CustomRadar data={radarData} />
           </div>
 
           {/* Draft Progress Board */}
