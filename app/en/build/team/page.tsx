@@ -73,9 +73,12 @@ function TeamPageInner() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [teamResetsLeft, setTeamResetsLeft] = useState(3);
   const [acquiredSkill, setAcquiredSkill] = useState<PlayerSkill | null>(null);
-  const [stolenIds, setStolenIds] = useState<Set<string>>(new Set());
+  const [stolenSkillKeys, setStolenSkillKeys] = useState<Set<string>>(new Set());
   const [teamLocked, setTeamLocked] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stealingRef = useRef(false);
+
+  const skillKey = (skill: PlayerSkill) => `${skill.attribute}:${skill.value}`;
 
   const startSpin = () => {
     if (isSpinning) return;
@@ -178,12 +181,17 @@ function TeamPageInner() {
   };
 
   const handleStealSkill = (skill: PlayerSkill) => {
-    if (!selectedTeam || !selectedPlayer || isSpinning) return;
-    if (stolenIds.has(skill.id)) return;
+    if (!selectedTeam || !selectedPlayer || isSpinning || stealingRef.current) return;
+    if (stolenSkillKeys.has(skillKey(skill))) return;
+    stealingRef.current = true;
     const stolen: StolenSkill = { ...skill, player: selectedPlayer, team: selectedTeam };
     setAcquiredSkill(skill);
     setHistory((prev) => [...prev, stolen]);
-    setStolenIds((prev) => new Set(prev).add(skill.id));
+    setStolenSkillKeys((prev) => {
+      const next = new Set(prev);
+      next.add(skillKey(skill));
+      return next;
+    });
 
     setTimeout(() => {
       if (round < TOTAL_ROUNDS) {
@@ -193,8 +201,12 @@ function TeamPageInner() {
         setSelectedPlayer(null);
         setAcquiredSkill(null);
         setDisplayIndex(0);
-        setTimeout(() => startSpin(), 0);
+        setTimeout(() => {
+          stealingRef.current = false;
+          startSpin();
+        }, 0);
       } else {
+        stealingRef.current = false;
         setState("completed");
       }
     }, 800);
@@ -207,6 +219,8 @@ function TeamPageInner() {
     setSelectedTeam(null);
     setSelectedPlayer(null);
     setAcquiredSkill(null);
+    setStolenSkillKeys(new Set());
+    stealingRef.current = false;
     startSpin();
   };
 
@@ -396,7 +410,7 @@ function TeamPageInner() {
               <div className="flex-1 min-h-0 overflow-y-auto pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
                 <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
                   {selectedPlayer.skills.map((skill) => {
-                    const stolen = stolenIds.has(skill.id);
+                    const stolen = stolenSkillKeys.has(skillKey(skill));
                     const justGot = acquiredSkill?.id === skill.id;
                     const color = rarityColor(skill.rarity);
                     return (
@@ -425,6 +439,7 @@ function TeamPageInner() {
                         <div className="flex items-center gap-1.5">
                           <Zap className="h-3 w-3" style={{ color }} />
                           <span className="font-[family-name:var(--font-space-grotesk)] text-sm font-bold" style={{ color }}>+{skill.value}</span>
+                          <span className="text-[9px] text-[#A8A8B3]">(+{skill.bonus})</span>
                         </div>
                       </button>
                     );

@@ -73,9 +73,12 @@ function TeamPageInner() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [teamResetsLeft, setTeamResetsLeft] = useState(3);
   const [acquiredSkill, setAcquiredSkill] = useState<PlayerSkill | null>(null);
-  const [stolenIds, setStolenIds] = useState<Set<string>>(new Set());
+  const [stolenSkillKeys, setStolenSkillKeys] = useState<Set<string>>(new Set());
   const [teamLocked, setTeamLocked] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stealingRef = useRef(false);
+
+  const skillKey = (skill: PlayerSkill) => `${skill.attribute}:${skill.value}`;
 
   const startSpin = () => {
     if (isSpinning) return;
@@ -84,13 +87,13 @@ function TeamPageInner() {
       intervalRef.current = null;
     }
     setIsSpinning(true);
-    setTeamLocked(true);
     setState("draw");
     setSelectedPlayer(null);
     setAcquiredSkill(null);
 
     let frame = 0;
     const targetIndex = Math.floor(Math.random() * pool.length);
+    setTeamLocked(true);
     intervalRef.current = setInterval(() => {
       frame += 1;
       const progress = frame / TOTAL_FRAMES;
@@ -178,12 +181,17 @@ function TeamPageInner() {
   };
 
   const handleStealSkill = (skill: PlayerSkill) => {
-    if (!selectedTeam || !selectedPlayer || isSpinning) return;
-    if (stolenIds.has(skill.id)) return;
+    if (!selectedTeam || !selectedPlayer || isSpinning || stealingRef.current) return;
+    if (stolenSkillKeys.has(skillKey(skill))) return;
+    stealingRef.current = true;
     const stolen: StolenSkill = { ...skill, player: selectedPlayer, team: selectedTeam };
     setAcquiredSkill(skill);
     setHistory((prev) => [...prev, stolen]);
-    setStolenIds((prev) => new Set(prev).add(skill.id));
+    setStolenSkillKeys((prev) => {
+      const next = new Set(prev);
+      next.add(skillKey(skill));
+      return next;
+    });
 
     setTimeout(() => {
       if (round < TOTAL_ROUNDS) {
@@ -193,8 +201,12 @@ function TeamPageInner() {
         setSelectedPlayer(null);
         setAcquiredSkill(null);
         setDisplayIndex(0);
-        setTimeout(() => startSpin(), 0);
+        setTimeout(() => {
+          stealingRef.current = false;
+          startSpin();
+        }, 0);
       } else {
+        stealingRef.current = false;
         setState("completed");
       }
     }, 800);
@@ -207,6 +219,8 @@ function TeamPageInner() {
     setSelectedTeam(null);
     setSelectedPlayer(null);
     setAcquiredSkill(null);
+    setStolenSkillKeys(new Set());
+    stealingRef.current = false;
     startSpin();
   };
 
@@ -239,7 +253,7 @@ function TeamPageInner() {
       <header className="h-14 border-b border-white/8 bg-[#0B0B12] flex items-center justify-between px-6 lg:px-10 shrink-0">
         <div className="font-[family-name:var(--font-anton)] text-lg uppercase tracking-wider text-white">HooperVault</div>
         <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">
-          第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS} 轮
+          第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}
         </div>
         <div className="text-xs text-[#A8A8B3] uppercase tracking-wider">{mode === "blind" ? "盲选模式" : "经典模式"}</div>
       </header>
@@ -268,11 +282,13 @@ function TeamPageInner() {
       )}
 
       <div className="grid lg:grid-cols-[1fr_540px] h-[calc(100vh-56px)]">
+        {/* LEFT GAMEPLAY AREA */}
         <section className="relative p-6 lg:p-10 overflow-hidden flex flex-col">
+          {/* STATE 01: DRAW TEAM */}
           {state === "draw" && (
             <div className="h-full flex flex-col">
               <div className="mb-6">
-                <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS} 轮</div>
+                <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}</div>
                 <h1 className="font-[family-name:var(--font-anton)] text-4xl lg:text-5xl uppercase tracking-wide">抽取你的传奇球队</h1>
                 <p className="text-[#A8A8B3] text-sm mt-2">你的旅程从一个传奇篮球时代开始。</p>
               </div>
@@ -324,17 +340,18 @@ function TeamPageInner() {
             </div>
           )}
 
+          {/* STATE 02: CHOOSE PLAYER */}
           {state === "player" && selectedTeam && (
             <div className="h-full flex flex-col">
               <div className="mb-5">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS} 轮</span>
+                  <span className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}</span>
                   <Button variant="outline" size="sm" onClick={handleResetTeam} disabled={teamResetsLeft === 0 || isSpinning}>
                     <RefreshCw className="h-3.5 w-3.5 mr-2" /> 重置球队 · 剩余 {teamResetsLeft} 次
                   </Button>
                 </div>
                 <div className="text-[#F2CA50] text-sm font-bold uppercase tracking-widest mb-1">{selectedTeam.season}</div>
-                <h1 className="font-[family-name:var(--font-anton)] text-3xl lg:text-4xl uppercase tracking-wide">从 {selectedTeam.teamName} 选择传奇</h1>
+                <h1 className="font-[family-name:var(--font-anton)] text-3xl lg:text-4xl uppercase tracking-wide">从 {selectedTeam.teamName}</h1>
                 <p className="text-[#A8A8B3] text-sm mt-1">选择一名传奇球员来继承一项技能。</p>
               </div>
 
@@ -371,11 +388,12 @@ function TeamPageInner() {
             </div>
           )}
 
+          {/* STATE 03: STEAL SKILL */}
           {state === "skill" && selectedTeam && selectedPlayer && (
             <div className="h-full flex flex-col">
               <div className="mb-4">
-                <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS} 轮</div>
-                <h1 className="font-[family-name:var(--font-anton)] text-3xl lg:text-4xl uppercase tracking-wide">从 {showNames ? selectedPlayer.fullName : "???"} 偷取技能</h1>
+                <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}</div>
+                <h1 className="font-[family-name:var(--font-anton)] text-3xl lg:text-4xl uppercase tracking-wide">从 {showNames ? selectedPlayer.fullName : "???"}</h1>
                 <p className="text-[#A8A8B3] text-sm mt-1">点击技能即可偷取。已使用的技能会被锁定。</p>
               </div>
 
@@ -392,7 +410,7 @@ function TeamPageInner() {
               <div className="flex-1 min-h-0 overflow-y-auto pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
                 <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
                   {selectedPlayer.skills.map((skill) => {
-                    const stolen = stolenIds.has(skill.id);
+                    const stolen = stolenSkillKeys.has(skillKey(skill));
                     const justGot = acquiredSkill?.id === skill.id;
                     const color = rarityColor(skill.rarity);
                     return (
@@ -414,13 +432,14 @@ function TeamPageInner() {
                           </div>
                         )}
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-[8px] uppercase tracking-wider font-bold" style={{ color }}>{skill.rarity === "legendary" ? "传说" : skill.rarity === "epic" ? "史诗" : "稀有"}</span>
+                          <span className="text-[8px] uppercase tracking-wider font-bold" style={{ color }}>{skill.rarity}</span>
                           <span className="text-[9px] text-[#A8A8B3] uppercase tracking-wider">{ATTRIBUTE_LABELS[skill.attribute]}</span>
                         </div>
                         <div className="font-[family-name:var(--font-anton)] text-sm uppercase tracking-wide mb-1 leading-tight">{skill.name}</div>
                         <div className="flex items-center gap-1.5">
                           <Zap className="h-3 w-3" style={{ color }} />
                           <span className="font-[family-name:var(--font-space-grotesk)] text-sm font-bold" style={{ color }}>+{skill.value}</span>
+                          <span className="text-[9px] text-[#A8A8B3]">(+{skill.bonus})</span>
                         </div>
                       </button>
                     );
@@ -431,6 +450,7 @@ function TeamPageInner() {
           )}
         </section>
 
+        {/* RIGHT HOOPER PANEL — FIXED */}
         <aside className="border-l border-white/8 bg-[#111317]/60 p-8 flex flex-col items-center text-center shrink-0">
           <div className="w-full">
             <div className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold mb-1">你的 Hooper</div>
@@ -445,6 +465,7 @@ function TeamPageInner() {
             </div>
           </div>
 
+          {/* 13 Skills Radar */}
           <div className="h-80 w-full mb-8 relative">
             {history.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
@@ -470,6 +491,7 @@ function TeamPageInner() {
             </ResponsiveContainer>
           </div>
 
+          {/* 选秀进度 Board */}
           <div className="w-full mt-auto">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold">选秀进度</span>
