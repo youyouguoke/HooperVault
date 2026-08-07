@@ -2,30 +2,16 @@
 
 import { useEffect, useMemo, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Container } from "@/components/ui/Container";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/Button";
-import { Section } from "@/components/ui/Section";
 import {
   HISTORIC_TEAMS,
-  getDailyTeamPool,
   type HistoricTeam,
   type LegendaryPlayer,
   type PlayerSkill,
 } from "@/data/teams";
 import { ATTRIBUTES, type Attribute } from "@/data/legends";
-import {
-  Trophy,
-  Star,
-  EyeOff,
-  Dices,
-  Lock,
-  X,
-  Swords,
-  Zap,
-  Shield,
-  Flame,
-  Footprints,
-} from "lucide-react";
+import { Trophy, Star, EyeOff, Lock, RefreshCw, Dices, ChevronRight } from "lucide-react";
 
 const DAILY_SEED = 20260805;
 const TOTAL_ROUNDS = 13;
@@ -48,13 +34,21 @@ const ATTRIBUTE_LABELS: Record<Attribute, string> = {
   clutch: "CLU",
 };
 
-const GROUPS: { label: string; icon: typeof Trophy; attrs: Attribute[] }[] = [
-  { label: "Scoring", icon: Swords, attrs: ["shooting", "mid_range", "finishing", "dunk"] },
-  { label: "Playmaking", icon: Zap, attrs: ["ball_handle", "passing"] },
-  { label: "Defense & Rebounding", icon: Shield, attrs: ["perimeter_defense", "interior_defense", "block", "rebound"] },
-  { label: "Physical", icon: Footprints, attrs: ["speed", "strength"] },
-  { label: "Clutch", icon: Flame, attrs: ["clutch"] },
-];
+const ATTRIBUTE_GROUPS: Record<Attribute, string> = {
+  shooting: "Scoring",
+  mid_range: "Scoring",
+  finishing: "Scoring",
+  dunk: "Scoring",
+  ball_handle: "Playmaking",
+  passing: "Playmaking",
+  perimeter_defense: "Defense",
+  interior_defense: "Defense",
+  block: "Defense",
+  rebound: "Defense",
+  speed: "Physical",
+  strength: "Physical",
+  clutch: "Clutch",
+};
 
 interface StolenSkill extends PlayerSkill {
   player: LegendaryPlayer;
@@ -65,9 +59,13 @@ function playerOvr(player: LegendaryPlayer): number {
   return Math.round(player.skills.reduce((sum, s) => sum + s.value, 0) / player.skills.length);
 }
 
+function teamLogo(team: HistoricTeam): string {
+  return team.teamShortName.slice(0, 2).toUpperCase();
+}
+
 export default function TeamPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#111317]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-[#0B0B12]" />}>
       <TeamPageInner />
     </Suspense>
   );
@@ -90,6 +88,7 @@ function TeamPageInner() {
   const [selectedPlayer, setSelectedPlayer] = useState<LegendaryPlayer | null>(null);
   const [history, setHistory] = useState<StolenSkill[]>([]);
   const [isSpinning, setIsSpinning] = useState(false);
+  const [teamResetsLeft, setTeamResetsLeft] = useState(3);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startSpin = () => {
@@ -150,6 +149,14 @@ function TeamPageInner() {
     return attrs;
   }, [history]);
 
+  const radarData = useMemo(() => {
+    return ATTRIBUTES.map((attr) => ({
+      attribute: ATTRIBUTE_LABELS[attr],
+      fullMark: 100,
+      value: currentAttributes[attr],
+    }));
+  }, [currentAttributes]);
+
   const handlePlayerClick = (player: LegendaryPlayer) => {
     if (phase !== "drafting" || isSpinning) return;
     setSelectedPlayer((prev) => (prev?.id === player.id ? null : player));
@@ -157,8 +164,7 @@ function TeamPageInner() {
 
   const handleStealSkill = (skill: PlayerSkill) => {
     if (!selectedTeam || !selectedPlayer || isSpinning || history.some((s) => s.id === skill.id)) return;
-    const stolen: StolenSkill = { ...skill, player: selectedPlayer, team: selectedTeam };
-    setHistory((prev) => [...prev, stolen]);
+    setHistory((prev) => [...prev, { ...skill, player: selectedPlayer, team: selectedTeam }]);
     setSelectedPlayer(null);
     if (round < TOTAL_ROUNDS) {
       setTimeout(() => {
@@ -170,9 +176,17 @@ function TeamPageInner() {
     }
   };
 
+  const handleResetTeam = () => {
+    if (teamResetsLeft > 0 && !isSpinning) {
+      setTeamResetsLeft((r) => r - 1);
+      startSpin();
+    }
+  };
+
   const handlePlayAgain = () => {
     setHistory([]);
     setRound(1);
+    setTeamResetsLeft(3);
     startSpin();
   };
 
@@ -189,322 +203,316 @@ function TeamPageInner() {
   };
 
   const team = selectedTeam || pool[displayIndex];
-  const progress = ((round - 1) / TOTAL_ROUNDS) * 100;
   const overall = Math.round(Object.values(currentAttributes).reduce((a, b) => a + b, 0) / 13);
 
-  const completedGroups = useMemo(() => {
-    return GROUPS.map((g) => ({
-      ...g,
-      avg: Math.round(g.attrs.reduce((sum, a) => sum + currentAttributes[a], 0) / g.attrs.length),
-    }));
-  }, [currentAttributes]);
-
   return (
-    <>
-      <div className="relative overflow-hidden border-b border-white/8 bg-[#111317] pt-16 pb-6">
-        <div className="stadium-glow" />
-        <Container>
-          <div className="relative z-10">
-            <div className="text-center mb-6">
-              <p className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#F2CA50] font-bold mb-2">
-                Round {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}
-              </p>
-              <h1 className="font-[family-name:var(--font-anton)] text-3xl md:text-5xl text-white uppercase tracking-wide">
-                {phase === "completed" ? "Build Complete" : "Steal a Legendary Skill"}
-              </h1>
-              <p className="text-[#A8A8B3] mt-2 max-w-2xl mx-auto">
-                {phase === "spinning" && "Spinning for a new legendary team..."}
-                {phase === "drafting" && selectedTeam && `Choose a player from the ${selectedTeam.season} ${selectedTeam.teamName}.`}
-                {phase === "completed" && "13 skills stolen. Review your build below."}
-              </p>
-            </div>
+    <main className="bg-[#0B0B12] min-h-screen lg:h-screen lg:overflow-hidden text-white font-sans">
+      {/* Top bar */}
+      <header className="h-14 border-b border-white/8 bg-[#111317]/80 backdrop-blur flex items-center justify-between px-6 lg:px-8">
+        <div className="flex items-center gap-4">
+          <span className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">
+            Round {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}
+          </span>
+          <div className="h-4 w-px bg-white/10" />
+          <span className="text-xs text-[#A8A8B3]">HooperBuilder</span>
+        </div>
+        <div className="text-xs text-[#A8A8B3]">{mode === "blind" ? "Blind Draft" : "Classic Draft"}</div>
+      </header>
 
-            {(phase === "drafting" || phase === "spinning") && (
-              <div className="max-w-2xl mx-auto">
-                <div className="flex justify-between text-xs uppercase tracking-wider text-[#A8A8B3] mb-2">
-                  <span>Progress</span>
-                  <span>{Math.round(progress)}%</span>
-                </div>
-                <div className="h-2 bg-[#1a1c20] rounded-full overflow-hidden border border-white/5">
-                  <div
-                    className="h-full bg-[#FF5E07] rounded-full shadow-[0_0_10px_rgba(255,94,7,0.8)] transition-all duration-500"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
-            )}
+      {/* Spinning overlay / header row */}
+      {phase === "spinning" && (
+        <div className="absolute inset-x-0 top-14 bottom-0 z-20 flex flex-col items-center justify-center bg-[#0B0B12]/95 backdrop-blur-sm px-8">
+          <div className="text-center mb-8">
+            <h2 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide mb-2">
+              Spinning for a Legendary Team
+            </h2>
+            <p className="text-[#A8A8B3] text-sm">19 historic teams in the pool</p>
           </div>
-        </Container>
-      </div>
-
-      <Section className="relative">
-        <Container>
-          <div className="max-w-6xl mx-auto">
-            <div className="glass-card rounded-2xl p-8 md:p-10 text-center relative overflow-hidden mb-8">
-              <div className="absolute inset-0 bg-gradient-to-br from-[#FF5E07]/10 to-transparent pointer-events-none" />
-              <div className="relative z-10">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F2CA50]/10 border border-[#F2CA50]/30 text-[#F2CA50] text-xs uppercase tracking-wider font-bold mb-4">
-                  <Trophy className="h-4 w-4" />
-                  {team.season}
+          <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-10 gap-3 max-w-4xl w-full">
+            {pool.map((t) => {
+              const active = t.id === team.id;
+              return (
+                <div
+                  key={t.id}
+                  className={`rounded-xl p-3 border text-center transition-all ${
+                    active ? "bg-[#FF5E07]/10 border-[#FF5E07] text-white" : "bg-[#1a1c20] border-white/10 text-[#A8A8B3]"
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold mx-auto mb-2 ${
+                      active ? "bg-[#FF5E07] text-white" : "bg-[#111317] text-[#A8A8B3]"
+                    }`}
+                  >
+                    {teamLogo(t)}
+                  </div>
+                  <div className="text-[9px] uppercase tracking-wider truncate">{t.teamShortName}</div>
                 </div>
-                <h2 className="font-[family-name:var(--font-anton)] text-4xl md:text-6xl text-white uppercase tracking-wide mb-2">
-                  {team.teamName}
-                </h2>
-                <p className="text-[#A8A8B3] text-lg mb-1">{team.record}</p>
-                <p className="text-[#A8A8B3] max-w-xl mx-auto">{team.note}</p>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Completed overlay */}
+      {phase === "completed" && (
+        <div className="absolute inset-x-0 top-14 bottom-0 z-30 flex flex-col items-center justify-center bg-[#0B0B12] px-8 overflow-y-auto">
+          <div className="glass-card rounded-2xl p-8 md:p-12 text-center max-w-3xl w-full border border-[#F2CA50]/20">
+            <div className="mb-6">
+              <span className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">Build Complete</span>
+              <h2 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl uppercase tracking-wide mt-2">
+                Legendary Build
+              </h2>
+            </div>
+
+            <div className="flex items-center justify-center gap-8 mb-8">
+              <div className="text-center">
+                <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">OVR</div>
+                <div className="font-[family-name:var(--font-space-grotesk)] text-6xl font-bold text-[#F2CA50]">{overall}</div>
+              </div>
+              <div className="text-left">
+                <div className="text-[#A8A8B3] text-sm">13 skills stolen</div>
+                <div className="text-[#A8A8B3] text-sm">from {history.length} historic players</div>
               </div>
             </div>
 
-            {phase === "spinning" && (
-              <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-3 mb-8">
-                {pool.map((t) => {
-                  const isActive = t.id === team.id;
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 mb-8">
+              {ATTRIBUTES.map((attr) => (
+                <div key={attr} className="bg-[#1a1c20] border border-white/5 rounded-lg p-2 text-center">
+                  <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">{ATTRIBUTE_LABELS[attr]}</div>
+                  <div className="font-[family-name:var(--font-space-grotesk)] font-bold">{currentAttributes[attr]}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-center gap-4">
+              <Button variant="outline" size="lg" onClick={handlePlayAgain}>
+                Play Again
+              </Button>
+              <Button variant="secondary" size="lg" onClick={handlePreview}>
+                <Dices className="h-4 w-4 mr-2" />
+                View Legacy Page
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main two-column layout */}
+      <div className="grid lg:grid-cols-[1fr_360px] h-[calc(100vh-56px)]">
+        {/* LEFT PANEL */}
+        <section className="p-6 lg:p-8 overflow-y-auto lg:overflow-hidden flex flex-col">
+          {selectedTeam && (
+            <>
+              <div className="mb-5">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">
+                    Round {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}
+                  </span>
+                  <Button variant="outline" size="sm" onClick={handleResetTeam} disabled={teamResetsLeft === 0 || isSpinning}>
+                    <RefreshCw className="h-3.5 w-3.5 mr-2" />
+                    Reset Team · {teamResetsLeft} Left
+                  </Button>
+                </div>
+                <h1 className="font-[family-name:var(--font-anton)] text-3xl lg:text-4xl uppercase tracking-wide">
+                  Steal a Skill From {selectedTeam.teamName}
+                </h1>
+                <p className="text-[#A8A8B3] text-sm mt-1">
+                  Choose a player and steal one of their legendary skills. Already-used skills are locked.
+                </p>
+              </div>
+
+              {/* Player chips */}
+              <div className="flex gap-3 overflow-x-auto pb-3 mb-5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                {selectedTeam.players.map((player) => {
+                  const selected = selectedPlayer?.id === player.id;
+                  const Icon = showNames ? Star : EyeOff;
                   return (
-                    <div
-                      key={t.id}
-                      className={`rounded-xl p-3 border text-center transition-all flex flex-col items-center justify-center ${
-                        isActive
-                          ? "bg-[#FF5E07]/10 border-[#FF5E07]/50 text-white"
-                          : "bg-[#1a1c20] border-white/10 text-[#A8A8B3]"
+                    <button
+                      key={player.id}
+                      onClick={() => handlePlayerClick(player)}
+                      className={`flex-shrink-0 rounded-xl border p-3 min-w-[160px] text-left transition-all ${
+                        selected
+                          ? "bg-[#F2CA50]/10 border-[#F2CA50] shadow-[0_0_20px_rgba(242,202,80,0.15)]"
+                          : "bg-[#1a1c20] border-white/10 hover:border-white/20"
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-2 border ${
-                        isActive ? "bg-[#FF5E07] text-white border-[#FF5E07]" : "bg-[#111317] text-[#A8A8B3] border-white/10"
-                      }`}>
-                        {t.teamShortName.slice(0, 2).toUpperCase()}
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-9 h-9 rounded-full bg-[#111317] border border-white/10 flex items-center justify-center">
+                          <Icon className="h-4 w-4 text-[#F2CA50]" />
+                        </div>
+                        <div>
+                          <div className="font-[family-name:var(--font-anton)] text-sm uppercase leading-none">
+                            {showNames ? player.fullName : "???"}
+                          </div>
+                          <div className="text-[10px] text-[#A8A8B3] mt-0.5">
+                            {showNames ? player.nickname : "Hidden"}
+                          </div>
+                        </div>
                       </div>
-                      <div className="font-[family-name:var(--font-space-grotesk)] text-[10px] uppercase tracking-wider">{t.season}</div>
-                      <div className="font-[family-name:var(--font-anton)] text-[10px] uppercase mt-0.5">{t.teamShortName}</div>
-                    </div>
+                      <div className="flex items-center justify-between text-[10px] uppercase tracking-wider">
+                        <span className="text-[#A8A8B3]">{player.position}</span>
+                        <span className="text-[#F2CA50] font-bold">OVR {playerOvr(player)}</span>
+                      </div>
+                    </button>
                   );
                 })}
               </div>
-            )}
 
-            {phase === "drafting" && selectedTeam && (
-              <div className="grid gap-6 lg:grid-cols-12">
-                <div className="lg:col-span-8 space-y-6">
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {selectedTeam.players.map((player) => {
-                      const isSelected = selectedPlayer?.id === player.id;
-                      const Icon = showNames ? Star : EyeOff;
-                      const ovr = playerOvr(player);
-                      return (
-                        <div
-                          key={player.id}
-                          onClick={() => handlePlayerClick(player)}
-                          className={`cursor-pointer rounded-2xl border transition-all duration-300 flex flex-col ${
-                            isSelected
-                              ? "bg-[#F2CA50]/10 border-[#F2CA50]/40 shadow-[0_0_30px_rgba(242,202,80,0.12)]"
-                              : "bg-[#1a1c20]/60 border-white/10 hover:border-white/20 hover:bg-[#1a1c20]"
-                          }`}
-                        >
-                          <div className="p-5 flex-1">
-                            <div className="flex items-start justify-between mb-4">
-                              <div className="w-10 h-10 rounded-full bg-[#111317]/80 border border-white/10 flex items-center justify-center">
-                                <Icon className="h-5 w-5 text-[#F2CA50]" />
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] uppercase tracking-wider text-[#A8A8B3] bg-[#111317]/80 px-2 py-1 rounded border border-white/10">
-                                  {player.position}
-                                </span>
-                                <span className="text-[10px] uppercase tracking-wider text-[#F2CA50] bg-[#F2CA50]/10 px-2 py-1 rounded border border-[#F2CA50]/30 font-bold">
-                                  OVR {ovr}
-                                </span>
-                              </div>
-                            </div>
-                            <h3 className="font-[family-name:var(--font-anton)] text-xl text-white uppercase tracking-wide">
-                              {showNames ? player.fullName : "???"}
-                            </h3>
-                            <p className="text-[#F2CA50] text-sm font-medium">{showNames ? player.nickname : "Hidden Legend"}</p>
-                            <p className="text-[#A8A8B3] text-xs mt-2">{showNames ? player.tagline : "Reveal by selecting."}</p>
-                            <div className="mt-4 flex items-center text-xs text-[#A8A8B3]">
-                              <span className={isSelected ? "text-[#F2CA50]" : ""}>
-                                {isSelected ? "Select a skill below" : "Click to view skills"}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {selectedPlayer && (
-                    <div className="glass-card rounded-2xl p-6 md:p-8 border border-[#F2CA50]/30 relative">
-                      <button
-                        onClick={() => setSelectedPlayer(null)}
-                        className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/10 text-[#A8A8B3] hover:text-white transition-colors"
-                      >
-                        <X className="h-5 w-5" />
-                      </button>
-                      <div className="mb-6">
-                        <h3 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide">
+              {/* Skill detail panel */}
+              <div className="flex-1 min-h-0">
+                {selectedPlayer ? (
+                  <div className="glass-card rounded-2xl p-5 h-full border border-white/10 flex flex-col">
+                    <div className="flex items-center gap-4 mb-5">
+                      <div className="w-14 h-14 rounded-full bg-[#111317] border border-[#F2CA50]/30 flex items-center justify-center">
+                        <Star className="h-6 w-6 text-[#F2CA50]" />
+                      </div>
+                      <div>
+                        <h3 className="font-[family-name:var(--font-anton)] text-2xl uppercase tracking-wide">
                           {showNames ? selectedPlayer.fullName : "???"}
                         </h3>
                         <p className="text-[#F2CA50] text-sm font-medium">
                           {showNames ? selectedPlayer.nickname : "Hidden Legend"} · {selectedPlayer.position} · OVR {playerOvr(selectedPlayer)}
                         </p>
-                        <p className="text-[#A8A8B3] text-xs mt-1">{showNames ? selectedPlayer.tagline : ""}</p>
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                        {selectedPlayer.skills.map((skill) => {
-                          const stolen = history.some((s) => s.id === skill.id);
-                          const isLegendary = skill.rarity === "legendary";
-                          return (
-                            <button
-                              key={skill.id}
-                              disabled={stolen || isSpinning}
-                              onClick={() => handleStealSkill(skill)}
-                              className={`relative rounded-xl border p-3 text-center transition-all ${
-                                stolen
-                                  ? "bg-[#1a1c20]/40 border-white/5 opacity-40 cursor-not-allowed"
-                                  : isLegendary
-                                  ? "bg-[#F2CA50]/10 border-[#F2CA50]/40 hover:bg-[#F2CA50]/20 hover:scale-[1.02]"
-                                  : "bg-[#1a1c20] border-white/10 hover:bg-white/5 hover:border-white/20 hover:scale-[1.02]"
-                              }`}
-                            >
-                              {stolen && (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <Lock className="h-5 w-5 text-[#A8A8B3]" />
-                                </div>
-                              )}
-                              <div className={`text-[10px] uppercase tracking-wider ${isLegendary ? "text-[#F2CA50]" : "text-[#A8A8B3]"}`}>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-3 overflow-y-auto pr-2">
+                      {selectedPlayer.skills.map((skill) => {
+                        const stolen = history.some((s) => s.id === skill.id);
+                        const isLegendary = skill.rarity === "legendary";
+                        const barColor = isLegendary ? "#F2CA50" : "#6CB9FF";
+                        return (
+                          <button
+                            key={skill.id}
+                            disabled={stolen || isSpinning}
+                            onClick={() => handleStealSkill(skill)}
+                            className={`relative rounded-lg border p-3 text-left transition-all ${
+                              stolen
+                                ? "bg-[#1a1c20]/40 border-white/5 opacity-50 cursor-not-allowed"
+                                : "bg-[#111317] border-white/10 hover:border-[#F2CA50]/50 hover:scale-[1.02]"
+                            }`}
+                          >
+                            {stolen && (
+                              <div className="absolute inset-0 flex items-center justify-center z-10">
+                                <Lock className="h-5 w-5 text-[#A8A8B3]" />
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className={`text-xs uppercase tracking-wider font-bold ${isLegendary ? "text-[#F2CA50]" : "text-white"}`}>
                                 {ATTRIBUTE_LABELS[skill.attribute]}
-                              </div>
-                              <div className={`font-[family-name:var(--font-space-grotesk)] font-bold text-xl ${isLegendary ? "text-[#F2CA50]" : "text-white"}`}>
-                                {skill.value}
-                              </div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="lg:col-span-4">
-                  <div className="glass-card rounded-2xl p-5 sticky top-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-[family-name:var(--font-anton)] text-xl text-white uppercase tracking-wide">
-                        Stolen Skills
-                      </h3>
-                      <span className="text-xs text-[#F2CA50] font-bold">{history.length} / {TOTAL_ROUNDS}</span>
-                    </div>
-                    <div className="space-y-2 max-h-[360px] overflow-y-auto hide-scrollbar pr-1 mb-4">
-                      {history.length === 0 && (
-                        <p className="text-[#A8A8B3] text-sm text-center py-6">No skills stolen yet. Tap a player to start.</p>
-                      )}
-                      {history.map((skill, i) => (
-                        <div
-                          key={`${skill.id}-${i}`}
-                          className="flex items-center justify-between bg-[#1a1c20]/70 rounded-lg p-3 border border-white/5"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-2 h-8 rounded-full ${
-                                skill.rarity === "legendary" ? "bg-[#F2CA50]" : "bg-[#6CB9FF]"
-                              }`}
-                            />
-                            <div>
-                              <div className="text-white font-medium text-sm">{skill.name}</div>
-                              <div className="text-[10px] tracking-wider text-[#A8A8B3]">
-                                {showNames ? skill.player.fullName : "???"} · {ATTRIBUTE_LABELS[skill.attribute]} {skill.value}
-                              </div>
+                              </span>
+                              <span className="text-sm font-[family-name:var(--font-space-grotesk)] font-bold">{skill.value}</span>
                             </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="border-t border-white/10 pt-4">
-                      <div className="grid grid-cols-2 gap-2 mb-4">
-                        {ATTRIBUTES.map((attr) => (
-                          <div key={attr} className="bg-[#1a1c20] rounded p-2 text-center">
-                            <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">{ATTRIBUTE_LABELS[attr]}</div>
-                            <div
-                              className={`font-[family-name:var(--font-space-grotesk)] font-bold ${
-                                currentAttributes[attr] >= 90 ? "text-[#F2CA50]" : currentAttributes[attr] >= 75 ? "text-white" : "text-[#A8A8B3]"
-                              }`}
-                            >
-                              {currentAttributes[attr]}
+                            <div className="h-2 bg-[#1a1c20] rounded-full overflow-hidden border border-white/5">
+                              <div
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ width: `${skill.value}%`, backgroundColor: barColor }}
+                              />
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex items-center justify-between text-sm text-[#A8A8B3] mb-2">
-                        <span>OVR</span>
-                        <span className="text-[#F2CA50] font-bold text-lg">{overall}</span>
-                      </div>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="glass-card rounded-2xl p-8 h-full border border-white/10 flex flex-col items-center justify-center text-center">
+                    <div className="w-16 h-16 rounded-full bg-[#1a1c20] border border-white/10 flex items-center justify-center mb-4">
+                      <Trophy className="h-7 w-7 text-[#F2CA50]" />
+                    </div>
+                    <h3 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide mb-2">
+                      Select a Player
+                    </h3>
+                    <p className="text-[#A8A8B3] text-sm max-w-md">
+                      Choose one of the legendary players above to view their 13 skills. Pick the one that best evolves your Hooper.
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
+            </>
+          )}
+        </section>
 
-            {phase === "completed" && (
-              <div className="space-y-6">
-                <div className="glass-card rounded-2xl p-6 text-center">
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-8">
-                    <div className="text-center">
-                      <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">OVR</div>
-                      <div className="font-[family-name:var(--font-space-grotesk)] text-5xl font-bold text-[#F2CA50]">{overall}</div>
-                    </div>
-                    <div className="text-left">
-                      <h3 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide">Legendary Build</h3>
-                      <p className="text-[#A8A8B3] text-sm">13 skills stolen from {history.length} historic players</p>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-8">
-                    {completedGroups.map((g) => {
-                      const Icon = g.icon;
-                      return (
-                        <div key={g.label} className="bg-[#1a1c20] border border-white/5 rounded-xl p-4 text-center">
-                          <div className="flex items-center justify-center gap-2 mb-2">
-                            <Icon className="h-4 w-4 text-[#F2CA50]" />
-                            <span className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">{g.label}</span>
-                          </div>
-                          <div className={`font-[family-name:var(--font-space-grotesk)] text-2xl font-bold ${g.avg >= 90 ? "text-[#F2CA50]" : g.avg >= 75 ? "text-white" : "text-[#A8A8B3]"}`}>
-                            {g.avg}
-                          </div>
-                          <div className="text-[10px] text-[#A8A8B3] mt-1">
-                            {g.attrs.map((a) => ATTRIBUTE_LABELS[a]).join(" / ")}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 mb-8">
-                    {ATTRIBUTES.map((attr) => (
-                      <div key={attr} className="bg-[#1a1c20] border border-white/5 rounded-lg p-3 text-center">
-                        <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">{ATTRIBUTE_LABELS[attr]}</div>
-                        <div
-                          className={`font-[family-name:var(--font-space-grotesk)] text-xl font-bold ${
-                            currentAttributes[attr] >= 90 ? "text-[#F2CA50]" : currentAttributes[attr] >= 75 ? "text-white" : "text-[#A8A8B3]"
-                          }`}
-                        >
-                          {currentAttributes[attr]}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <Button variant="outline" size="xl" onClick={handlePlayAgain}>
-                      Play Again
-                    </Button>
-                    <Button variant="secondary" size="xl" onClick={handlePreview}>
-                      <Dices className="h-5 w-5 mr-2" />
-                      View Legacy Page
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
+        {/* RIGHT PANEL */}
+        <aside className="border-l border-white/8 bg-[#111317]/50 p-5 lg:p-6 flex flex-col gap-5 overflow-y-auto lg:overflow-hidden">
+          <div className="text-center">
+            <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-1">Your Hooper</div>
+            <h2 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide">Custom Build</h2>
+            <div className="text-[10px] text-[#A8A8B3] mt-1">BAH-{String(round).padStart(2, "0")}</div>
           </div>
-        </Container>
-      </Section>
-    </>
+
+          <div className="text-center">
+            <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3] mb-1">Overall</div>
+            <div className="font-[family-name:var(--font-space-grotesk)] text-6xl font-bold text-[#F2CA50]">{overall}</div>
+          </div>
+
+          {/* Radar chart */}
+          <div className="h-48 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData}>
+                <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                <PolarAngleAxis dataKey="attribute" tick={{ fill: "#A8A8B3", fontSize: 9, fontFamily: "var(--font-space-grotesk)" }} />
+                <Radar name="Attributes" dataKey="value" stroke="#F2CA50" strokeWidth={2} fill="#F2CA50" fillOpacity={0.22} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Stolen skills */}
+          <div className="flex-1 min-h-0">
+            <div className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold mb-2">Stolen Skills</div>
+            <div className="space-y-2 overflow-y-auto max-h-[200px] pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+              {history.length === 0 && (
+                <p className="text-[#A8A8B3] text-xs text-center py-4">No skills stolen yet.</p>
+              )}
+              {history.map((skill, i) => (
+                <div key={`${skill.id}-${i}`} className="bg-[#1a1c20] rounded-lg p-2 border border-white/5 flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-medium text-white">{showNames ? skill.player.fullName : "???"}</div>
+                    <div className="text-[10px] text-[#A8A8B3]">{skill.name}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs font-bold text-[#F2CA50]">{skill.value}</div>
+                    <div className="text-[9px] text-[#A8A8B3]">{ATTRIBUTE_LABELS[skill.attribute]}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Draft board */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold">Draft Board</span>
+              <span className="text-xs font-bold text-[#F2CA50]">{overall}</span>
+            </div>
+            <div className="grid grid-cols-13 gap-1">
+              {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => {
+                const skill = history[i];
+                return (
+                  <div
+                    key={i}
+                    className={`aspect-square rounded border ${
+                      skill
+                        ? skill.rarity === "legendary"
+                          ? "bg-[#F2CA50] border-[#F2CA50]"
+                          : "bg-[#6CB9FF] border-[#6CB9FF]"
+                        : i < round
+                        ? "bg-[#FF5E07] border-[#FF5E07]"
+                        : "bg-[#1a1c20] border-white/10"
+                    }`}
+                    title={skill ? `${skill.player.fullName} · ${skill.name}` : undefined}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <style jsx>{`
+        .grid-cols-13 {
+          grid-template-columns: repeat(13, minmax(0, 1fr));
+        }
+      `}</style>
+    </main>
   );
 }
