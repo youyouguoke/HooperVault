@@ -10,8 +10,8 @@ import { Trophy, Star, EyeOff, Lock, RefreshCw, Zap } from "lucide-react";
 
 const DAILY_SEED = 20260805;
 const TOTAL_ROUNDS = 13;
-const TOTAL_FRAMES = 16;
-const SPIN_INTERVAL_MS = 60;
+const TOTAL_FRAMES = 20;
+const SPIN_INTERVAL_MS = 55;
 
 const ATTRIBUTE_LABELS: Record<Attribute, string> = {
   shooting: "3PT",
@@ -73,11 +73,16 @@ function TeamPageInner() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [teamResetsLeft, setTeamResetsLeft] = useState(3);
   const [acquiredSkill, setAcquiredSkill] = useState<PlayerSkill | null>(null);
+  const [stolenIds, setStolenIds] = useState<Set<string>>(new Set());
+  const [teamLocked, setTeamLocked] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startSpin = () => {
     if (isSpinning) return;
-    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
     setIsSpinning(true);
     setState("draw");
     setSelectedPlayer(null);
@@ -85,13 +90,17 @@ function TeamPageInner() {
 
     let frame = 0;
     const targetIndex = Math.floor(Math.random() * pool.length);
+    setTeamLocked(true);
     intervalRef.current = setInterval(() => {
       frame += 1;
       const progress = frame / TOTAL_FRAMES;
       const speed = Math.max(1, Math.floor((1 - progress) * 6));
       setDisplayIndex((d) => (d + speed) % pool.length);
       if (frame >= TOTAL_FRAMES) {
-        if (intervalRef.current) clearInterval(intervalRef.current);
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
         setDisplayIndex(targetIndex);
         const drawnTeam = pool[targetIndex];
         setSelectedTeam(drawnTeam);
@@ -106,10 +115,13 @@ function TeamPageInner() {
   useEffect(() => {
     if (!startedRef.current) {
       startedRef.current = true;
-      startSpin();
+      setTimeout(() => startSpin(), 0);
     }
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -150,8 +162,12 @@ function TeamPageInner() {
   }, [currentAttributes]);
 
   const handleResetTeam = () => {
-    if (teamResetsLeft > 0 && !isSpinning) {
+    if (teamResetsLeft > 0 && !isSpinning && !teamLocked) {
       setTeamResetsLeft((r) => r - 1);
+      setSelectedTeam(null);
+      setSelectedPlayer(null);
+      setAcquiredSkill(null);
+      setDisplayIndex(0);
       startSpin();
     }
   };
@@ -163,15 +179,21 @@ function TeamPageInner() {
 
   const handleStealSkill = (skill: PlayerSkill) => {
     if (!selectedTeam || !selectedPlayer || isSpinning) return;
-    if (history.some((s) => s.id === skill.id)) return;
+    if (stolenIds.has(skill.id)) return;
     const stolen: StolenSkill = { ...skill, player: selectedPlayer, team: selectedTeam };
     setAcquiredSkill(skill);
     setHistory((prev) => [...prev, stolen]);
+    setStolenIds((prev) => new Set(prev).add(skill.id));
 
     setTimeout(() => {
       if (round < TOTAL_ROUNDS) {
         setRound((r) => r + 1);
-        startSpin();
+        setTeamLocked(false);
+        setSelectedTeam(null);
+        setSelectedPlayer(null);
+        setAcquiredSkill(null);
+        setDisplayIndex(0);
+        setTimeout(() => startSpin(), 0);
       } else {
         setState("completed");
       }
@@ -374,7 +396,7 @@ function TeamPageInner() {
               <div className="flex-1 min-h-0 overflow-y-auto pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
                 <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
                   {selectedPlayer.skills.map((skill) => {
-                    const stolen = history.some((s) => s.id === skill.id);
+                    const stolen = stolenIds.has(skill.id);
                     const justGot = acquiredSkill?.id === skill.id;
                     const color = rarityColor(skill.rarity);
                     return (
