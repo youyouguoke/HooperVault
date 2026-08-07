@@ -45,29 +45,25 @@ function rarityColor(rarity: string): string {
   return rarity === "legendary" ? "#F2CA50" : rarity === "epic" ? "#6CB9FF" : "#A8A8B3";
 }
 
-function CustomRadar({ data }: { data: { attribute: string; value: number | null }[] }) {
+function CustomRadar({ data }: { data: { attribute: string; value: number }[] }) {
   const size = 320;
   const cx = size / 2;
   const cy = size / 2;
   const radius = 110;
   const levels = 4;
-  const active = data.filter((d) => d.value !== null) as { attribute: string; value: number }[];
-  if (active.length < 2) return null;
   const angleFor = (index: number, total: number) => (Math.PI * 2 * index) / total - Math.PI / 2;
   const pointFor = (index: number, total: number, value: number) => {
     const angle = angleFor(index, total);
     const r = (value / 100) * radius;
     return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
   };
-  const path = active
-    .map(({ value }, i) => {
-      // find original index to place on correct axis
-      const idx = data.findIndex((d) => d.value === value && d.attribute === active[i].attribute);
-      const [x, y] = pointFor(idx, data.length, value);
+  const closedPath = data
+    .map((d, i) => {
+      const [x, y] = pointFor(i, data.length, d.value);
       return `${i === 0 ? "M" : "L"} ${x} ${y}`;
     })
-    .join(" ");
-  const closedPath = `${path} Z`;
+    .join(" ") + " Z";
+  const showFill = data.length >= 3;
   return (
     <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
       {[...Array(levels)].map((_, i) => {
@@ -86,15 +82,13 @@ function CustomRadar({ data }: { data: { attribute: string; value: number | null
       })}
       {data.map((d, i) => {
         const angle = angleFor(i, data.length);
-        const x1 = cx;
-        const y1 = cy;
         const x2 = cx + radius * Math.cos(angle);
         const y2 = cy + radius * Math.sin(angle);
-        const lx = cx + (radius + 18) * Math.cos(angle);
-        const ly = cy + (radius + 18) * Math.sin(angle);
+        const lx = cx + (radius + 22) * Math.cos(angle);
+        const ly = cy + (radius + 22) * Math.sin(angle);
         return (
           <g key={d.attribute}>
-            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+            <line x1={cx} y1={cy} x2={x2} y2={y2} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
             <text
               x={lx}
               y={ly}
@@ -109,11 +103,12 @@ function CustomRadar({ data }: { data: { attribute: string; value: number | null
           </g>
         );
       })}
-      <path d={closedPath} fill="#F2CA50" fillOpacity={0.22} stroke="#F2CA50" strokeWidth={2} />
-      {active.map(({ value, attribute }) => {
-        const idx = data.findIndex((d) => d.attribute === attribute && d.value === value);
-        const [x, y] = pointFor(idx, data.length, value);
-        return <circle key={attribute} cx={x} cy={y} r={3} fill="#F2CA50" />;
+      {showFill && (
+        <path d={closedPath} fill="#F2CA50" fillOpacity={0.22} stroke="#F2CA50" strokeWidth={2} />
+      )}
+      {data.map((d, i) => {
+        const [x, y] = pointFor(i, data.length, d.value);
+        return <circle key={d.attribute} cx={x} cy={y} r={3} fill="#F2CA50" />;
       })}
     </svg>
   );
@@ -151,7 +146,7 @@ function TeamPageInner() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stealingRef = useRef(false);
 
-  const skillKey = (skill: PlayerSkill) => `${skill.attribute}:${skill.value}`;
+  const skillKey = (skill: PlayerSkill) => skill.attribute;
 
   const startSpin = () => {
     if (isSpinning) return;
@@ -204,19 +199,19 @@ function TeamPageInner() {
 
   const currentAttributes = useMemo(() => {
     const attrs: Record<Attribute, number> = {
-      shooting: 0,
-      mid_range: 0,
-      finishing: 0,
-      dunk: 0,
-      passing: 0,
-      ball_handle: 0,
-      perimeter_defense: 0,
-      interior_defense: 0,
-      block: 0,
-      rebound: 0,
-      speed: 0,
-      strength: 0,
-      clutch: 0,
+      shooting: 55,
+      mid_range: 55,
+      finishing: 55,
+      dunk: 55,
+      passing: 55,
+      ball_handle: 55,
+      perimeter_defense: 55,
+      interior_defense: 55,
+      block: 55,
+      rebound: 55,
+      speed: 55,
+      strength: 55,
+      clutch: 55,
     };
     history.forEach((skill) => {
       attrs[skill.attribute] = Math.min(99, attrs[skill.attribute] + skill.bonus);
@@ -225,15 +220,14 @@ function TeamPageInner() {
   }, [history]);
 
   const overall = useMemo(() => {
-    if (history.length === 0) return null;
     return Math.round(Object.values(currentAttributes).reduce((a, b) => a + b, 0) / 13);
-  }, [currentAttributes, history.length]);
+  }, [currentAttributes]);
 
   const radarData = useMemo(() => {
     return ATTRIBUTES.map((attr) => ({
       attribute: ATTRIBUTE_LABELS[attr],
       fullMark: 100,
-      value: currentAttributes[attr] > 0 ? currentAttributes[attr] : null,
+      value: currentAttributes[attr],
     }));
   }, [currentAttributes]);
 
@@ -261,7 +255,7 @@ function TeamPageInner() {
     const stolen: StolenSkill = { ...skill, player: selectedPlayer, team: selectedTeam };
     setAcquiredSkill(skill);
     setHistory((prev) => {
-      if (prev.some((s) => skillKey(s) === key)) return prev;
+      if (prev.some((s) => s.attribute === skill.attribute)) return prev;
       return [...prev, stolen];
     });
     setStolenSkillKeys((prev) => {
@@ -489,7 +483,7 @@ function TeamPageInner() {
                 <div className="grid grid-cols-4 md:grid-cols-5 gap-2">
                   {selectedPlayer.skills.map((skill) => {
                     const key = skillKey(skill);
-                    const stolen = history.some((h) => h.attribute === skill.attribute && h.value === skill.value) || stolenSkillKeys.has(key);
+                    const stolen = history.some((h) => h.attribute === skill.attribute) || stolenSkillKeys.has(key);
                     const justGot = acquiredSkill?.id === skill.id;
                     const color = rarityColor(skill.rarity);
                     return (
