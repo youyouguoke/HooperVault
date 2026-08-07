@@ -4,14 +4,9 @@ import { useEffect, useMemo, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { Button } from "@/components/ui/Button";
-import {
-  HISTORIC_TEAMS,
-  type HistoricTeam,
-  type LegendaryPlayer,
-  type PlayerSkill,
-} from "@/data/teams";
+import { HISTORIC_TEAMS, type HistoricTeam, type LegendaryPlayer, type PlayerSkill } from "@/data/teams";
 import { ATTRIBUTES, type Attribute } from "@/data/legends";
-import { Trophy, Star, EyeOff, Lock, RefreshCw, Dices } from "lucide-react";
+import { Trophy, Star, EyeOff, Lock, RefreshCw, ChevronRight, Zap } from "lucide-react";
 
 const DAILY_SEED = 20260805;
 const TOTAL_ROUNDS = 13;
@@ -47,6 +42,10 @@ function teamLogo(team: HistoricTeam): string {
   return team.teamShortName.slice(0, 2).toUpperCase();
 }
 
+function rarityColor(rarity: string): string {
+  return rarity === "legendary" ? "#F2CA50" : rarity === "epic" ? "#6CB9FF" : "#A8A8B3";
+}
+
 export default function TeamPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#0B0B12]" />}>
@@ -65,23 +64,26 @@ function TeamPageInner() {
   const startedRef = useRef(false);
 
   const pool = useMemo(() => HISTORIC_TEAMS, []);
-  const [phase, setPhase] = useState<"spinning" | "drafting" | "completed">("spinning");
+  const [state, setState] = useState<"draw" | "player" | "skill" | "completed">("draw");
   const [selectedTeam, setSelectedTeam] = useState<HistoricTeam | null>(null);
   const [displayIndex, setDisplayIndex] = useState(0);
   const [round, setRound] = useState(1);
   const [selectedPlayer, setSelectedPlayer] = useState<LegendaryPlayer | null>(null);
+  const [selectedSkill, setSelectedSkill] = useState<PlayerSkill | null>(null);
   const [history, setHistory] = useState<StolenSkill[]>([]);
   const [isSpinning, setIsSpinning] = useState(false);
   const [teamResetsLeft, setTeamResetsLeft] = useState(3);
+  const [acquiredSkill, setAcquiredSkill] = useState<PlayerSkill | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const startSpin = () => {
     if (isSpinning) return;
     if (intervalRef.current) clearInterval(intervalRef.current);
     setIsSpinning(true);
-    setPhase("spinning");
+    setState("draw");
     setSelectedPlayer(null);
-    setSelectedTeam(null);
+    setSelectedSkill(null);
+    setAcquiredSkill(null);
 
     let frame = 0;
     const targetIndex = Math.floor(Math.random() * pool.length);
@@ -94,7 +96,6 @@ function TeamPageInner() {
         if (intervalRef.current) clearInterval(intervalRef.current);
         setDisplayIndex(targetIndex);
         setSelectedTeam(pool[targetIndex]);
-        setPhase("drafting");
         setIsSpinning(false);
       }
     }, SPIN_INTERVAL_MS);
@@ -113,25 +114,30 @@ function TeamPageInner() {
 
   const currentAttributes = useMemo(() => {
     const attrs: Record<Attribute, number> = {
-      shooting: 50,
-      mid_range: 50,
-      finishing: 50,
-      dunk: 50,
-      passing: 50,
-      ball_handle: 50,
-      perimeter_defense: 50,
-      interior_defense: 50,
-      block: 50,
-      rebound: 50,
-      speed: 50,
-      strength: 50,
-      clutch: 50,
+      shooting: 0,
+      mid_range: 0,
+      finishing: 0,
+      dunk: 0,
+      passing: 0,
+      ball_handle: 0,
+      perimeter_defense: 0,
+      interior_defense: 0,
+      block: 0,
+      rebound: 0,
+      speed: 0,
+      strength: 0,
+      clutch: 0,
     };
     history.forEach((skill) => {
       attrs[skill.attribute] = Math.min(99, attrs[skill.attribute] + skill.bonus);
     });
     return attrs;
   }, [history]);
+
+  const overall = useMemo(() => {
+    if (history.length === 0) return null;
+    return Math.round(Object.values(currentAttributes).reduce((a, b) => a + b, 0) / 13);
+  }, [currentAttributes, history.length]);
 
   const radarData = useMemo(() => {
     return ATTRIBUTES.map((attr) => ({
@@ -141,25 +147,6 @@ function TeamPageInner() {
     }));
   }, [currentAttributes]);
 
-  const handlePlayerClick = (player: LegendaryPlayer) => {
-    if (phase !== "drafting" || isSpinning) return;
-    setSelectedPlayer((prev) => (prev?.id === player.id ? null : player));
-  };
-
-  const handleStealSkill = (skill: PlayerSkill) => {
-    if (!selectedTeam || !selectedPlayer || isSpinning || history.some((s) => s.id === skill.id)) return;
-    setHistory((prev) => [...prev, { ...skill, player: selectedPlayer, team: selectedTeam }]);
-    setSelectedPlayer(null);
-    if (round < TOTAL_ROUNDS) {
-      setTimeout(() => {
-        setRound((r) => r + 1);
-        startSpin();
-      }, 400);
-    } else {
-      setTimeout(() => setPhase("completed"), 800);
-    }
-  };
-
   const handleResetTeam = () => {
     if (teamResetsLeft > 0 && !isSpinning) {
       setTeamResetsLeft((r) => r - 1);
@@ -167,10 +154,49 @@ function TeamPageInner() {
     }
   };
 
+  const handleContinueToPlayers = () => {
+    if (selectedTeam) setState("player");
+  };
+
+  const handleSelectPlayer = (player: LegendaryPlayer) => {
+    setSelectedPlayer(player);
+    setSelectedSkill(null);
+  };
+
+  const handleContinueToSkill = () => {
+    if (selectedPlayer) setState("skill");
+  };
+
+  const handleSelectSkill = (skill: PlayerSkill) => {
+    if (history.some((s) => s.id === skill.id)) return;
+    setSelectedSkill(skill);
+  };
+
+  const handleStealSkill = () => {
+    if (!selectedTeam || !selectedPlayer || !selectedSkill || isSpinning) return;
+    if (history.some((s) => s.id === selectedSkill.id)) return;
+    const stolen: StolenSkill = { ...selectedSkill, player: selectedPlayer, team: selectedTeam };
+    setAcquiredSkill(selectedSkill);
+    setHistory((prev) => [...prev, stolen]);
+
+    setTimeout(() => {
+      if (round < TOTAL_ROUNDS) {
+        setRound((r) => r + 1);
+        startSpin();
+      } else {
+        setState("completed");
+      }
+    }, 900);
+  };
+
   const handlePlayAgain = () => {
     setHistory([]);
     setRound(1);
     setTeamResetsLeft(3);
+    setSelectedTeam(null);
+    setSelectedPlayer(null);
+    setSelectedSkill(null);
+    setAcquiredSkill(null);
     startSpin();
   };
 
@@ -187,144 +213,163 @@ function TeamPageInner() {
   };
 
   const team = selectedTeam || pool[displayIndex];
-  const overall = Math.round(Object.values(currentAttributes).reduce((a, b) => a + b, 0) / 13);
+  const isDrawDone = selectedTeam && !isSpinning && state === "draw";
+
+  const draftBoard = Array.from({ length: TOTAL_ROUNDS }).map((_, i) => {
+    const skill = history[i];
+    if (skill) {
+      return { filled: true, rarity: skill.rarity, attribute: skill.attribute } as const;
+    }
+    if (i < round) return { filled: false, active: true } as const;
+    return { filled: false, active: false } as const;
+  });
 
   return (
-    <main className="bg-[#0B0B12] min-h-screen lg:h-screen lg:overflow-hidden text-white font-sans">
-      <header className="h-14 border-b border-white/8 bg-[#111317]/80 backdrop-blur flex items-center justify-between px-6 lg:px-8">
-        <div className="flex items-center gap-4">
-          <span className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">
-            第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS} 轮
-          </span>
-          <div className="h-4 w-px bg-white/10" />
-          <span className="text-xs text-[#A8A8B3]">HooperBuilder</span>
+    <main className="bg-[#0B0B12] min-h-screen lg:h-screen lg:overflow-hidden text-white font-sans selection:bg-[#F2CA50]/30">
+      <header className="h-14 border-b border-white/8 bg-[#0B0B12] flex items-center justify-between px-6 lg:px-10 shrink-0">
+        <div className="font-[family-name:var(--font-anton)] text-lg uppercase tracking-wider text-white">
+          HooperVault
         </div>
-        <div className="text-xs text-[#A8A8B3]">{mode === "blind" ? "盲选模式" : "经典模式"}</div>
+        <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">
+          第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS} 轮
+        </div>
+        <div className="text-xs text-[#A8A8B3] uppercase tracking-wider">
+          {mode === "blind" ? "盲选模式" : "经典模式"}
+        </div>
       </header>
 
-      {phase === "spinning" && (
-        <div className="absolute inset-x-0 top-14 bottom-0 z-20 flex flex-col items-center justify-center bg-[#0B0B12]/95 backdrop-blur-sm px-8">
-          <div className="text-center mb-8">
-            <h2 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide mb-2">
-              抽取传奇球队
+      {state === "completed" && (
+        <div className="absolute inset-x-0 top-14 bottom-0 z-30 flex items-center justify-center bg-[#0B0B12]/95 backdrop-blur-sm px-8">
+          <div className="glass-card rounded-2xl p-10 md:p-14 text-center max-w-2xl w-full border border-[#F2CA50]/20">
+            <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-3">构建完成</div>
+            <h2 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl uppercase tracking-wide mb-8">
+              传奇构建
             </h2>
-            <p className="text-[#A8A8B3] text-sm">19 支历史球队候选池</p>
-          </div>
-          <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-10 gap-3 max-w-4xl w-full">
-            {pool.map((t) => {
-              const active = t.id === team.id;
-              return (
-                <div
-                  key={t.id}
-                  className={`rounded-xl p-3 border text-center transition-all ${
-                    active ? "bg-[#FF5E07]/10 border-[#FF5E07] text-white" : "bg-[#1a1c20] border-white/10 text-[#A8A8B3]"
-                  }`}
-                >
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold mx-auto mb-2 ${
-                      active ? "bg-[#FF5E07] text-white" : "bg-[#111317] text-[#A8A8B3]"
-                    }`}
-                  >
-                    {teamLogo(t)}
-                  </div>
-                  <div className="text-[9px] uppercase tracking-wider truncate">{t.teamShortName}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {phase === "completed" && (
-        <div className="absolute inset-x-0 top-14 bottom-0 z-30 flex flex-col items-center justify-center bg-[#0B0B12] px-8 overflow-y-auto">
-          <div className="glass-card rounded-2xl p-8 md:p-12 text-center max-w-3xl w-full border border-[#F2CA50]/20">
-            <div className="mb-6">
-              <span className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">构建完成</span>
-              <h2 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl uppercase tracking-wide mt-2">
-                传奇构建
-              </h2>
-            </div>
-
-            <div className="flex items-center justify-center gap-8 mb-8">
+            <div className="flex items-center justify-center gap-10 mb-10">
               <div className="text-center">
-                <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">总评</div>
-                <div className="font-[family-name:var(--font-space-grotesk)] text-6xl font-bold text-[#F2CA50]">{overall}</div>
+                <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3] mb-1">总评</div>
+                <div className="font-[family-name:var(--font-space-grotesk)] text-7xl font-bold text-[#F2CA50]">{overall}</div>
               </div>
-              <div className="text-left">
-                <div className="text-[#A8A8B3] text-sm">已偷取 13 个技能</div>
-                <div className="text-[#A8A8B3] text-sm">来自 {history.length} 位传奇球员</div>
+              <div className="text-left text-[#A8A8B3] text-sm">
+                <div>已偷取 13 个技能</div>
+                <div>来自 {history.length} 位传奇</div>
               </div>
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 mb-8">
-              {ATTRIBUTES.map((attr) => (
-                <div key={attr} className="bg-[#1a1c20] border border-white/5 rounded-lg p-2 text-center">
-                  <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">{ATTRIBUTE_LABELS[attr]}</div>
-                  <div className="font-[family-name:var(--font-space-grotesk)] font-bold">{currentAttributes[attr]}</div>
-                </div>
-              ))}
-            </div>
-
             <div className="flex items-center justify-center gap-4">
-              <Button variant="outline" size="lg" onClick={handlePlayAgain}>
-                再玩一次
-              </Button>
-              <Button variant="secondary" size="lg" onClick={handlePreview}>
-                <Dices className="h-4 w-4 mr-2" />
-                查看传奇页面
-              </Button>
+              <Button variant="outline" size="xl" onClick={handlePlayAgain}>再玩一次</Button>
+              <Button variant="secondary" size="xl" onClick={handlePreview}>查看传奇页面</Button>
             </div>
           </div>
         </div>
       )}
 
       <div className="grid lg:grid-cols-[1fr_360px] h-[calc(100vh-56px)]">
-        <section className="p-6 lg:p-8 overflow-y-auto lg:overflow-hidden flex flex-col">
-          {selectedTeam && (
-            <>
+        <section className="relative p-6 lg:p-10 overflow-hidden flex flex-col">
+          {state === "draw" && (
+            <div className="h-full flex flex-col">
+              <div className="mb-6">
+                <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">
+                  第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS} 轮
+                </div>
+                <h1 className="font-[family-name:var(--font-anton)] text-4xl lg:text-5xl uppercase tracking-wide">
+                  抽取你的传奇球队
+                </h1>
+                <p className="text-[#A8A8B3] text-sm mt-2">
+                  你的旅程从一个传奇篮球时代开始。
+                </p>
+              </div>
+
+              <div className="flex-1 flex flex-col items-center justify-center">
+                {!isDrawDone ? (
+                  <>
+                    <div className="text-center mb-8">
+                      <h2 className="font-[family-name:var(--font-anton)] text-3xl uppercase tracking-wide mb-2">抽取中...</h2>
+                      <p className="text-[#A8A8B3] text-sm">19 支传奇球队候选池</p>
+                    </div>
+                    <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-10 gap-3 max-w-4xl w-full">
+                      {pool.map((t) => {
+                        const active = t.id === team.id;
+                        return (
+                          <div
+                            key={t.id}
+                            className={`rounded-xl p-3 border text-center transition-all ${
+                              active ? "bg-[#FF5E07]/10 border-[#FF5E07] text-white scale-105" : "bg-[#111317] border-white/10 text-[#A8A8B3] opacity-60"
+                            }`}
+                          >
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold mx-auto mb-2 ${
+                              active ? "bg-[#FF5E07] text-white" : "bg-[#1a1c20] text-[#A8A8B3]"
+                            }`}>
+                              {teamLogo(t)}
+                            </div>
+                            <div className="text-[9px] uppercase tracking-wider truncate">{t.teamShortName}</div>
+                            <div className="text-[8px] text-[#A8A8B3]">{t.season}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F2CA50]/10 border border-[#F2CA50]/30 text-[#F2CA50] text-[10px] uppercase tracking-widest font-bold mb-4">
+                      <Trophy className="h-3.5 w-3.5" />
+                      传奇球队已发现
+                    </div>
+                    <div className="glass-card rounded-3xl p-10 border border-[#F2CA50]/30 shadow-[0_0_60px_rgba(242,202,80,0.15)] max-w-md mx-auto">
+                      <div className="w-20 h-20 rounded-full bg-[#F2CA50] text-[#0B0B12] flex items-center justify-center text-2xl font-bold mx-auto mb-4">
+                        {teamLogo(selectedTeam!)}
+                      </div>
+                      <div className="text-[#F2CA50] text-sm font-bold uppercase tracking-widest mb-1">{selectedTeam!.season}</div>
+                      <h2 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide mb-2">{selectedTeam!.teamName}</h2>
+                      <p className="text-[#A8A8B3] text-sm mb-6">{selectedTeam!.note}</p>
+                      <Button variant="secondary" size="xl" fullWidth onClick={handleContinueToPlayers}>
+                        继续 <ChevronRight className="h-5 w-5" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {state === "player" && selectedTeam && (
+            <div className="h-full flex flex-col">
               <div className="mb-5">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">
                     第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS} 轮
                   </span>
                   <Button variant="outline" size="sm" onClick={handleResetTeam} disabled={teamResetsLeft === 0 || isSpinning}>
-                    <RefreshCw className="h-3.5 w-3.5 mr-2" />
-                    重置球队 · 剩余 {teamResetsLeft} 次
+                    <RefreshCw className="h-3.5 w-3.5 mr-2" /> 重置球队 · 剩余 {teamResetsLeft} 次
                   </Button>
                 </div>
+                <div className="text-[#F2CA50] text-sm font-bold uppercase tracking-widest mb-1">{selectedTeam.season}</div>
                 <h1 className="font-[family-name:var(--font-anton)] text-3xl lg:text-4xl uppercase tracking-wide">
-                  从 {selectedTeam.teamName} 偷取技能
+                  从 {selectedTeam.teamName} 选择传奇
                 </h1>
-                <p className="text-[#A8A8B3] text-sm mt-1">
-                  选择一名球员并偷取他的传奇技能。已使用的技能会被锁定。
-                </p>
+                <p className="text-[#A8A8B3] text-sm mt-1">选择一名传奇球员来继承一项技能。</p>
               </div>
 
-              <div className="flex gap-3 overflow-x-auto pb-3 mb-5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+              <div className="flex gap-4 overflow-x-auto pb-3 mb-5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
                 {selectedTeam.players.map((player) => {
                   const selected = selectedPlayer?.id === player.id;
                   const Icon = showNames ? Star : EyeOff;
                   return (
                     <button
                       key={player.id}
-                      onClick={() => handlePlayerClick(player)}
-                      className={`flex-shrink-0 rounded-xl border p-3 min-w-[160px] text-left transition-all ${
+                      onClick={() => handleSelectPlayer(player)}
+                      className={`flex-shrink-0 rounded-2xl border p-4 min-w-[180px] text-left transition-all ${
                         selected
-                          ? "bg-[#F2CA50]/10 border-[#F2CA50] shadow-[0_0_20px_rgba(242,202,80,0.15)]"
-                          : "bg-[#1a1c20] border-white/10 hover:border-white/20"
+                          ? "bg-[#F2CA50]/10 border-[#F2CA50] shadow-[0_0_24px_rgba(242,202,80,0.18)]"
+                          : "bg-[#111317] border-white/10 hover:border-white/20"
                       }`}
                     >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-9 h-9 rounded-full bg-[#111317] border border-white/10 flex items-center justify-center">
-                          <Icon className="h-4 w-4 text-[#F2CA50]" />
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-12 h-12 rounded-full bg-[#0B0B12] border border-white/10 flex items-center justify-center">
+                          <Icon className="h-5 w-5 text-[#F2CA50]" />
                         </div>
                         <div>
-                          <div className="font-[family-name:var(--font-anton)] text-sm uppercase leading-none">
-                            {showNames ? player.fullName : "???"}
-                          </div>
-                          <div className="text-[10px] text-[#A8A8B3] mt-0.5">
-                            {showNames ? player.nickname : "隐藏"}
-                          </div>
+                          <div className="font-[family-name:var(--font-anton)] text-sm uppercase leading-none">{showNames ? player.fullName : "???"}</div>
+                          <div className="text-[10px] text-[#A8A8B3] mt-1">{showNames ? player.nickname : "隐藏传奇"}</div>
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-[10px] uppercase tracking-wider">
@@ -338,144 +383,180 @@ function TeamPageInner() {
 
               <div className="flex-1 min-h-0">
                 {selectedPlayer ? (
-                  <div className="glass-card rounded-2xl p-5 h-full border border-white/10 flex flex-col">
+                  <div className="glass-card rounded-2xl p-6 h-full border border-white/10 flex flex-col">
                     <div className="flex items-center gap-4 mb-5">
-                      <div className="w-14 h-14 rounded-full bg-[#111317] border border-[#F2CA50]/30 flex items-center justify-center">
-                        <Star className="h-6 w-6 text-[#F2CA50]" />
+                      <div className="w-16 h-16 rounded-full bg-[#111317] border border-[#F2CA50]/30 flex items-center justify-center">
+                        <Star className="h-7 w-7 text-[#F2CA50]" />
                       </div>
                       <div>
-                        <h3 className="font-[family-name:var(--font-anton)] text-2xl uppercase tracking-wide">
-                          {showNames ? selectedPlayer.fullName : "???"}
-                        </h3>
-                        <p className="text-[#F2CA50] text-sm font-medium">
-                          {showNames ? selectedPlayer.nickname : "隐藏传奇"} · {selectedPlayer.position} · 评分 {playerOvr(selectedPlayer)}
-                        </p>
+                        <h3 className="font-[family-name:var(--font-anton)] text-2xl uppercase tracking-wide">{showNames ? selectedPlayer.fullName : "???"}</h3>
+                        <p className="text-[#F2CA50] text-sm font-medium">{showNames ? selectedPlayer.nickname : "隐藏传奇"} · {selectedPlayer.position} · 评分 {playerOvr(selectedPlayer)}</p>
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-3 overflow-y-auto pr-2">
-                      {selectedPlayer.skills.map((skill) => {
-                        const stolen = history.some((s) => s.id === skill.id);
-                        const isLegendary = skill.rarity === "legendary";
-                        const barColor = isLegendary ? "#F2CA50" : "#6CB9FF";
-                        return (
-                          <button
-                            key={skill.id}
-                            disabled={stolen || isSpinning}
-                            onClick={() => handleStealSkill(skill)}
-                            className={`relative rounded-lg border p-3 text-left transition-all ${
-                              stolen
-                                ? "bg-[#1a1c20]/40 border-white/5 opacity-50 cursor-not-allowed"
-                                : "bg-[#111317] border-white/10 hover:border-[#F2CA50]/50 hover:scale-[1.02]"
-                            }`}
-                          >
-                            {stolen && (
-                              <div className="absolute inset-0 flex items-center justify-center z-10">
-                                <Lock className="h-5 w-5 text-[#A8A8B3]" />
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className={`text-xs uppercase tracking-wider font-bold ${isLegendary ? "text-[#F2CA50]" : "text-white"}`}>
-                                {ATTRIBUTE_LABELS[skill.attribute]}
-                              </span>
-                              <span className="text-sm font-[family-name:var(--font-space-grotesk)] font-bold">{skill.value}</span>
-                            </div>
-                            <div className="h-2 bg-[#1a1c20] rounded-full overflow-hidden border border-white/5">
-                              <div
-                                className="h-full rounded-full transition-all duration-500"
-                                style={{ width: `${skill.value}%`, backgroundColor: barColor }}
-                              />
-                            </div>
-                          </button>
-                        );
-                      })}
+                    <p className="text-[#A8A8B3] text-sm mb-4">{showNames ? selectedPlayer.tagline : ""}</p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 overflow-y-auto pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                      {selectedPlayer.skills.map((skill) => (
+                        <div key={skill.id} className="bg-[#111317] rounded-lg p-3 border border-white/10">
+                          <div className="flex items-center justify-between text-xs mb-1.5">
+                            <span className="uppercase tracking-wider text-[#A8A8B3]">{ATTRIBUTE_LABELS[skill.attribute]}</span>
+                            <span className="font-bold" style={{ color: rarityColor(skill.rarity) }}>{skill.value}</span>
+                          </div>
+                          <div className="h-1.5 bg-[#1a1c20] rounded-full overflow-hidden">
+                            <div className="h-full rounded-full" style={{ width: `${skill.value}%`, backgroundColor: rarityColor(skill.rarity) }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-5 flex justify-end">
+                      <Button variant="secondary" size="lg" onClick={handleContinueToSkill}>
+                        继续偷取技能 <ChevronRight className="h-5 w-5" />
+                      </Button>
                     </div>
                   </div>
                 ) : (
-                  <div className="glass-card rounded-2xl p-8 h-full border border-white/10 flex flex-col items-center justify-center text-center">
-                    <div className="w-16 h-16 rounded-full bg-[#1a1c20] border border-white/10 flex items-center justify-center mb-4">
-                      <Trophy className="h-7 w-7 text-[#F2CA50]" />
-                    </div>
-                    <h3 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide mb-2">
-                      选择一名球员
-                    </h3>
-                    <p className="text-[#A8A8B3] text-sm max-w-md">
-                      从上方选择一位传奇球员，查看他的 13 项技能，挑选最能强化你的 Hooper 的技能。
-                    </p>
+                  <div className="h-full flex items-center justify-center text-center">
+                    <p className="text-[#A8A8B3] text-sm">选择上方球员卡片预览其技能。</p>
                   </div>
                 )}
               </div>
-            </>
+            </div>
+          )}
+
+          {state === "skill" && selectedTeam && selectedPlayer && (
+            <div className="h-full flex flex-col">
+              <div className="mb-5">
+                <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">
+                  第 {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS} 轮
+                </div>
+                <h1 className="font-[family-name:var(--font-anton)] text-3xl lg:text-4xl uppercase tracking-wide">
+                  从 {showNames ? selectedPlayer.fullName : "???"} 偷取技能
+                </h1>
+                <p className="text-[#A8A8B3] text-sm mt-1">选择他的一项传奇能力。已使用的技能会被锁定。</p>
+              </div>
+
+              <div className="flex items-center gap-4 mb-5 p-4 bg-[#111317] rounded-xl border border-white/10">
+                <div className="w-12 h-12 rounded-full bg-[#0B0B12] border border-[#F2CA50]/30 flex items-center justify-center">
+                  <Star className="h-5 w-5 text-[#F2CA50]" />
+                </div>
+                <div>
+                  <div className="font-[family-name:var(--font-anton)] text-lg uppercase tracking-wide">{showNames ? selectedPlayer.fullName : "???"}</div>
+                  <div className="text-[10px] text-[#A8A8B3]">{showNames ? selectedPlayer.nickname : "隐藏传奇"} · {selectedPlayer.position} · 评分 {playerOvr(selectedPlayer)}</div>
+                </div>
+              </div>
+
+              <div className="flex-1 min-h-0 overflow-y-auto pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {selectedPlayer.skills.map((skill) => {
+                    const stolen = history.some((s) => s.id === skill.id);
+                    const selected = selectedSkill?.id === skill.id;
+                    const color = rarityColor(skill.rarity);
+                    return (
+                      <button
+                        key={skill.id}
+                        disabled={stolen}
+                        onClick={() => handleSelectSkill(skill)}
+                        className={`relative rounded-xl border p-4 text-left transition-all ${
+                          selected
+                            ? "bg-[#F2CA50]/10 border-[#F2CA50] shadow-[0_0_24px_rgba(242,202,80,0.18)] scale-[1.02]"
+                            : stolen
+                            ? "bg-[#1a1c20]/40 border-white/5 opacity-40 cursor-not-allowed"
+                            : "bg-[#111317] border-white/10 hover:border-[#F2CA50]/40 hover:scale-[1.02]"
+                        }`}
+                      >
+                        {stolen && (
+                          <div className="absolute inset-0 flex items-center justify-center z-10">
+                            <Lock className="h-6 w-6 text-[#A8A8B3]" />
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[10px] uppercase tracking-wider font-bold" style={{ color }}>{skill.rarity === "legendary" ? "传说" : skill.rarity === "epic" ? "史诗" : "稀有"}</span>
+                          <span className="text-xs text-[#A8A8B3] uppercase tracking-wider">{ATTRIBUTE_LABELS[skill.attribute]}</span>
+                        </div>
+                        <div className="font-[family-name:var(--font-anton)] text-lg uppercase tracking-wide mb-1">{skill.name}</div>
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-3.5 w-3.5" style={{ color }} />
+                          <span className="font-[family-name:var(--font-space-grotesk)] font-bold" style={{ color }}>+{skill.value}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-5 flex justify-end">
+                <Button
+                  variant="secondary"
+                  size="xl"
+                  disabled={!selectedSkill || acquiredSkill !== null}
+                  onClick={handleStealSkill}
+                >
+                  {acquiredSkill ? "技能已获得" : "偷取此技能"} <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
           )}
         </section>
 
-        <aside className="border-l border-white/8 bg-[#111317]/50 p-5 lg:p-6 flex flex-col gap-5 overflow-y-auto lg:overflow-hidden">
-          <div className="text-center">
-            <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-1">你的 Hooper</div>
-            <h2 className="font-[family-name:var(--font-anton)] text-xl uppercase tracking-wide">自定义构建</h2>
+        <aside className="border-l border-white/8 bg-[#111317]/60 p-6 flex flex-col items-center text-center shrink-0">
+          <div className="w-full">
+            <div className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold mb-1">你的 Hooper</div>
+            <h2 className="font-[family-name:var(--font-anton)] text-2xl uppercase tracking-wide">自定义构建</h2>
             <div className="text-[10px] text-[#A8A8B3] mt-1">BAH-{String(round).padStart(2, "0")}</div>
           </div>
 
-          <div className="text-center">
+          <div className="my-6 text-center">
             <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3] mb-1">总评</div>
-            <div className="font-[family-name:var(--font-space-grotesk)] text-6xl font-bold text-[#F2CA50]">{overall}</div>
+            <div className={`font-[family-name:var(--font-space-grotesk)] text-7xl font-bold ${overall !== null ? "text-[#F2CA50]" : "text-[#A8A8B3]/30"}`}>
+              {overall ?? "--"}
+            </div>
           </div>
 
-          <div className="h-48 w-full">
+          <div className="h-56 w-full mb-6 relative">
+            {history.length === 0 && (
+              <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                <div className="text-center">
+                  <div className="text-[#A8A8B3]/40 text-xs uppercase tracking-widest">构建中</div>
+                  <div className="text-[#A8A8B3]/20 text-2xl">...</div>
+                </div>
+              </div>
+            )}
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData}>
                 <PolarGrid stroke="rgba(255,255,255,0.08)" />
                 <PolarAngleAxis dataKey="attribute" tick={{ fill: "#A8A8B3", fontSize: 9, fontFamily: "var(--font-space-grotesk)" }} />
-                <Radar name="Attributes" dataKey="value" stroke="#F2CA50" strokeWidth={2} fill="#F2CA50" fillOpacity={0.22} />
+                <Radar
+                  name="Hooper"
+                  dataKey="value"
+                  stroke={history.length > 0 ? "#F2CA50" : "rgba(255,255,255,0.1)"}
+                  strokeWidth={2}
+                  fill={history.length > 0 ? "#F2CA50" : "transparent"}
+                  fillOpacity={history.length > 0 ? 0.22 : 0}
+                />
               </RadarChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="flex-1 min-h-0">
-            <div className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold mb-2">已偷技能</div>
-            <div className="space-y-2 overflow-y-auto max-h-[200px] pr-1" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-              {history.length === 0 && (
-                <p className="text-[#A8A8B3] text-xs text-center py-4">还没有偷取技能。</p>
-              )}
-              {history.map((skill, i) => (
-                <div key={`${skill.id}-${i}`} className="bg-[#1a1c20] rounded-lg p-2 border border-white/5 flex items-center justify-between">
-                  <div>
-                    <div className="text-xs font-medium text-white">{showNames ? skill.player.fullName : "???"}</div>
-                    <div className="text-[10px] text-[#A8A8B3]">{skill.name}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-xs font-bold text-[#F2CA50]">{skill.value}</div>
-                    <div className="text-[9px] text-[#A8A8B3]">{ATTRIBUTE_LABELS[skill.attribute]}</div>
-                  </div>
-                </div>
+          <div className="w-full mt-auto">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold">选秀进度</span>
+              <span className="text-xs font-bold text-[#F2CA50]">{Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}</span>
+            </div>
+            <div className="grid grid-cols-13 gap-1 mb-4">
+              {draftBoard.map((slot, i) => (
+                <div
+                  key={i}
+                  className={`aspect-square rounded border ${
+                    slot.filled
+                      ? slot.rarity === "legendary"
+                        ? "bg-[#F2CA50] border-[#F2CA50]"
+                        : "bg-[#6CB9FF] border-[#6CB9FF]"
+                      : slot.active
+                      ? "bg-[#FF5E07] border-[#FF5E07]"
+                      : "bg-[#1a1c20] border-white/10"
+                  }`}
+                  title={slot.filled ? `${ATTRIBUTE_LABELS[slot.attribute as Attribute]}` : undefined}
+                />
               ))}
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold">选秀板</span>
-              <span className="text-xs font-bold text-[#F2CA50]">{overall}</span>
-            </div>
-            <div className="grid grid-cols-13 gap-1">
-              {Array.from({ length: TOTAL_ROUNDS }).map((_, i) => {
-                const skill = history[i];
-                return (
-                  <div
-                    key={i}
-                    className={`aspect-square rounded border ${
-                      skill
-                        ? skill.rarity === "legendary"
-                          ? "bg-[#F2CA50] border-[#F2CA50]"
-                          : "bg-[#6CB9FF] border-[#6CB9FF]"
-                        : i < round
-                        ? "bg-[#FF5E07] border-[#FF5E07]"
-                        : "bg-[#1a1c20] border-white/10"
-                    }`}
-                    title={skill ? `${skill.player.fullName} · ${skill.name}` : undefined}
-                  />
-                );
-              })}
             </div>
           </div>
         </aside>
