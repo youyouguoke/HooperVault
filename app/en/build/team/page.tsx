@@ -160,7 +160,7 @@ function TeamPageInner() {
     return ATTRIBUTES.map((attr) => ({
       attribute: ATTRIBUTE_LABELS[attr],
       fullMark: 100,
-      value: currentAttributes[attr],
+      value: currentAttributes[attr] > 0 ? currentAttributes[attr] : null,
     }));
   }, [currentAttributes]);
 
@@ -184,12 +184,17 @@ function TeamPageInner() {
     if (!selectedTeam || !selectedPlayer || isSpinning || stealingRef.current) return;
     if (stolenSkillKeys.has(skillKey(skill))) return;
     stealingRef.current = true;
+    const key = skillKey(skill);
     const stolen: StolenSkill = { ...skill, player: selectedPlayer, team: selectedTeam };
     setAcquiredSkill(skill);
-    setHistory((prev) => [...prev, stolen]);
+    setHistory((prev) => {
+      if (prev.some((s) => skillKey(s) === key)) return prev;
+      return [...prev, stolen];
+    });
     setStolenSkillKeys((prev) => {
+      if (prev.has(key)) return prev;
       const next = new Set(prev);
-      next.add(skillKey(skill));
+      next.add(key);
       return next;
     });
 
@@ -249,7 +254,7 @@ function TeamPageInner() {
   });
 
   return (
-    <main className="bg-[#0B0B12] min-h-screen lg:h-screen lg:overflow-hidden text-white font-sans selection:bg-[#F2CA50]/30">
+    <main className="bg-[#0B0B12] min-h-screen text-white font-sans selection:bg-[#F2CA50]/30">
       <header className="h-14 border-b border-white/8 bg-[#0B0B12] flex items-center justify-between px-6 lg:px-10 shrink-0">
         <div className="font-[family-name:var(--font-anton)] text-lg uppercase tracking-wider text-white">HooperVault</div>
         <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">
@@ -281,7 +286,7 @@ function TeamPageInner() {
         </div>
       )}
 
-      <div className="grid lg:grid-cols-[1fr_540px] h-[calc(100vh-56px)]">
+      <div className="grid lg:grid-cols-[1fr_540px] min-h-[calc(100vh-56px)]">
         {/* LEFT GAMEPLAY AREA */}
         <section className="relative p-6 lg:p-10 overflow-hidden flex flex-col">
           {/* STATE 01: DRAW TEAM */}
@@ -416,7 +421,7 @@ function TeamPageInner() {
                     return (
                       <button
                         key={skill.id}
-                        disabled={stolen || justGot || isSpinning}
+                        disabled={stolen || justGot || isSpinning || stealingRef.current}
                         onClick={() => handleStealSkill(skill)}
                         className={`relative rounded-lg border p-2 text-left transition-all ${
                           justGot
@@ -451,7 +456,7 @@ function TeamPageInner() {
         </section>
 
         {/* RIGHT HOOPER PANEL — FIXED */}
-        <aside className="border-l border-white/8 bg-[#111317]/60 p-8 flex flex-col items-center text-center shrink-0">
+        <aside className="border-l border-white/8 bg-[#111317]/60 p-8 flex flex-col items-center text-center shrink-0 overflow-y-auto">
           <div className="w-full">
             <div className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold mb-1">Your Hooper</div>
             <h2 className="font-[family-name:var(--font-anton)] text-3xl uppercase tracking-wide">Custom Build</h2>
@@ -466,7 +471,7 @@ function TeamPageInner() {
           </div>
 
           {/* 13 Skills Radar */}
-          <div className="h-80 w-full mb-8 relative">
+          <div className="h-64 w-full mb-6 relative">
             {history.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                 <div className="text-center">
@@ -486,13 +491,14 @@ function TeamPageInner() {
                   strokeWidth={2}
                   fill={history.length > 0 ? "#F2CA50" : "transparent"}
                   fillOpacity={history.length > 0 ? 0.22 : 0}
+                  connectNulls={false}
                 />
               </RadarChart>
             </ResponsiveContainer>
           </div>
 
           {/* Draft Progress Board */}
-          <div className="w-full mt-auto">
+          <div className="w-full">
             <div className="flex items-center justify-between mb-3">
               <span className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold">Draft Progress</span>
               <span className="text-xs font-bold text-[#F2CA50]">{Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}</span>
