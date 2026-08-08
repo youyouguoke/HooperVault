@@ -28,6 +28,7 @@ export interface LegendaryPlayer {
   // Short, verifiable tag line for the inspiration field.
   tagline: string;
   position: string;
+  avatarPath: string;
   skills: PlayerSkill[];
 }
 
@@ -59,6 +60,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "His Airness",
         tagline: "The closer",
         position: "SG/SF",
+        avatarPath: "/images/player-avatars/michael-jordan-96.jpg",
                                       skills: [
         { id: "michael-jordan-96-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 83, bonus: 8, rarity: "epic" },
         { id: "michael-jordan-96-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 100, bonus: 10, rarity: "legendary" },
@@ -81,6 +83,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Pip",
         tagline: "Versatile wing defender",
         position: "SF",
+        avatarPath: "/images/player-avatars/scottie-pippen-96.jpg",
                                       skills: [
         { id: "scottie-pippen-96-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 72, bonus: 7, rarity: "rare" },
         { id: "scottie-pippen-96-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 85, bonus: 8, rarity: "epic" },
@@ -103,6 +106,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "The Worm",
         tagline: "Rebounding machine",
         position: "PF",
+        avatarPath: "/images/player-avatars/dennis-rodman-96.jpg",
                                       skills: [
         { id: "dennis-rodman-96-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 55, bonus: 6, rarity: "rare" },
         { id: "dennis-rodman-96-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 66, bonus: 7, rarity: "rare" },
@@ -136,6 +140,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "His Airness",
         tagline: "The last dance",
         position: "SG",
+        avatarPath: "/images/player-avatars/michael-jordan-98.jpg",
                                       skills: [
         { id: "michael-jordan-98-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 85, bonus: 8, rarity: "epic" },
         { id: "michael-jordan-98-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 93, bonus: 9, rarity: "legendary" },
@@ -158,6 +163,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Pip",
         tagline: "Defensive engine",
         position: "SF",
+        avatarPath: "/images/player-avatars/scottie-pippen-98.jpg",
                                       skills: [
         { id: "scottie-pippen-98-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 71, bonus: 7, rarity: "rare" },
         { id: "scottie-pippen-98-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 78, bonus: 8, rarity: "epic" },
@@ -180,6 +186,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "The Worm",
         tagline: "Rebound machine",
         position: "PF",
+        avatarPath: "/images/player-avatars/dennis-rodman-98.jpg",
                                       skills: [
         { id: "dennis-rodman-98-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 57, bonus: 6, rarity: "rare" },
         { id: "dennis-rodman-98-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 74, bonus: 7, rarity: "rare" },
@@ -213,6 +220,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Shaq Diesel",
         tagline: "Dominant force",
         position: "C",
+        avatarPath: "/images/player-avatars/shaquille-oneal-01.jpg",
                                       skills: [
         { id: "shaquille-oneal-01-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 56, bonus: 6, rarity: "rare" },
         { id: "shaquille-oneal-01-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 62, bonus: 6, rarity: "rare" },
@@ -235,6 +243,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Black Mamba",
         tagline: "Relentless scorer",
         position: "SG",
+        avatarPath: "/images/player-avatars/kobe-bryant-01.jpg",
                                       skills: [
         { id: "kobe-bryant-01-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 80, bonus: 8, rarity: "epic" },
         { id: "kobe-bryant-01-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 99, bonus: 10, rarity: "legendary" },
@@ -257,6 +266,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "D-Fish",
         tagline: "Clutch floor general",
         position: "PG",
+        avatarPath: "/images/player-avatars/derek-fisher-01.jpg",
                                       skills: [
         { id: "derek-fisher-01-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 73, bonus: 7, rarity: "rare" },
         { id: "derek-fisher-01-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 83, bonus: 8, rarity: "epic" },
@@ -290,6 +300,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Black Mamba",
         tagline: "Alpha scorer",
         position: "SG",
+        avatarPath: "/images/player-avatars/kobe-bryant-09.jpg",
                                       skills: [
         { id: "kobe-bryant-09-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 83, bonus: 8, rarity: "epic" },
         { id: "kobe-bryant-09-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 100, bonus: 10, rarity: "legendary" },
@@ -312,6 +323,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Pau",
         tagline: "Skilled big man",
         position: "PF/C",
+        avatarPath: "/images/player-avatars/pau-gasol-09.jpg",
                                       skills: [
         { id: "pau-gasol-09-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 60, bonus: 6, rarity: "rare" },
         { id: "pau-gasol-09-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 67, bonus: 7, rarity: "rare" },
@@ -334,6 +346,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "LO",
         tagline: "Versatile forward",
         position: "SF/PF",
+        avatarPath: "/images/player-avatars/lamar-odom-09.jpg",
                                       skills: [
         { id: "lamar-odom-09-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 76, bonus: 8, rarity: "epic" },
         { id: "lamar-odom-09-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 76, bonus: 8, rarity: "epic" },
@@ -367,6 +380,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "The Great Wall",
         tagline: "Skilled 7-foot-6 center",
         position: "C",
+        avatarPath: "/images/player-avatars/yao-ming-05.jpg",
                                       skills: [
         { id: "yao-ming-05-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 58, bonus: 6, rarity: "rare" },
         { id: "yao-ming-05-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 86, bonus: 9, rarity: "epic" },
@@ -389,6 +403,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "T-Mac",
         tagline: "Scoring machine",
         position: "SG/SF",
+        avatarPath: "/images/player-avatars/tracy-mcgrady-05.jpg",
                                       skills: [
         { id: "tracy-mcgrady-05-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 82, bonus: 8, rarity: "epic" },
         { id: "tracy-mcgrady-05-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 99, bonus: 10, rarity: "legendary" },
@@ -411,6 +426,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Sura",
         tagline: "Energetic guard",
         position: "PG",
+        avatarPath: "/images/player-avatars/bob-sura-05.jpg",
                                       skills: [
         { id: "bob-sura-05-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 76, bonus: 8, rarity: "epic" },
         { id: "bob-sura-05-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 77, bonus: 8, rarity: "epic" },
@@ -444,6 +460,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "The Great Wall",
         tagline: "Franchise center",
         position: "C",
+        avatarPath: "/images/player-avatars/yao-ming-08.jpg",
                                       skills: [
         { id: "yao-ming-08-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 58, bonus: 6, rarity: "rare" },
         { id: "yao-ming-08-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 60, bonus: 6, rarity: "rare" },
@@ -466,6 +483,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "T-Mac",
         tagline: "Isolation star",
         position: "SG/SF",
+        avatarPath: "/images/player-avatars/tracy-mcgrady-08.jpg",
                                       skills: [
         { id: "tracy-mcgrady-08-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 95, bonus: 10, rarity: "legendary" },
         { id: "tracy-mcgrady-08-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 89, bonus: 9, rarity: "epic" },
@@ -488,6 +506,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Batman",
         tagline: "3-and-D specialist",
         position: "SF",
+        avatarPath: "/images/player-avatars/shane-battier-08.jpg",
                                       skills: [
         { id: "shane-battier-08-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 81, bonus: 8, rarity: "epic" },
         { id: "shane-battier-08-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 80, bonus: 8, rarity: "epic" },
@@ -521,6 +540,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Chef Curry",
         tagline: "Range revolution",
         position: "PG",
+        avatarPath: "/images/player-avatars/stephen-curry-15.jpg",
                                       skills: [
         { id: "stephen-curry-15-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 100, bonus: 10, rarity: "legendary" },
         { id: "stephen-curry-15-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 78, bonus: 8, rarity: "epic" },
@@ -543,6 +563,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Game 6 Klay",
         tagline: "Catch-and-fire",
         position: "SG",
+        avatarPath: "/images/player-avatars/klay-thompson-15.jpg",
                                       skills: [
         { id: "klay-thompson-15-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 95, bonus: 10, rarity: "legendary" },
         { id: "klay-thompson-15-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 90, bonus: 9, rarity: "legendary" },
@@ -565,6 +586,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Dray",
         tagline: "Defensive engine",
         position: "PF",
+        avatarPath: "/images/player-avatars/draymond-green-15.jpg",
                                       skills: [
         { id: "draymond-green-15-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 64, bonus: 6, rarity: "rare" },
         { id: "draymond-green-15-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 66, bonus: 7, rarity: "rare" },
@@ -598,6 +620,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Chef Curry",
         tagline: "Unanimous MVP",
         position: "PG",
+        avatarPath: "/images/player-avatars/stephen-curry-16.jpg",
                                       skills: [
         { id: "stephen-curry-16-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 94, bonus: 9, rarity: "legendary" },
         { id: "stephen-curry-16-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 80, bonus: 8, rarity: "epic" },
@@ -620,6 +643,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Game 6 Klay",
         tagline: "Catch-and-shoot sniper",
         position: "SG",
+        avatarPath: "/images/player-avatars/klay-thompson-16.jpg",
                                       skills: [
         { id: "klay-thompson-16-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 100, bonus: 10, rarity: "legendary" },
         { id: "klay-thompson-16-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 90, bonus: 9, rarity: "legendary" },
@@ -642,6 +666,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Dray",
         tagline: "Defensive anchor",
         position: "PF",
+        avatarPath: "/images/player-avatars/draymond-green-16.jpg",
                                       skills: [
         { id: "draymond-green-16-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 63, bonus: 6, rarity: "rare" },
         { id: "draymond-green-16-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 67, bonus: 7, rarity: "rare" },
@@ -675,6 +700,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "The Answer",
         tagline: "Fearless scorer",
         position: "SG/PG",
+        avatarPath: "/images/player-avatars/allen-iverson-01.jpg",
                                       skills: [
         { id: "allen-iverson-01-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 94, bonus: 9, rarity: "legendary" },
         { id: "allen-iverson-01-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 96, bonus: 10, rarity: "legendary" },
@@ -697,6 +723,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Mt. Mutombo",
         tagline: "Rim protector",
         position: "C",
+        avatarPath: "/images/player-avatars/dikembe-mutombo-01.jpg",
                                       skills: [
         { id: "dikembe-mutombo-01-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 57, bonus: 6, rarity: "rare" },
         { id: "dikembe-mutombo-01-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 63, bonus: 6, rarity: "rare" },
@@ -719,6 +746,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "McKie",
         tagline: "Sixth Man of the Year",
         position: "SG/SF",
+        avatarPath: "/images/player-avatars/aaron-mckie-01.jpg",
                                       skills: [
         { id: "aaron-mckie-01-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 85, bonus: 8, rarity: "epic" },
         { id: "aaron-mckie-01-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 95, bonus: 10, rarity: "legendary" },
@@ -752,6 +780,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "The Big Fundamental",
         tagline: "Fundamental anchor",
         position: "PF/C",
+        avatarPath: "/images/player-avatars/tim-duncan-14.jpg",
                                       skills: [
         { id: "tim-duncan-14-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 57, bonus: 6, rarity: "rare" },
         { id: "tim-duncan-14-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 68, bonus: 7, rarity: "rare" },
@@ -774,6 +803,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "TP",
         tagline: "French speedster",
         position: "PG",
+        avatarPath: "/images/player-avatars/tony-parker-14.jpg",
                                       skills: [
         { id: "tony-parker-14-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 81, bonus: 8, rarity: "epic" },
         { id: "tony-parker-14-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 77, bonus: 8, rarity: "epic" },
@@ -796,6 +826,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "The Klaw",
         tagline: "Two-way wing",
         position: "SF",
+        avatarPath: "/images/player-avatars/kawhi-leonard-14.jpg",
                                       skills: [
         { id: "kawhi-leonard-14-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 83, bonus: 8, rarity: "epic" },
         { id: "kawhi-leonard-14-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 76, bonus: 8, rarity: "epic" },
@@ -829,6 +860,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "King James",
         tagline: "Two-way freight train",
         position: "SF/PF",
+        avatarPath: "/images/player-avatars/lebron-james-12.jpg",
                                       skills: [
         { id: "lebron-james-12-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 81, bonus: 8, rarity: "epic" },
         { id: "lebron-james-12-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 78, bonus: 8, rarity: "epic" },
@@ -851,6 +883,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Flash",
         tagline: "Explosive guard",
         position: "SG",
+        avatarPath: "/images/player-avatars/dwyane-wade-12.jpg",
                                       skills: [
         { id: "dwyane-wade-12-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 95, bonus: 10, rarity: "legendary" },
         { id: "dwyane-wade-12-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 87, bonus: 9, rarity: "epic" },
@@ -873,6 +906,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "CB4",
         tagline: "Stretch big",
         position: "PF/C",
+        avatarPath: "/images/player-avatars/chris-bosh-12.jpg",
                                       skills: [
         { id: "chris-bosh-12-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 57, bonus: 6, rarity: "rare" },
         { id: "chris-bosh-12-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 95, bonus: 10, rarity: "legendary" },
@@ -906,6 +940,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "C-Webb",
         tagline: "Passing power forward",
         position: "PF",
+        avatarPath: "/images/player-avatars/chris-webber-02.jpg",
                                       skills: [
         { id: "chris-webber-02-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 56, bonus: 6, rarity: "rare" },
         { id: "chris-webber-02-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 88, bonus: 9, rarity: "epic" },
@@ -928,6 +963,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "White Chocolate",
         tagline: "Flashy playmaker",
         position: "PG",
+        avatarPath: "/images/player-avatars/jason-williams-02.jpg",
                                       skills: [
         { id: "jason-williams-02-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 79, bonus: 8, rarity: "epic" },
         { id: "jason-williams-02-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 73, bonus: 7, rarity: "rare" },
@@ -950,6 +986,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Peja",
         tagline: "Sharpshooter",
         position: "SF",
+        avatarPath: "/images/player-avatars/peja-stojakovic-02.jpg",
                                       skills: [
         { id: "peja-stojakovic-02-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 95, bonus: 10, rarity: "legendary" },
         { id: "peja-stojakovic-02-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 83, bonus: 8, rarity: "epic" },
@@ -983,6 +1020,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Dirk",
         tagline: "One-legged fadeaway",
         position: "PF",
+        avatarPath: "/images/player-avatars/dirk-nowitzki-03.jpg",
                                       skills: [
         { id: "dirk-nowitzki-03-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 86, bonus: 9, rarity: "epic" },
         { id: "dirk-nowitzki-03-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 100, bonus: 10, rarity: "legendary" },
@@ -1005,6 +1043,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Nash",
         tagline: "Seven-Seconds-or-Less engine",
         position: "PG",
+        avatarPath: "/images/player-avatars/steve-nash-03.jpg",
                                       skills: [
         { id: "steve-nash-03-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 89, bonus: 9, rarity: "epic" },
         { id: "steve-nash-03-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 81, bonus: 8, rarity: "epic" },
@@ -1027,6 +1066,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Fin",
         tagline: "Two-way wing",
         position: "SF/SG",
+        avatarPath: "/images/player-avatars/michael-finley-03.jpg",
                                       skills: [
         { id: "michael-finley-03-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 76, bonus: 8, rarity: "epic" },
         { id: "michael-finley-03-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 84, bonus: 8, rarity: "epic" },
@@ -1060,6 +1100,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Nash",
         tagline: "MVP playmaker",
         position: "PG",
+        avatarPath: "/images/player-avatars/steve-nash-05.jpg",
                                       skills: [
         { id: "steve-nash-05-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 95, bonus: 10, rarity: "legendary" },
         { id: "steve-nash-05-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 79, bonus: 8, rarity: "epic" },
@@ -1082,6 +1123,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "STAT",
         tagline: "Roll man terror",
         position: "PF/C",
+        avatarPath: "/images/player-avatars/amaré-stoudemire-05.jpg",
                                       skills: [
         { id: "amaré-stoudemire-05-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 60, bonus: 6, rarity: "rare" },
         { id: "amaré-stoudemire-05-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 69, bonus: 7, rarity: "rare" },
@@ -1104,6 +1146,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "The Matrix",
         tagline: "Versatile defender",
         position: "SF/PF",
+        avatarPath: "/images/player-avatars/shawn-marion-05.jpg",
                                       skills: [
         { id: "shawn-marion-05-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 76, bonus: 8, rarity: "epic" },
         { id: "shawn-marion-05-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 77, bonus: 8, rarity: "epic" },
@@ -1137,6 +1180,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Dirk",
         tagline: "MVP season",
         position: "PF",
+        avatarPath: "/images/player-avatars/dirk-nowitzki-07.jpg",
                                       skills: [
         { id: "dirk-nowitzki-07-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 94, bonus: 9, rarity: "legendary" },
         { id: "dirk-nowitzki-07-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 100, bonus: 10, rarity: "legendary" },
@@ -1159,6 +1203,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "J-Ho",
         tagline: "Two-way wing",
         position: "SF",
+        avatarPath: "/images/player-avatars/josh-howard-07.jpg",
                                       skills: [
         { id: "josh-howard-07-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 72, bonus: 7, rarity: "rare" },
         { id: "josh-howard-07-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 95, bonus: 10, rarity: "legendary" },
@@ -1181,6 +1226,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Jet",
         tagline: "Microwave scorer",
         position: "SG/PG",
+        avatarPath: "/images/player-avatars/jason-terry-07.jpg",
                                       skills: [
         { id: "jason-terry-07-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 83, bonus: 8, rarity: "epic" },
         { id: "jason-terry-07-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 95, bonus: 10, rarity: "legendary" },
@@ -1214,6 +1260,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "King James",
         tagline: "MVP freight train",
         position: "SF",
+        avatarPath: "/images/player-avatars/lebron-james-09.jpg",
                                       skills: [
         { id: "lebron-james-09-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 74, bonus: 7, rarity: "rare" },
         { id: "lebron-james-09-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 81, bonus: 8, rarity: "epic" },
@@ -1236,6 +1283,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Mo",
         tagline: "All-Star point guard",
         position: "PG",
+        avatarPath: "/images/player-avatars/mo-williams-09.jpg",
                                       skills: [
         { id: "mo-williams-09-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 82, bonus: 8, rarity: "epic" },
         { id: "mo-williams-09-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 78, bonus: 8, rarity: "epic" },
@@ -1258,6 +1306,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Z",
         tagline: "Steady big man",
         position: "C",
+        avatarPath: "/images/player-avatars/z-ilgauskas-09.jpg",
                                       skills: [
         { id: "z-ilgauskas-09-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 58, bonus: 6, rarity: "rare" },
         { id: "z-ilgauskas-09-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 82, bonus: 8, rarity: "epic" },
@@ -1291,6 +1340,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "KG",
         tagline: "Defensive anchor",
         position: "PF",
+        avatarPath: "/images/player-avatars/kevin-garnett-08.jpg",
                                       skills: [
         { id: "kevin-garnett-08-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 58, bonus: 6, rarity: "rare" },
         { id: "kevin-garnett-08-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 71, bonus: 7, rarity: "rare" },
@@ -1313,6 +1363,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "The Truth",
         tagline: "Clutch scorer",
         position: "SF",
+        avatarPath: "/images/player-avatars/paul-pierce-08.jpg",
                                       skills: [
         { id: "paul-pierce-08-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 72, bonus: 7, rarity: "rare" },
         { id: "paul-pierce-08-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 99, bonus: 10, rarity: "legendary" },
@@ -1335,6 +1386,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Jesus Shuttlesworth",
         tagline: "Sharpshooter",
         position: "SG",
+        avatarPath: "/images/player-avatars/ray-allen-08.jpg",
                                       skills: [
         { id: "ray-allen-08-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 100, bonus: 10, rarity: "legendary" },
         { id: "ray-allen-08-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 93, bonus: 9, rarity: "legendary" },
@@ -1368,6 +1420,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Mr. Big Shot",
         tagline: "Clutch point guard",
         position: "PG",
+        avatarPath: "/images/player-avatars/chauncey-billups-05.jpg",
                                       skills: [
         { id: "chauncey-billups-05-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 81, bonus: 8, rarity: "epic" },
         { id: "chauncey-billups-05-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 79, bonus: 8, rarity: "epic" },
@@ -1390,6 +1443,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Big Ben",
         tagline: "Defensive anchor",
         position: "C",
+        avatarPath: "/images/player-avatars/ben-wallace-05.jpg",
                                       skills: [
         { id: "ben-wallace-05-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 56, bonus: 6, rarity: "rare" },
         { id: "ben-wallace-05-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 55, bonus: 6, rarity: "rare" },
@@ -1412,6 +1466,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Rip",
         tagline: "Mid-range machine",
         position: "SG",
+        avatarPath: "/images/player-avatars/richard-hamilton-05.jpg",
                                       skills: [
         { id: "richard-hamilton-05-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 87, bonus: 9, rarity: "epic" },
         { id: "richard-hamilton-05-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 95, bonus: 10, rarity: "legendary" },
@@ -1445,6 +1500,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Sheed",
         tagline: "Versatile big man",
         position: "PF/C",
+        avatarPath: "/images/player-avatars/rasheed-wallace-00.jpg",
                                       skills: [
         { id: "rasheed-wallace-00-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 63, bonus: 6, rarity: "rare" },
         { id: "rasheed-wallace-00-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 92, bonus: 9, rarity: "legendary" },
@@ -1467,6 +1523,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Pip",
         tagline: "Veteran wing defender",
         position: "SF",
+        avatarPath: "/images/player-avatars/scottie-pippen-00.jpg",
                                       skills: [
         { id: "scottie-pippen-00-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 71, bonus: 7, rarity: "rare" },
         { id: "scottie-pippen-00-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 79, bonus: 8, rarity: "epic" },
@@ -1489,6 +1546,7 @@ export const HISTORIC_TEAMS: HistoricTeam[] = [
         nickname: "Mighty Mouse",
         tagline: "Quick point guard",
         position: "PG",
+        avatarPath: "/images/player-avatars/damon-stoudamire-00.jpg",
                                       skills: [
         { id: "damon-stoudamire-00-shooting", name: "3-Point Shooting", description: "Catch-and-shoot and off-the-dribble range from beyond the arc.", attribute: "shooting", value: 77, bonus: 8, rarity: "epic" },
         { id: "damon-stoudamire-00-mid_range", name: "Mid-Range Scoring", description: "Elbow pull-ups, floaters, and contested mid-range shot-making.", attribute: "mid_range", value: 78, bonus: 8, rarity: "epic" },

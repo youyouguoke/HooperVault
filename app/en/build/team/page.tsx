@@ -431,27 +431,36 @@ function TeamPageInner() {
                 <p className="text-[#A8A8B3] text-sm mt-1">Choose one legendary player to inherit a skill from.</p>
               </div>
 
-              <div className="flex gap-3 overflow-x-auto pb-3 mb-5" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+              <div className="flex gap-3 overflow-x-auto pb-4" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
                 {selectedTeam.players.map((player) => {
                   const Icon = showNames ? Star : EyeOff;
+                  const ovr = playerOvr(player);
                   return (
                     <button
                       key={player.id}
                       onClick={() => handleSelectPlayer(player)}
-                      className="flex-shrink-0 rounded-xl border p-3 sm:p-4 min-w-[170px] sm:min-w-[180px] text-left transition-all bg-[#111317] border-white/10 hover:border-[#F2CA50]/40 hover:bg-[#F2CA50]/5 h-auto"
+                      className="flex-shrink-0 rounded-xl border p-3 sm:p-4 min-w-[150px] sm:min-w-[170px] text-left transition-all bg-[#111317] border-white/10 hover:border-[#F2CA50]/40 hover:bg-[#F2CA50]/5 h-fit"
                     >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-full bg-[#0B0B12] border border-white/10 flex items-center justify-center flex-shrink-0">
-                          <Icon className="h-4 w-4 text-[#F2CA50]" />
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-10 h-10 rounded-full bg-[#0B0B12] border border-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {showNames ? (
+                            <img
+                              src={player.avatarPath}
+                              alt={player.fullName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Icon className="h-4 w-4 text-[#F2CA50]" />
+                          )}
                         </div>
                         <div className="min-w-0">
-                          <div className="font-[family-name:var(--font-anton)] text-xs uppercase leading-tight line-clamp-1">{showNames ? player.fullName : "???"}</div>
-                          <div className="text-[9px] text-[#A8A8B3] mt-0.5 leading-tight line-clamp-1">{showNames ? player.nickname : "Hidden Legend"}</div>
+                          <div className="font-[family-name:var(--font-anton)] text-[11px] uppercase leading-tight line-clamp-1">{showNames ? player.fullName : "???"}</div>
+                          <div className="text-[9px] text-[#A8A8B3] leading-tight line-clamp-1">{showNames ? player.nickname : "Hidden Legend"}</div>
                         </div>
                       </div>
-                      <div className="flex flex-col gap-0.5 text-[9px] uppercase tracking-wider">
+                      <div className="mt-2 flex items-center justify-between text-[9px] uppercase tracking-wider">
                         <span className="text-[#A8A8B3]">{player.position}</span>
-                        <span className="text-[#F2CA50] font-bold">OVR {playerOvr(player)}</span>
+                        <span className="text-[#F2CA50] font-bold">OVR {ovr}</span>
                       </div>
                     </button>
                   );
@@ -474,8 +483,16 @@ function TeamPageInner() {
               </div>
 
               <div className="flex items-center gap-3 mb-4 p-3 bg-[#111317] rounded-xl border border-white/10">
-                <div className="w-10 h-10 rounded-full bg-[#0B0B12] border border-[#F2CA50]/30 flex items-center justify-center">
-                  <Star className="h-5 w-5 text-[#F2CA50]" />
+                <div className="w-10 h-10 rounded-full bg-[#0B0B12] border border-[#F2CA50]/30 flex items-center justify-center overflow-hidden">
+                  {showNames ? (
+                    <img
+                      src={selectedPlayer.avatarPath}
+                      alt={selectedPlayer.fullName}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Star className="h-5 w-5 text-[#F2CA50]" />
+                  )}
                 </div>
                 <div>
                   <div className="font-[family-name:var(--font-anton)] text-base uppercase tracking-wide">{showNames ? selectedPlayer.fullName : "???"}</div>
