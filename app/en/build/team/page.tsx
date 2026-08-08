@@ -266,21 +266,25 @@ function TeamPageInner() {
     });
 
     setTimeout(() => {
-      if (round < TOTAL_ROUNDS) {
-        setRound((r) => r + 1);
-        setTeamLocked(false);
-        setSelectedTeam(null);
-        setSelectedPlayer(null);
-        setAcquiredSkill(null);
-        setDisplayIndex(0);
-        setTimeout(() => {
+      setHistory((currentHistory) => {
+        const nextLength = currentHistory.length;
+        if (nextLength < TOTAL_ROUNDS) {
+          setRound((r) => r + 1);
+          setTeamLocked(false);
+          setSelectedTeam(null);
+          setSelectedPlayer(null);
+          setAcquiredSkill(null);
+          setDisplayIndex(0);
+          setTimeout(() => {
+            stealingRef.current = false;
+            startSpin();
+          }, 0);
+        } else {
           stealingRef.current = false;
-          startSpin();
-        }, 0);
-      } else {
-        stealingRef.current = false;
-        setState("completed");
-      }
+          setState("completed");
+        }
+        return currentHistory;
+      });
     }, 800);
   };
 
