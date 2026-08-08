@@ -341,25 +341,31 @@ function PreviewPageInner() {
                   onClick={async () => {
                     setSaving(true);
                     try {
+                      const payload = {
+                        position,
+                        mode,
+                        team: teamId,
+                        seed: seedParam,
+                        history: historyParam || skills.map((s) => s.id).join(","),
+                        overall,
+                        archetype: archetype.name,
+                        firstName: playerName.firstName,
+                        lastName: playerName.lastName,
+                      };
                       const res = await fetch("/api/hoopers", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          position,
-                          mode,
-                          team: teamId,
-                          seed: seedParam,
-                          history: historyParam || skills.map((s) => s.id).join(","),
-                          overall,
-                          archetype: archetype.name,
-                          firstName: playerName.firstName,
-                          lastName: playerName.lastName,
-                        }),
+                        body: JSON.stringify(payload),
                       });
                       const data = await res.json();
-                      if (data.slug) {
-                        router.push(`/zh-CN/simulate?position=${position}&mode=${mode}&team=${teamId}&seed=${seedParam}&slug=${data.slug}&history=${encodeURIComponent(historyParam || skills.map((s) => s.id).join(","))}`);
+                      if (!res.ok || !data.slug) {
+                        console.error("保存失败:", res.status, data);
+                        return;
                       }
+                      const redirectUrl = `/zh-CN/simulate?position=${position}&mode=${mode}&team=${teamId}&seed=${seedParam}&slug=${data.slug}&history=${encodeURIComponent(historyParam || skills.map((s) => s.id).join(","))}`;
+                      router.push(redirectUrl);
+                    } catch (err) {
+                      console.error("保存并模拟出错:", err);
                     } finally {
                       setSaving(false);
                     }
