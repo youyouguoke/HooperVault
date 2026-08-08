@@ -81,7 +81,14 @@ export function Footer() {
         <div className="py-12">
           <div className="grid gap-10 md:grid-cols-4">
             <div className="md:col-span-1">
-              <Link href={homeHref} className="inline-block text-2xl font-black tracking-tight text-[#F5C542]">
+              <Link href={homeHref} className="inline-flex items-center gap-2 text-2xl font-black tracking-tight text-[#F5C542]">
+                <img
+                  src="/images/logo-40.png"
+                  alt="HooperVault"
+                  width={40}
+                  height={40}
+                  className="h-10 w-10 rounded-lg object-contain"
+                />
                 HooperVault
               </Link>
               <p className="mt-3 max-w-xs text-sm leading-relaxed text-[#A8A8B3]">

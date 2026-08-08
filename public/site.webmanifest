@@ -1,0 +1,21 @@
+{
+  "name": "HooperVault",
+  "short_name": "HooperVault",
+  "description": "Build your ultimate basketball player with legendary skills.",
+  "start_url": "/en",
+  "display": "standalone",
+  "background_color": "#0B0B12",
+  "theme_color": "#F5C542",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

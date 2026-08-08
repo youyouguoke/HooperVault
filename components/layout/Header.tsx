@@ -62,6 +62,13 @@ export function Header() {
       <Container>
         <div className="flex h-16 items-center justify-between">
           <Link href={homeHref} className="flex items-center gap-2">
+            <img
+              src="/images/logo-40.png"
+              alt="HooperVault"
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-lg object-contain"
+            />
             <span className="text-2xl font-black tracking-tight text-[#F5C542]">
               HooperVault
             </span>
