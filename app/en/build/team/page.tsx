@@ -135,7 +135,7 @@ function TeamPageInner() {
   const [state, setState] = useState<"draw" | "player" | "skill" | "completed">("draw");
   const [selectedTeam, setSelectedTeam] = useState<HistoricTeam | null>(null);
   const [displayIndex, setDisplayIndex] = useState(0);
-  const [round, setRound] = useState(1);
+  const [round, setRound] = useState(0);
   const [selectedPlayer, setSelectedPlayer] = useState<LegendaryPlayer | null>(null);
   const [history, setHistory] = useState<StolenSkill[]>([]);
   const [isSpinning, setIsSpinning] = useState(false);
@@ -290,7 +290,7 @@ function TeamPageInner() {
 
   const handlePlayAgain = () => {
     setHistory([]);
-    setRound(1);
+    setRound(0);
     setTeamResetsLeft(3);
     setSelectedTeam(null);
     setSelectedPlayer(null);
