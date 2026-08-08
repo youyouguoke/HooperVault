@@ -1,0 +1,58 @@
+{
+  "Bulls": {
+    "img": "https://upload.wikimedia.org/wikipedia/en/thumb/6/67/Chicago_Bulls_logo.svg/330px-Chicago_Bulls_logo.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "Chicago_Bulls"
+  },
+  "Lakers": {
+    "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Los_Angeles_Lakers_logo.svg/330px-Los_Angeles_Lakers_logo.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "Los_Angeles_Lakers"
+  },
+  "Rockets": {
+    "img": "https://upload.wikimedia.org/wikipedia/en/thumb/2/28/Houston_Rockets.svg/330px-Houston_Rockets.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "Houston_Rockets"
+  },
+  "Warriors": {
+    "img": "https://upload.wikimedia.org/wikipedia/en/thumb/0/01/Golden_State_Warriors_logo.svg/330px-Golden_State_Warriors_logo.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "Golden_State_Warriors"
+  },
+  "76ers": {
+    "img": "https://upload.wikimedia.org/wikipedia/en/thumb/0/0e/Philadelphia_76ers_logo.svg/330px-Philadelphia_76ers_logo.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "Philadelphia_76ers"
+  },
+  "Spurs": {
+    "img": "https://upload.wikimedia.org/wikipedia/en/thumb/a/a2/San_Antonio_Spurs.svg/330px-San_Antonio_Spurs.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "San_Antonio_Spurs"
+  },
+  "Heat": {
+    "img": "https://upload.wikimedia.org/wikipedia/en/thumb/f/fb/Miami_Heat_logo.svg/330px-Miami_Heat_logo.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "Miami_Heat"
+  },
+  "Kings": {
+    "img": "https://upload.wikimedia.org/wikipedia/en/thumb/c/c7/SacramentoKings.svg/330px-SacramentoKings.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "Sacramento_Kings"
+  },
+  "Mavericks": {
+    "img": "https://upload.wikimedia.org/wikipedia/en/thumb/9/97/Dallas_Mavericks_logo.svg/330px-Dallas_Mavericks_logo.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "Dallas_Mavericks"
+  },
+  "Suns": {
+    "img": "https://upload.wikimedia.org/wikipedia/en/thumb/d/dc/Phoenix_Suns_logo.svg/330px-Phoenix_Suns_logo.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "Phoenix_Suns"
+  },
+  "Cavaliers": {
+    "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Cleveland_Cavaliers_logo.svg/330px-Cleveland_Cavaliers_logo.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "Cleveland_Cavaliers"
+  },
+  "Celtics": {
+    "img": "https://upload.wikimedia.org/wikipedia/en/thumb/8/8f/Boston_Celtics.svg/330px-Boston_Celtics.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "Boston_Celtics"
+  },
+  "Pistons": {
+    "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/Logo_of_the_Detroit_Pistons.svg/330px-Logo_of_the_Detroit_Pistons.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "Detroit_Pistons"
+  },
+  "Blazers": {
+    "img": "https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Portland_Trail_Blazers_logo.svg/330px-Portland_Trail_Blazers_logo.svg.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+    "title": "Portland_Trail_Blazers"
+  }
+}

@@ -37,8 +37,8 @@ function playerOvr(player: LegendaryPlayer): number {
   return Math.round(player.skills.reduce((sum, s) => sum + s.value, 0) / player.skills.length);
 }
 
-function teamLogo(team: HistoricTeam): string {
-  return team.teamShortName.slice(0, 2).toUpperCase();
+function teamLogoPath(team: HistoricTeam): string {
+  return `/images/team-logos/${team.teamShortName.toLowerCase()}.png`;
 }
 
 function rarityColor(rarity: string): string {
@@ -386,8 +386,8 @@ function TeamPageInner() {
                               active ? "bg-[#FF5E07]/10 border-[#FF5E07] text-white scale-105" : "bg-[#111317] border-white/10 text-[#A8A8B3] opacity-60"
                             }`}
                           >
-                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold mx-auto mb-2 ${active ? "bg-[#FF5E07] text-white" : "bg-[#1a1c20] text-[#A8A8B3]"}`}>
-                              {teamLogo(t)}
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold mx-auto mb-2 overflow-hidden bg-white/5 ${active ? "ring-2 ring-[#FF5E07]" : "opacity-60"}`}>
+                              <img src={teamLogoPath(t)} alt={t.teamShortName} className="w-full h-full object-contain" />
                             </div>
                             <div className="text-[9px] uppercase tracking-wider truncate">{t.teamShortName}</div>
                             <div className="text-[8px] text-[#A8A8B3]">{t.season}</div>
@@ -403,8 +403,8 @@ function TeamPageInner() {
                       Legendary Team Found
                     </div>
                     <div className="glass-card rounded-3xl p-10 border border-[#F2CA50]/30 shadow-[0_0_60px_rgba(242,202,80,0.15)] max-w-md mx-auto">
-                      <div className="w-20 h-20 rounded-full bg-[#F2CA50] text-[#0B0B12] flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                        {teamLogo(selectedTeam!)}
+                      <div className="w-20 h-20 rounded-full bg-white/5 border border-[#F2CA50]/30 flex items-center justify-center mx-auto mb-4 overflow-hidden p-2">
+                        <img src={teamLogoPath(selectedTeam!)} alt={selectedTeam!.teamShortName} className="w-full h-full object-contain" />
                       </div>
                       <div className="text-[#F2CA50] text-sm font-bold uppercase tracking-widest mb-1">{selectedTeam!.season}</div>
                       <h2 className="font-[family-name:var(--font-anton)] text-4xl uppercase tracking-wide mb-2">{selectedTeam!.teamName}</h2>
