@@ -438,18 +438,18 @@ function TeamPageInner() {
                     <button
                       key={player.id}
                       onClick={() => handleSelectPlayer(player)}
-                      className="flex-shrink-0 rounded-xl border p-3 min-w-[160px] text-left transition-all bg-[#111317] border-white/10 hover:border-[#F2CA50]/40 hover:bg-[#F2CA50]/5"
+                      className="flex-shrink-0 rounded-xl border p-3 sm:p-4 min-w-[170px] sm:min-w-[180px] text-left transition-all bg-[#111317] border-white/10 hover:border-[#F2CA50]/40 hover:bg-[#F2CA50]/5"
                     >
                       <div className="flex items-center gap-3 mb-2">
                         <div className="w-10 h-10 rounded-full bg-[#0B0B12] border border-white/10 flex items-center justify-center">
                           <Icon className="h-4 w-4 text-[#F2CA50]" />
                         </div>
                         <div>
-                          <div className="font-[family-name:var(--font-anton)] text-xs uppercase leading-none">{showNames ? player.fullName : "???"}</div>
-                          <div className="text-[9px] text-[#A8A8B3] mt-0.5">{showNames ? player.nickname : "Hidden Legend"}</div>
+                          <div className="font-[family-name:var(--font-anton)] text-xs uppercase leading-tight line-clamp-1">{showNames ? player.fullName : "???"}</div>
+                          <div className="text-[9px] text-[#A8A8B3] mt-0.5 leading-tight line-clamp-1">{showNames ? player.nickname : "Hidden Legend"}</div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between text-[9px] uppercase tracking-wider">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-0.5 sm:gap-0 text-[9px] uppercase tracking-wider">
                         <span className="text-[#A8A8B3]">{player.position}</span>
                         <span className="text-[#F2CA50] font-bold">OVR {playerOvr(player)}</span>
                       </div>
