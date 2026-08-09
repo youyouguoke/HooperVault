@@ -29,6 +29,24 @@ function DiscordIcon({ className }: { className?: string }) {
   );
 }
 
+// Reddit icon
+function RedditIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z" />
+    </svg>
+  );
+}
+
+// WeChat icon
+function WechatIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.212 1.17 4.203 3.002 5.55a.59.59 0 0 1 .213.665l-.39 1.48c-.019.07-.048.141-.048.213 0 .163.13.295.29.295a.326.326 0 0 0 .167-.054l1.903-1.114a.864.864 0 0 1 .717-.098 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838-.576-3.583-4.196-6.348-8.596-6.348zM5.785 5.991c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178A1.17 1.17 0 0 1 4.623 7.17c0-.651.52-1.18 1.162-1.18zm5.813 0c.642 0 1.162.529 1.162 1.18a1.17 1.17 0 0 1-1.162 1.178 1.17 1.17 0 0 1-1.162-1.178c0-.651.52-1.18 1.162-1.18zm5.34 2.867c-1.797-.052-3.746.512-5.28 1.786-1.72 1.428-2.687 3.72-1.78 6.22.942 2.453 3.666 4.229 6.884 4.229.826 0 1.622-.12 2.361-.336a.722.722 0 0 1 .598.082l1.584.926a.272.272 0 0 0 .14.047c.134 0 .24-.111.24-.247 0-.06-.023-.12-.038-.177l-.327-1.233a.582.582 0 0 1-.023-.156.49.49 0 0 1 .201-.398C23.024 18.48 24 16.82 24 14.98c0-3.21-2.931-5.837-6.656-6.088V8.89l-.002-.003v-.04h.002zm-2.746 2.639c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982zm4.842 0c.535 0 .969.44.969.982a.976.976 0 0 1-.969.983.976.976 0 0 1-.969-.983c0-.542.434-.982.97-.982z" />
+    </svg>
+  );
+}
+
 type ShareChannel = "copy" | "twitter" | "discord" | "image";
 
 type ShareModalProps = {
@@ -48,7 +66,10 @@ const UI = {
   copyLink: { en: "Copy Link", "zh-CN": "复制链接" },
   copied: { en: "Copied!", "zh-CN": "已复制!" },
   twitter: { en: "Share on X", "zh-CN": "分享到 X" },
+  reddit: { en: "Share on Reddit", "zh-CN": "分享到 Reddit" },
   discord: { en: "Copy for Discord", "zh-CN": "复制到 Discord" },
+  wechat: { en: "Share to WeChat", "zh-CN": "转发到微信" },
+  wechatHint: { en: "Text copied, paste in WeChat", "zh-CN": "已复制，去微信粘贴发送" },
   download: { en: "Download Image", "zh-CN": "下载图片" },
   downloading: { en: "Generating...", "zh-CN": "生成中..." },
   close: { en: "Close", "zh-CN": "关闭" },
@@ -72,6 +93,7 @@ export function ShareModal({
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedDiscord, setCopiedDiscord] = useState(false);
+  const [copiedWechat, setCopiedWechat] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -103,6 +125,27 @@ export function ShareModal({
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
     window.open(tweetUrl, "_blank", "width=600,height=400");
   }, [shareText]);
+
+  const redditTitle = lang === "zh-CN"
+    ? `我打造了一名 ${overall} OVR 的 ${archetype}！来 HooperVault 挑战我`
+    : `I built a ${overall} OVR ${archetype} in HooperVault! Can you beat it?`;
+
+  const handleReddit = useCallback(() => {
+    const redditUrl = `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(redditTitle)}`;
+    window.open(redditUrl, "_blank", "width=600,height=600");
+  }, [url, redditTitle]);
+
+  const wechatText = lang === "zh-CN"
+    ? `🏀 HooperVault — ${playerName}\n\n⭐ ${overall} OVR · ${archetype}${stats?.ppg ? `\n📊 ${stats.ppg} PPG · ${stats.rpg} RPG · ${stats.apg} APG` : ""}${champion ? "\n🏆 NBA Champion" : ""}${awards.length > 0 ? `\n🎖️ ${awards.join(" · ")}` : ""}\n\n🔗 ${url}`
+    : `🏀 HooperVault — ${playerName}\n\n⭐ ${overall} OVR · ${archetype}${stats?.ppg ? `\n📊 ${stats.ppg} PPG · ${stats.rpg} RPG · ${stats.apg} APG` : ""}${champion ? "\n🏆 NBA Champion" : ""}\n\n🔗 ${url}`;
+
+  const handleWechat = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(wechatText);
+      setCopiedWechat(true);
+      setTimeout(() => setCopiedWechat(false), 3000);
+    } catch {}
+  }, [wechatText]);
 
   const generateShareImage = useCallback(async () => {
     setDownloading(true);
@@ -292,6 +335,38 @@ export function ShareModal({
               <div className="text-white text-sm font-medium">{copiedDiscord ? t("copied", lang) : t("discord", lang)}</div>
               <div className="text-[10px] text-[#A8A8B3] mt-0.5">
                 {lang === "zh-CN" ? "复制格式化文本到 Discord" : "Copy formatted text for Discord"}
+              </div>
+            </div>
+          </button>
+
+          {/* Reddit */}
+          <button
+            onClick={handleReddit}
+            className="w-full flex items-center gap-4 p-4 rounded-xl bg-[#1a1c20] border border-white/5 hover:border-[#FF4500]/30 hover:bg-[#FF4500]/5 transition-all text-left"
+          >
+            <div className="w-10 h-10 rounded-lg bg-[#FF4500]/10 flex items-center justify-center flex-shrink-0">
+              <RedditIcon className="h-5 w-5 text-[#FF4500]" />
+            </div>
+            <div>
+              <div className="text-white text-sm font-medium">{t("reddit", lang)}</div>
+              <div className="text-[10px] text-[#A8A8B3] mt-0.5">
+                {lang === "zh-CN" ? "发布到 r/basketball 等社区" : "Post to r/basketball and more"}
+              </div>
+            </div>
+          </button>
+
+          {/* WeChat */}
+          <button
+            onClick={handleWechat}
+            className="w-full flex items-center gap-4 p-4 rounded-xl bg-[#1a1c20] border border-white/5 hover:border-[#07C160]/30 hover:bg-[#07C160]/5 transition-all text-left"
+          >
+            <div className="w-10 h-10 rounded-lg bg-[#07C160]/10 flex items-center justify-center flex-shrink-0">
+              {copiedWechat ? <Check className="h-5 w-5 text-green-400" /> : <WechatIcon className="h-5 w-5 text-[#07C160]" />}
+            </div>
+            <div>
+              <div className="text-white text-sm font-medium">{copiedWechat ? t("wechatHint", lang) : t("wechat", lang)}</div>
+              <div className="text-[10px] text-[#A8A8B3] mt-0.5">
+                {lang === "zh-CN" ? "复制文字，打开微信粘贴发送" : "Copy text, then paste in WeChat"}
               </div>
             </div>
           </button>
