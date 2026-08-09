@@ -468,6 +468,44 @@ function SimulatePageInner() {
     setChampion(false);
   };
 
+  const saveAndGoLegacy = () => {
+    try {
+      const simData = {
+        customName: hooperDisplayName,
+        customImage: customImage,
+        overall,
+        position,
+        mode,
+        seed,
+        history: hooperData?.history || historyParam,
+        archetype: (() => {
+          const archetypes = [
+            { name: "Two-Way Superstar", check: (a: Record<string, number>) => (a.perimeter_defense >= 80 || a.interior_defense >= 80 || a.block >= 80) && (a.shooting >= 80 || a.finishing >= 80 || a.mid_range >= 80) },
+            { name: "Legendary Slasher", check: (a: Record<string, number>) => a.finishing >= 85 && a.dunk >= 80 && a.speed >= 75 },
+            { name: "Floor General", check: (a: Record<string, number>) => a.passing >= 85 && a.ball_handle >= 80 && a.speed >= 75 },
+            { name: "Splash Legend", check: (a: Record<string, number>) => a.shooting >= 85 && a.mid_range >= 75 },
+            { name: "Rim Protector", check: (a: Record<string, number>) => a.block >= 85 && (a.interior_defense >= 80 || a.rebound >= 80) },
+            { name: "Versatile Wing", check: (a: Record<string, number>) => { const v = Object.values(a); return v.every(x => x >= 70) && v.reduce((s, x) => s + x, 0) / v.length >= 78; } },
+          ];
+          return archetypes.find(a => a.check(attributes))?.name || "Rising Prospect";
+        })(),
+        attributes: Object.fromEntries(ATTRIBUTES.map(attr => [attr, attributes[attr]])),
+        season: { wins, losses, ppg: parseFloat(ppg), rpg: parseFloat(rpg), apg: parseFloat(apg) },
+        playoffs: {
+          qualified: qualifiedForPlayoffs,
+          seed: playoffSeedValue,
+          champion,
+          series: playoffSeries.map(s => ({ round: s.round, opponent: s.opponent, wins: s.wins, losses: s.losses, result: s.result })),
+        },
+        awards,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem("hoopervault_sim_result", JSON.stringify(simData));
+    } catch (e) {
+      // localStorage might be full or disabled
+    }
+  };
+
   const remainingGames = 82 - gameIndex;
   const playoffRemainingGames = Math.max(0, 7 - playoffWins - playoffLosses);
 
@@ -795,7 +833,7 @@ function SimulatePageInner() {
                   ) : (
                     <div className="flex flex-wrap justify-center gap-3">
                       <Button variant="outline" size="lg" onClick={handlePlayAgain}>Play Again</Button>
-                      <Button variant="secondary" size="lg" asChild href={`/en/hooper?slug=${hooperData?.slug || slug || "sample"}&position=${position}&mode=${mode}&seed=${seed}`}>
+                      <Button variant="secondary" size="lg" onClick={() => { saveAndGoLegacy(); window.location.href = `/en/hooper?slug=${hooperData?.slug || slug || "sample"}&position=${position}&mode=${mode}&seed=${seed}`; }}>
                         <span className="flex items-center gap-2">View Legacy Card <ChevronRight className="h-5 w-5" /></span>
                       </Button>
                     </div>
@@ -1047,10 +1085,9 @@ function SimulatePageInner() {
                   <div className="flex flex-wrap justify-center gap-3">
                     <Button variant="outline" size="xl" onClick={handlePlayAgain}>Play Again</Button>
                     <Button
-                      asChild
-                      href={`/en/hooper?slug=${hooperData?.slug || slug || "sample"}&position=${position}&mode=${mode}&seed=${seed}`}
                       variant="secondary"
                       size="xl"
+                      onClick={() => { saveAndGoLegacy(); window.location.href = `/en/hooper?slug=${hooperData?.slug || slug || "sample"}&position=${position}&mode=${mode}&seed=${seed}`; }}
                     >
                       <span className="flex items-center justify-center gap-2">
                         View Legacy Card <ChevronRight className="h-5 w-5" />

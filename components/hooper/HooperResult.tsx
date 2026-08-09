@@ -28,6 +28,8 @@ import {
   Star,
   Dices,
   Flame,
+  Medal,
+  Crown,
 } from "lucide-react";
 
 const ATTRIBUTE_LABELS: Record<Attribute, string> = {
@@ -44,6 +46,13 @@ const ATTRIBUTE_LABELS: Record<Attribute, string> = {
   speed: "Speed",
   strength: "Strength",
   clutch: "Clutch",
+};
+
+const PLAYOFF_ROUND_EMOJI: Record<string, string> = {
+  "First Round": "🏀",
+  "Conference Semifinals": "🔥",
+  "Conference Finals": "⚡",
+  "NBA Finals": "🏆",
 };
 
 const ARCHETYPES = [
@@ -135,6 +144,27 @@ type HooperApiData = {
   created_at: string;
 };
 
+type SimResult = {
+  customName: string;
+  customImage: string | null;
+  overall: number;
+  position: string;
+  mode: string;
+  seed: number;
+  history: string;
+  archetype: string;
+  attributes: Record<string, number>;
+  season: { wins: number; losses: number; ppg: number; rpg: number; apg: number };
+  playoffs: {
+    qualified: boolean;
+    seed: number;
+    champion: boolean;
+    series: { round: string; opponent: string; wins: number; losses: number; result: string }[];
+  };
+  awards: string[];
+  timestamp: number;
+};
+
 function parseHistory(history: string): (Skill & { legendName: string; legendCategory: string })[] {
   return history
     .split(",")
@@ -175,20 +205,33 @@ function t(key: keyof typeof UI, lang: "en" | "zh-CN"): string {
 
 export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" | "zh-CN" }) {
   const [data, setData] = useState<HooperApiData | null>(null);
-  const [loading, setLoading] = useState(Boolean(slug));
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [simResult, setSimResult] = useState<SimResult | null>(null);
 
+  // Try to load sim result from localStorage first
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem("hoopervault_sim_result");
+      if (stored) {
+        const parsed = JSON.parse(stored) as SimResult;
+        if (parsed.timestamp && Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+          setSimResult(parsed);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {}
+    // Fallback: fetch from API
+    if (!slug || slug === "sample") {
+      setLoading(false);
+      return;
+    }
     let cancelled = false;
-
     fetch(`/api/hoopers/${encodeURIComponent(slug)}`)
       .then(async (res) => {
-        if (res.status === 404) {
-          throw new Error("NOT_FOUND");
-        }
-        if (!res.ok) {
-          throw new Error("Failed to load Hooper data");
-        }
+        if (res.status === 404) throw new Error("NOT_FOUND");
+        if (!res.ok) throw new Error("Failed to load Hooper data");
         const json = await res.json();
         if (!cancelled) setData(json);
       })
@@ -198,18 +241,21 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [slug]);
 
-  const position = (data?.position || "SG") as keyof typeof POSITION_MODIFIERS;
-  const mode = data?.mode || "classic";
-  const seed = data?.seed ?? 1;
-  const skills = useMemo(() => parseHistory(data?.history || ""), [data]);
+  const hasSim = simResult !== null;
+
+  const position = (simResult?.position || data?.position || "SG") as keyof typeof POSITION_MODIFIERS;
+  const mode = simResult?.mode || data?.mode || "classic";
+  const seed = simResult?.seed ?? data?.seed ?? 1;
+  const historyStr = simResult?.history || data?.history || "";
+  const skills = useMemo(() => parseHistory(historyStr), [historyStr]);
 
   const attributes: Record<Attribute, number> = useMemo(() => {
+    if (hasSim && simResult.attributes) {
+      return simResult.attributes as Record<Attribute, number>;
+    }
     const attrs: Record<Attribute, number> = {
       shooting: 55, mid_range: 55, finishing: 55, dunk: 55, passing: 55,
       ball_handle: 55, perimeter_defense: 55, interior_defense: 55, block: 55,
@@ -223,22 +269,21 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
       attrs[skill.attribute as Attribute] = Math.min(99, attrs[skill.attribute as Attribute] + skill.bonus);
     });
     return attrs;
-  }, [position, skills]);
+  }, [hasSim, simResult, position, skills]);
 
-  const overall = useMemo(() => {
+  const computedOverall = useMemo(() => {
     return Math.round(Object.values(attributes).reduce((a, b) => a + b, 0) / 13);
   }, [attributes]);
+  const overall = simResult?.overall ?? computedOverall;
 
-  const archetype = useMemo(() => {
-    return ARCHETYPES.find((a) => a.conditions(attributes)) || { name: "Rising Prospect", icon: Dices, desc: "A solid foundation with room to grow." };
+  const computedArchetypeName = useMemo(() => {
+    return ARCHETYPES.find((a) => a.conditions(attributes))?.name || "Rising Prospect";
   }, [attributes]);
+  const archetypeName = simResult?.archetype || computedArchetypeName;
 
-  const playerName = useMemo(() => {
-    if (data?.first_name && data?.last_name) {
-      return `${data.first_name} ${data.last_name}`;
-    }
-    return generatePlayerName(seed, position);
-  }, [data, seed, position]);
+  const archetype = ARCHETYPES.find(a => a.name === archetypeName) || { name: archetypeName, icon: Dices, desc: "A solid foundation with room to grow." };
+
+  const playerName = simResult?.customName || (data?.first_name && data?.last_name ? `${data.first_name} ${data.last_name}` : generatePlayerName(seed, position));
 
   const radarData = useMemo(() => {
     return ATTRIBUTES.map((attr) => ({
@@ -307,7 +352,7 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
             </div>
           )}
 
-          {!loading && error === "NOT_FOUND" && (
+          {!loading && error === "NOT_FOUND" && !hasSim && (
             <div className="max-w-4xl mx-auto text-center py-24">
               <h2 className="font-[family-name:var(--font-anton)] text-3xl text-white uppercase tracking-wide mb-4">
                 {t("notFound", lang)}
@@ -323,7 +368,23 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
             </div>
           )}
 
-          {!loading && error && error !== "NOT_FOUND" && (
+          {!loading && !hasSim && !data && !error && (
+            <div className="max-w-4xl mx-auto text-center py-24">
+              <h2 className="font-[family-name:var(--font-anton)] text-3xl text-white uppercase tracking-wide mb-4">
+                {t("notFound", lang)}
+              </h2>
+              <p className="text-[#A8A8B3] text-lg mb-8">
+                {t("notFoundDesc", lang)}
+              </p>
+              <Button asChild href={buildModeHref} variant="secondary" size="xl">
+                <span className="flex items-center justify-center gap-2">
+                  <RefreshCw className="h-5 w-5" /> {t("buildAnother", lang)}
+                </span>
+              </Button>
+            </div>
+          )}
+
+          {!loading && error && error !== "NOT_FOUND" && !hasSim && (
             <div className="max-w-4xl mx-auto text-center py-24">
               <h2 className="font-[family-name:var(--font-anton)] text-3xl text-white uppercase tracking-wide mb-4">
                 {t("errorLoading", lang)}
@@ -339,16 +400,25 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
             </div>
           )}
 
-          {!loading && !error && data && (
+          {!loading && (hasSim || (!error && data)) && (
             <div className="max-w-6xl mx-auto grid gap-8 lg:grid-cols-12">
+              {/* LEFT: Player Card */}
               <div className="lg:col-span-5">
                 <div className="legendary-card rounded-2xl overflow-hidden relative">
                   <div className="h-[420px] relative bg-gradient-to-br from-[#333539] via-[#1a1c20] to-[#111317] flex items-center justify-center overflow-hidden">
-                    <img
-                      src="/images/result-card.jpg"
-                      alt="A highly stylized, premium 3D render of a basketball player in a dynamic action pose mid-dunk."
-                      className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-500"
-                    />
+                    {simResult?.customImage ? (
+                      <img
+                        src={simResult.customImage}
+                        alt={playerName}
+                        className="absolute inset-0 w-full h-full object-cover opacity-90"
+                      />
+                    ) : (
+                      <img
+                        src="/images/result-card.jpg"
+                        alt="A highly stylized, premium 3D render of a basketball player in a dynamic action pose mid-dunk."
+                        className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-500"
+                      />
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#111317] via-transparent to-transparent" />
                     <div
                       className="absolute left-0 top-0 bottom-0 w-2 z-20"
@@ -362,6 +432,13 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
                         <Trophy className="h-3 w-3 inline mr-1" /> {tier}
                       </span>
                     </div>
+                    {hasSim && simResult.playoffs?.champion && (
+                      <div className="absolute top-4 left-4 z-20">
+                        <span className="px-3 py-1 rounded-full font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-wider border text-[#F2CA50] border-[#F2CA50]/50 bg-[#F2CA50]/15">
+                          <Crown className="h-3 w-3 inline mr-1" /> Champion
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="p-6 relative z-10 bg-[#111317]/80">
                     <div className="flex justify-between items-end mb-4">
@@ -400,7 +477,93 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
                 </div>
               </div>
 
+              {/* RIGHT: Details */}
               <div className="lg:col-span-7 space-y-6">
+                {/* Simulation Stats */}
+                {hasSim && simResult.season && (
+                  <div className="glass-card rounded-2xl p-6">
+                    <h3 className="font-[family-name:var(--font-anton)] text-xl text-white uppercase tracking-wide mb-4 border-b border-white/10 pb-2">
+                      Season Stats
+                    </h3>
+                    <div className="grid grid-cols-5 gap-3 mb-4">
+                      <div className="bg-[#1a1c20] rounded-lg p-3 text-center border border-white/5">
+                        <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">Record</div>
+                        <div className="font-[family-name:var(--font-space-grotesk)] text-lg font-bold">
+                          <span className="text-[#F2CA50]">{simResult.season.wins}</span>
+                          <span className="text-[#A8A8B3] mx-0.5">-</span>
+                          <span className="text-[#FF5E07]">{simResult.season.losses}</span>
+                        </div>
+                      </div>
+                      <div className="bg-[#1a1c20] rounded-lg p-3 text-center border border-white/5">
+                        <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">PPG</div>
+                        <div className="font-[family-name:var(--font-space-grotesk)] text-lg font-bold text-white">{simResult.season.ppg}</div>
+                      </div>
+                      <div className="bg-[#1a1c20] rounded-lg p-3 text-center border border-white/5">
+                        <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">RPG</div>
+                        <div className="font-[family-name:var(--font-space-grotesk)] text-lg font-bold text-white">{simResult.season.rpg}</div>
+                      </div>
+                      <div className="bg-[#1a1c20] rounded-lg p-3 text-center border border-white/5">
+                        <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">APG</div>
+                        <div className="font-[family-name:var(--font-space-grotesk)] text-lg font-bold text-white">{simResult.season.apg}</div>
+                      </div>
+                      <div className="bg-[#1a1c20] rounded-lg p-3 text-center border border-white/5">
+                        <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">Seed</div>
+                        <div className="font-[family-name:var(--font-space-grotesk)] text-lg font-bold text-[#F2CA50]">
+                          {simResult.playoffs?.qualified ? `#${simResult.playoffs.seed}` : "—"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Playoff Journey */}
+                    {simResult.playoffs?.series && simResult.playoffs.series.length > 0 && (
+                      <div>
+                        <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">Playoff Journey</div>
+                        <div className="space-y-1.5">
+                          {simResult.playoffs.series.map((s, i) => (
+                            <div key={i} className="flex items-center justify-between bg-[#1a1c20]/50 rounded-lg p-2.5 border border-white/5">
+                              <div className="flex items-center gap-2.5">
+                                <span className="text-sm">{PLAYOFF_ROUND_EMOJI[s.round] || "🏀"}</span>
+                                <div>
+                                  <div className="text-white text-xs font-medium">{s.round}</div>
+                                  <div className="text-[10px] text-[#A8A8B3]">vs {s.opponent}</div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs font-bold ${s.result === "W" ? "text-[#F2CA50]" : "text-[#FF5E07]"}`}>
+                                  {s.wins}-{s.losses}
+                                </span>
+                                <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                                  s.result === "W" ? "bg-[#F2CA50]/10 text-[#F2CA50]" : "bg-[#FF5E07]/10 text-[#FF5E07]"
+                                }`}>
+                                  {s.result === "W" ? "WON" : "LOST"}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Awards */}
+                    {simResult.awards && simResult.awards.length > 0 && (
+                      <div className="mt-4">
+                        <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">Awards</div>
+                        <div className="flex flex-wrap gap-2">
+                          {simResult.awards.map((award) => (
+                            <span
+                              key={award}
+                              className="inline-flex items-center gap-1.5 bg-[#F2CA50]/10 border border-[#F2CA50]/30 text-[#F2CA50] px-3 py-1.5 rounded-full font-[family-name:var(--font-space-grotesk)] text-xs font-bold uppercase tracking-wider"
+                            >
+                              <Medal className="h-3 w-3" /> {award}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Legacy Story */}
                 <div className="glass-card rounded-2xl p-6 md:p-8">
                   <h3 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-4 border-b border-white/10 pb-2">
                     {t("legacyStory", lang)}
@@ -462,6 +625,48 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
                     </div>
                   </div>
                 </div>
+
+                {/* Drafted Skills */}
+                {skills.length > 0 && (
+                  <div className="glass-card rounded-2xl p-6">
+                    <h4 className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#A8A8B3] mb-4 flex items-center gap-2">
+                      <Star className="h-4 w-4 text-[#F2CA50]" /> Drafted Skills ({skills.length})
+                    </h4>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto hide-scrollbar pr-1">
+                      {skills.map((skill, i) => (
+                        <div
+                          key={`${skill.id}-${i}`}
+                          className="flex items-center justify-between bg-[#1a1c20]/50 rounded-lg p-2.5 border border-white/5"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className={`w-1.5 h-7 rounded-full ${
+                                skill.rarity === "legendary" ? "bg-[#F2CA50]" : skill.rarity === "epic" ? "bg-[#6CB9FF]" : "bg-[#A8A8B3]"
+                              }`}
+                            />
+                            <div>
+                              <div className="text-white text-xs font-medium">{skill.name}</div>
+                              <div className="text-[10px] text-[#A8A8B3]">
+                                {ATTRIBUTE_LABELS[skill.attribute as Attribute]} +{skill.bonus}
+                              </div>
+                            </div>
+                          </div>
+                          <span
+                            className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                              skill.rarity === "legendary"
+                                ? "text-[#F2CA50] border border-[#F2CA50]/30 bg-[#F2CA50]/10"
+                                : skill.rarity === "epic"
+                                ? "text-[#6CB9FF] border border-[#6CB9FF]/30 bg-[#6CB9FF]/10"
+                                : "text-[#A8A8B3] border border-white/10 bg-white/5"
+                            }`}
+                          >
+                            {skill.rarity}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button variant="secondary" fullWidth size="xl" onClick={handleShare}>
