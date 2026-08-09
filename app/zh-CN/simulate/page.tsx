@@ -88,10 +88,10 @@ const OPPONENTS = [
 ];
 
 const PLAYOFF_ROUNDS = [
-  { name: "First Round", emoji: "🏀", opponentStrength: 0.15 },
-  { name: "Conference Semifinals", emoji: "🔥", opponentStrength: 0.22 },
-  { name: "Conference Finals", emoji: "⚡", opponentStrength: 0.28 },
-  { name: "NBA Finals", emoji: "🏆", opponentStrength: 0.34 },
+  { name: "First Round", emoji: "🏀", opponentStrength: 0.10 },
+  { name: "Conference Semifinals", emoji: "🔥", opponentStrength: 0.16 },
+  { name: "Conference Finals", emoji: "⚡", opponentStrength: 0.22 },
+  { name: "NBA Finals", emoji: "🏆", opponentStrength: 0.28 },
 ];
 
 function generateSchedule(seed: number): string[] {
@@ -219,13 +219,14 @@ function SimulatePageInner() {
 
   const schedule = useMemo(() => generateSchedule(seed), [seed]);
 
-  const simulateGame = useCallback((idx: number, opponentOverride?: string, strengthBoost?: number): GameResult => {
+  const simulateGame = useCallback((idx: number, opponentOverride?: string, strengthBoost?: number, useRandom = false): GameResult => {
     const opponent = opponentOverride || schedule[idx % schedule.length];
     const baseWin = (overall + (attributes.clutch - 60) * 0.2) / 100;
-    const noise = (Math.sin(idx * 123.45 + seed * 0.7 + idx * 0.3) + 1) / 2;
+    // Use true randomness for playoff games so outcomes aren't fixed per seed
+    const noise = useRandom ? Math.random() : (Math.sin(idx * 123.45 + seed * 0.7 + idx * 0.3) + 1) / 2;
     const strength = strengthBoost ?? 0;
     // Playoff clutch bonus: higher OVR gives bigger edge in playoffs
-    const playoffBonus = strength > 0 ? Math.max(0, (overall - 50) * 0.012) : 0;
+    const playoffBonus = strength > 0 ? Math.max(0, (overall - 50) * 0.015) : 0;
     const isWin = noise < baseWin + 0.15 - strength + playoffBonus;
 
     const teamScore = isWin ? 105 + Math.floor(noise * 25) : 95 + Math.floor(noise * 20);
@@ -303,7 +304,8 @@ function SimulatePageInner() {
     return simulateGame(
       82 + roundIdx * 7 + gameIdx,
       opponentName,
-      round.opponentStrength
+      round.opponentStrength,
+      true  // use Math.random() for playoffs
     );
   }, [seed, simulateGame]);
 

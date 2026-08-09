@@ -148,6 +148,8 @@ function TeamPageInner() {
 
   const skillKey = (skill: PlayerSkill) => skill.attribute;
 
+  const lastDrawnRef = useRef<number>(-1);
+
   const startSpin = () => {
     if (isSpinning) return;
     if (intervalRef.current) {
@@ -160,7 +162,14 @@ function TeamPageInner() {
     setAcquiredSkill(null);
 
     let frame = 0;
-    const targetIndex = Math.floor(Math.random() * pool.length);
+    // Avoid drawing the same team consecutively
+    let targetIndex = Math.floor(Math.random() * pool.length);
+    if (pool.length > 1) {
+      while (targetIndex === lastDrawnRef.current) {
+        targetIndex = Math.floor(Math.random() * pool.length);
+      }
+    }
+    lastDrawnRef.current = targetIndex;
     setTeamLocked(true);
     intervalRef.current = setInterval(() => {
       frame += 1;
