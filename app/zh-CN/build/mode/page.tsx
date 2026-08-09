@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Section } from "@/components/ui/Section";
-import { Eye, EyeOff, Zap, ChevronRight, Info } from "lucide-react";
+import { Eye, EyeOff, ChevronRight, Info } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "选择选秀模式 | HooperVault",
@@ -27,19 +27,9 @@ const modes = [
     description: "只看能力，不看名气。",
     details: "隐藏传奇姓名，只关注技能加成和惊喜协同。",
     icon: EyeOff,
-    badge: "P1",
+    badge: "挑战",
     difficulty: "困难",
     href: "/zh-CN/build/team?mode=blind",
-  },
-  {
-    id: "chaos",
-    title: "混沌选秀",
-    description: "意外的技能，意外的传奇。",
-    details: "每轮都有随机修正，高风险、高回报、无限重玩价值。",
-    icon: Zap,
-    badge: "P1",
-    difficulty: "狂野",
-    href: "/zh-CN/build/team?mode=chaos",
   },
 ];
 
@@ -65,7 +55,7 @@ export default function ModePage() {
 
       <Section className="relative">
         <Container>
-          <div className="grid gap-6 md:grid-cols-3 max-w-6xl mx-auto">
+          <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
             {modes.map((mode) => (
               <div
                 key={mode.id}

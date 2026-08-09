@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Section } from "@/components/ui/Section";
-import { Eye, EyeOff, Zap, ChevronRight, Info } from "lucide-react";
+import { Eye, EyeOff, ChevronRight, Info } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Choose Your Draft Mode | HooperVault",
@@ -27,19 +27,9 @@ const modes = [
     description: "Choose by ability, not reputation.",
     details: "Legend names are hidden. Focus purely on skill bonuses and surprise synergies.",
     icon: EyeOff,
-    badge: "P1",
+    badge: "Challenge",
     difficulty: "Hard",
     href: "/en/build/team?mode=blind",
-  },
-  {
-    id: "chaos",
-    title: "Chaos Draft",
-    description: "Unexpected skills. Unexpected legends.",
-    details: "Random modifiers shake up every round. High risk, high reward, infinite replayability.",
-    icon: Zap,
-    badge: "P1",
-    difficulty: "Wild",
-    href: "/en/build/team?mode=chaos",
   },
 ];
 
@@ -65,7 +55,7 @@ export default function ModePage() {
 
       <Section className="relative">
         <Container>
-          <div className="grid gap-6 md:grid-cols-3 max-w-6xl mx-auto">
+          <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
             {modes.map((mode) => (
               <div
                 key={mode.id}
