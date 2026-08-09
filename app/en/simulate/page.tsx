@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback, Suspense } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Container } from "@/components/ui/Container";
@@ -17,11 +17,15 @@ import {
   Trophy,
   Medal,
   Star,
-  TrendingUp,
-  TrendingDown,
-  Minus,
   ChevronRight,
   Swords,
+  Shield,
+  Zap,
+  Play,
+  FastForward,
+  SkipForward,
+  Crown,
+  Flame,
 } from "lucide-react";
 
 const ATTRIBUTE_LABELS: Record<Attribute, string> = {
@@ -45,6 +49,17 @@ type GameResult = {
   result: "W" | "L";
   score: string;
   playerStats: { pts: number; reb: number; ast: number };
+  gameNum: number;
+};
+
+type PlayoffSeries = {
+  round: string;
+  opponent: string;
+  opponentSeed: number;
+  wins: number;
+  losses: number;
+  result: "W" | "L" | "in_progress";
+  games: GameResult[];
 };
 
 type HooperApiData = {
@@ -66,11 +81,30 @@ function parseSkillsFromHistory(history: string): (Skill & { legendName: string;
 }
 
 const OPPONENTS = [
-  "Atlanta", "Boston", "Brooklyn", "Charlotte", "Chicago", "Cleveland", "Dallas", "Denver",
-  "Detroit", "Golden State", "Houston", "Indiana", "LA Clippers", "LA Lakers", "Memphis", "Miami",
-  "Milwaukee", "Minnesota", "New Orleans", "New York", "Oklahoma City", "Orlando", "Philadelphia",
-  "Phoenix", "Portland", "Sacramento", "San Antonio", "Toronto", "Utah", "Washington",
+  "Hawks", "Celtics", "Nets", "Hornets", "Bulls", "Cavaliers", "Mavericks", "Nuggets",
+  "Pistons", "Warriors", "Rockets", "Pacers", "Clippers", "Lakers", "Grizzlies", "Heat",
+  "Bucks", "Timberwolves", "Pelicans", "Knicks", "Thunder", "Magic", "76ers",
+  "Suns", "Trail Blazers", "Kings", "Spurs", "Raptors", "Jazz", "Wizards",
 ];
+
+const PLAYOFF_ROUNDS = [
+  { name: "First Round", emoji: "🏀", opponentStrength: 0.55 },
+  { name: "Conference Semifinals", emoji: "🔥", opponentStrength: 0.65 },
+  { name: "Conference Finals", emoji: "⚡", opponentStrength: 0.75 },
+  { name: "NBA Finals", emoji: "🏆", opponentStrength: 0.82 },
+];
+
+function generateSchedule(seed: number): string[] {
+  const schedule: string[] = [];
+  const rng = (i: number) => {
+    const x = Math.sin(seed * 9301 + i * 49297 + 233280) * 10000;
+    return x - Math.floor(x);
+  };
+  for (let i = 0; i < 82; i++) {
+    schedule.push(OPPONENTS[Math.floor(rng(i) * OPPONENTS.length)]);
+  }
+  return schedule;
+}
 
 export default function SimulatePage() {
   return (
@@ -89,19 +123,15 @@ function SimulatePageInner() {
   const historyParam = searchParams.get("history") || "";
 
   const [hooperData, setHooperData] = useState<HooperApiData | null>(null);
-  const [loadingHooper, setLoadingHooper] = useState(false);
+  const [loadingHooper, setLoadingHooper] = useState(!!slug);
   const [hooperError, setHooperError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!slug) return;
-
     let cancelled = false;
-
     fetch(`/api/hoopers/${encodeURIComponent(slug)}`)
       .then(async (res) => {
-        if (!res.ok) {
-          throw new Error("Failed to load Hooper data");
-        }
+        if (!res.ok) throw new Error("Failed to load Hooper data");
         const json = await res.json();
         if (!cancelled) setHooperData(json);
       })
@@ -111,23 +141,44 @@ function SimulatePageInner() {
       .finally(() => {
         if (!cancelled) setLoadingHooper(false);
       });
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [slug]);
 
   const position = (hooperData?.position || positionParam) as keyof typeof POSITION_MODIFIERS;
   const mode = hooperData?.mode || modeParam;
   const seed = hooperData?.seed ?? seedParam;
 
-  const [phase, setPhase] = useState<"intro" | "simulating" | "result">("intro");
+  // --- Phase state machine ---
+  type Phase = "intro" | "regular_season" | "playoff_check" | "playoffs" | "result";
+  const [phase, setPhase] = useState<Phase>("intro");
+
+  // --- Regular season state ---
   const [gameIndex, setGameIndex] = useState(0);
   const [wins, setWins] = useState(0);
   const [losses, setLosses] = useState(0);
   const [games, setGames] = useState<GameResult[]>([]);
   const [playerTotals, setPlayerTotals] = useState({ pts: 0, reb: 0, ast: 0 });
+  const [simulating, setSimulating] = useState(false);
+  const simulatingRef = useRef(false);
 
+  // --- Playoff state ---
+  const [playoffSeed, setPlayoffSeed] = useState(0);
+  const [playoffSeries, setPlayoffSeries] = useState<PlayoffSeries[]>([]);
+  const [currentPlayoffRound, setCurrentPlayoffRound] = useState(0);
+  const [playoffGameIndex, setPlayoffGameIndex] = useState(0);
+  const [playoffWins, setPlayoffWins] = useState(0);
+  const [playoffLosses, setPlayoffLosses] = useState(0);
+  const [playoffGames, setPlayoffGames] = useState<GameResult[]>([]);
+  const [playoffSimulating, setPlayoffSimulating] = useState(false);
+  const playoffSimulatingRef = useRef(false);
+  const [champion, setChampion] = useState(false);
+  // Refs to avoid stale closures in timeouts
+  const playoffRoundRef = useRef(0);
+  const playoffWinsRef = useRef(0);
+  const playoffLossesRef = useRef(0);
+  const playoffSeriesRef = useRef<PlayoffSeries[]>([]);
+
+  // --- Derived data ---
   const skills = useMemo(() => {
     const historyString = hooperData?.history || historyParam;
     return parseSkillsFromHistory(historyString);
@@ -153,11 +204,14 @@ function SimulatePageInner() {
     return Math.round(Object.values(attributes).reduce((a, b) => a + b, 0) / 13);
   }, [attributes]);
 
-  const simulateGame = useCallback((idx: number): GameResult => {
-    const opponent = OPPONENTS[idx % OPPONENTS.length];
+  const schedule = useMemo(() => generateSchedule(seed), [seed]);
+
+  const simulateGame = useCallback((idx: number, opponentOverride?: string, strengthBoost?: number): GameResult => {
+    const opponent = opponentOverride || schedule[idx % schedule.length];
     const baseWin = (overall + (attributes.clutch - 60) * 0.2) / 100;
-    const noise = (Math.sin(idx * 123.45 + seed) + 1) / 2; // pseudo random 0-1
-    const isWin = noise < baseWin + 0.15;
+    const noise = (Math.sin(idx * 123.45 + seed * 0.7 + idx * 0.3) + 1) / 2;
+    const strength = strengthBoost ?? 0;
+    const isWin = noise < baseWin + 0.15 - strength;
 
     const teamScore = isWin ? 105 + Math.floor(noise * 25) : 95 + Math.floor(noise * 20);
     const oppScore = isWin ? teamScore - 4 - Math.floor(noise * 8) : teamScore + 4 + Math.floor(noise * 8);
@@ -171,53 +225,231 @@ function SimulatePageInner() {
       result: isWin ? "W" : "L",
       score: `${teamScore}-${oppScore}`,
       playerStats: { pts: ppg, reb: rpg, ast: apg },
+      gameNum: idx + 1,
     };
-  }, [overall, attributes, seed]);
+  }, [overall, attributes, seed, schedule]);
 
-  useEffect(() => {
-    if (phase !== "simulating") return;
+  // --- Batch simulate regular season ---
+  const simulateBatch = useCallback((count: number) => {
+    if (simulatingRef.current) return;
+    simulatingRef.current = true;
+    setSimulating(true);
 
-    if (gameIndex >= 82) {
-      setPhase("result");
+    const remaining = 82 - gameIndex;
+    const toSim = Math.min(count, remaining);
+    if (toSim <= 0) {
+      simulatingRef.current = false;
+      setSimulating(false);
       return;
     }
 
-    const timer = setTimeout(() => {
-      const game = simulateGame(gameIndex);
-      setGames((prev) => [...prev, game]);
-      if (game.result === "W") setWins((w) => w + 1);
-      else setLosses((l) => l + 1);
-      setPlayerTotals((t) => ({
-        pts: t.pts + game.playerStats.pts,
-        reb: t.reb + game.playerStats.reb,
-        ast: t.ast + game.playerStats.ast,
-      }));
-      setGameIndex((i) => i + 1);
-    }, 30);
+    let delay = 0;
+    const batchSize = Math.min(toSim, count === 82 ? 82 : count);
+    const interval = count === 82 ? 15 : count === 10 ? 60 : count === 5 ? 100 : 200;
 
-    return () => clearTimeout(timer);
-  }, [phase, gameIndex, simulateGame]);
+    for (let i = 0; i < batchSize; i++) {
+      setTimeout(() => {
+        const idx = gameIndex + i;
+        const game = simulateGame(idx);
+        setGames((prev) => [...prev, game]);
+        if (game.result === "W") setWins((w) => w + 1);
+        else setLosses((l) => l + 1);
+        setPlayerTotals((t) => ({
+          pts: t.pts + game.playerStats.pts,
+          reb: t.reb + game.playerStats.reb,
+          ast: t.ast + game.playerStats.ast,
+        }));
+        setGameIndex((prev) => {
+          const next = prev + 1;
+          if (next >= 82) {
+            setTimeout(() => {
+              simulatingRef.current = false;
+              setSimulating(false);
+              setPhase("playoff_check");
+            }, 300);
+          }
+          return next;
+        });
 
-  const ppgValue = gameIndex > 0 ? playerTotals.pts / gameIndex : 0;
-  const rpgValue = gameIndex > 0 ? playerTotals.reb / gameIndex : 0;
-  const apgValue = gameIndex > 0 ? playerTotals.ast / gameIndex : 0;
+        if (i === batchSize - 1 && gameIndex + batchSize < 82) {
+          simulatingRef.current = false;
+          setSimulating(false);
+        }
+      }, delay);
+      delay += interval;
+    }
+  }, [gameIndex, simulateGame]);
+
+  // --- Playoff simulation ---
+  const simulatePlayoffGame = useCallback((roundIdx: number, gameIdx: number): GameResult => {
+    const round = PLAYOFF_ROUNDS[roundIdx];
+    const opponentSeedNum = 8 - roundIdx;
+    const opponentName = `${OPPONENTS[Math.floor((seed * 7 + roundIdx * 13) % OPPONENTS.length)]}`;
+    return simulateGame(
+      82 + roundIdx * 7 + gameIdx,
+      opponentName,
+      round.opponentStrength
+    );
+  }, [seed, simulateGame]);
+
+  const startPlayoffRound = useCallback((roundIdx: number) => {
+    setCurrentPlayoffRound(roundIdx);
+    playoffRoundRef.current = roundIdx;
+    setPlayoffGameIndex(0);
+    setPlayoffWins(0);
+    playoffWinsRef.current = 0;
+    setPlayoffLosses(0);
+    playoffLossesRef.current = 0;
+    setPlayoffGames([]);
+    setPhase("playoffs");
+  }, []);
+
+  const simulatePlayoffBatch = useCallback((count: number) => {
+    if (playoffSimulatingRef.current) return;
+    playoffSimulatingRef.current = true;
+    setPlayoffSimulating(true);
+
+    const roundIdx = playoffRoundRef.current;
+    const round = PLAYOFF_ROUNDS[roundIdx];
+    const remaining = Math.max(0, 7 - playoffWinsRef.current - playoffLossesRef.current);
+    const toSim = Math.min(count, remaining);
+    if (toSim <= 0) {
+      playoffSimulatingRef.current = false;
+      setPlayoffSimulating(false);
+      return;
+    }
+
+    const interval = count >= 7 ? 30 : count === 1 ? 250 : 100;
+
+    for (let i = 0; i < toSim; i++) {
+      const delayMs = i * interval;
+      setTimeout(() => {
+        const gameIdx = playoffWinsRef.current + playoffLossesRef.current;
+        const game = simulatePlayoffGame(roundIdx, gameIdx);
+
+        setPlayoffGames((prev) => [...prev, game]);
+        setPlayerTotals((t) => ({
+          pts: t.pts + game.playerStats.pts,
+          reb: t.reb + game.playerStats.reb,
+          ast: t.ast + game.playerStats.ast,
+        }));
+        setPlayoffGameIndex((prev) => prev + 1);
+
+        if (game.result === "W") {
+          playoffWinsRef.current += 1;
+          setPlayoffWins(playoffWinsRef.current);
+
+          if (playoffWinsRef.current >= 4) {
+            const seriesEntry: PlayoffSeries = {
+              round: round.name,
+              opponent: game.opponent,
+              opponentSeed: 8 - roundIdx,
+              wins: playoffWinsRef.current,
+              losses: playoffLossesRef.current,
+              result: "W",
+              games: [],
+            };
+            playoffSeriesRef.current = [...playoffSeriesRef.current, seriesEntry];
+            setPlayoffSeries(playoffSeriesRef.current);
+
+            setTimeout(() => {
+              if (roundIdx >= 3) {
+                setChampion(true);
+                setPhase("result");
+              } else {
+                startPlayoffRound(roundIdx + 1);
+              }
+              playoffSimulatingRef.current = false;
+              setPlayoffSimulating(false);
+            }, 400);
+            return;
+          }
+        } else {
+          playoffLossesRef.current += 1;
+          setPlayoffLosses(playoffLossesRef.current);
+
+          if (playoffLossesRef.current >= 4) {
+            const seriesEntry: PlayoffSeries = {
+              round: round.name,
+              opponent: game.opponent,
+              opponentSeed: 8 - roundIdx,
+              wins: playoffWinsRef.current,
+              losses: playoffLossesRef.current,
+              result: "L",
+              games: [],
+            };
+            playoffSeriesRef.current = [...playoffSeriesRef.current, seriesEntry];
+            setPlayoffSeries(playoffSeriesRef.current);
+
+            setTimeout(() => {
+              setPhase("result");
+              playoffSimulatingRef.current = false;
+              setPlayoffSimulating(false);
+            }, 400);
+            return;
+          }
+        }
+
+        if (i === toSim - 1) {
+          setTimeout(() => {
+            playoffSimulatingRef.current = false;
+            setPlayoffSimulating(false);
+          }, interval + 50);
+        }
+      }, delayMs);
+    }
+  }, [simulatePlayoffGame, startPlayoffRound]);
+
+  // --- Derived stats ---
+  const totalGamesPlayed = gameIndex;
+  const ppgValue = totalGamesPlayed > 0 ? playerTotals.pts / totalGamesPlayed : 0;
+  const rpgValue = totalGamesPlayed > 0 ? playerTotals.reb / totalGamesPlayed : 0;
+  const apgValue = totalGamesPlayed > 0 ? playerTotals.ast / totalGamesPlayed : 0;
   const ppg = ppgValue.toFixed(1);
   const rpg = rpgValue.toFixed(1);
   const apg = apgValue.toFixed(1);
 
+  // Playoff qualification
+  const qualifiedForPlayoffs = wins >= 42;
+  const playoffSeedValue = wins >= 60 ? 1 : wins >= 55 ? 2 : wins >= 50 ? 3 : wins >= 47 ? 4 : wins >= 44 ? 5 : 6;
+
   const awards = useMemo(() => {
     const list = [];
+    if (champion) list.push("NBA Champion");
     if (overall >= 95) list.push("Hall of Fame");
-    if (wins >= 50) list.push("Playoff Berth");
-    if (wins >= 60) list.push("Championship Contender");
+    if (qualifiedForPlayoffs && playoffSeries.length >= 3) list.push("Conference Champion");
+    if (qualifiedForPlayoffs) list.push("Playoff Berth");
+    if (wins >= 60) list.push("60-Win Season");
     if (ppgValue >= 25) list.push("Scoring Title");
     if (apgValue >= 8) list.push("Assist Leader");
     if (rpgValue >= 10) list.push("Rebound King");
     if (wins >= 55 && (ppgValue >= 20 || apgValue >= 7)) list.push("MVP Candidate");
+    if (champion && ppgValue >= 22) list.push("Finals MVP");
     return list;
-  }, [overall, wins, ppgValue, apgValue, rpgValue]);
+  }, [overall, wins, ppgValue, apgValue, rpgValue, qualifiedForPlayoffs, playoffSeries, champion]);
 
-  const seedCount = games.length;
+  const handlePlayAgain = () => {
+    setPhase("intro");
+    setGameIndex(0);
+    setWins(0);
+    setLosses(0);
+    setGames([]);
+    setPlayerTotals({ pts: 0, reb: 0, ast: 0 });
+    setPlayoffSeries([]);
+    playoffSeriesRef.current = [];
+    setCurrentPlayoffRound(0);
+    playoffRoundRef.current = 0;
+    setPlayoffGameIndex(0);
+    setPlayoffWins(0);
+    playoffWinsRef.current = 0;
+    setPlayoffLosses(0);
+    playoffLossesRef.current = 0;
+    setPlayoffGames([]);
+    setChampion(false);
+  };
+
+  const remainingGames = 82 - gameIndex;
+  const playoffRemainingGames = Math.max(0, 7 - playoffWins - playoffLosses);
 
   return (
     <>
@@ -226,10 +458,14 @@ function SimulatePageInner() {
         <Container>
           <div className="relative z-10 text-center">
             <p className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#F2CA50] font-bold mb-2">
-              Step 5 of 5
+              {phase === "playoffs" ? "Playoffs" : phase === "result" ? "Season Complete" : "Season Simulation"}
             </p>
             <h1 className="font-[family-name:var(--font-anton)] text-3xl md:text-5xl text-white uppercase tracking-wide">
-              Season Simulation
+              {phase === "playoffs"
+                ? PLAYOFF_ROUNDS[currentPlayoffRound]?.name || "Playoffs"
+                : phase === "playoff_check"
+                ? "Regular Season Complete"
+                : "Simulate Your Season"}
             </h1>
           </div>
         </Container>
@@ -238,32 +474,25 @@ function SimulatePageInner() {
       <Section className="relative bg-court">
         <Container>
           <div className="max-w-4xl mx-auto">
+            {/* Loading */}
             {loadingHooper && (
               <div className="glass-card rounded-2xl p-8 md:p-12 text-center">
                 <div className="h-12 w-12 border-4 border-[#F2CA50]/20 border-t-[#F2CA50] rounded-full animate-spin mx-auto mb-6" />
-                <h2 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-2">
-                  Loading Build
-                </h2>
+                <h2 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-2">Loading Build</h2>
                 <p className="text-[#A8A8B3]">Retrieving Hooper from the vault...</p>
               </div>
             )}
 
+            {/* Error */}
             {hooperError && !loadingHooper && (
               <div className="glass-card rounded-2xl p-8 md:p-12 text-center">
-                <h2 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-2">
-                  Error Loading Build
-                </h2>
+                <h2 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-2">Error Loading Build</h2>
                 <p className="text-[#A8A8B3] mb-6">{hooperError}</p>
-                <Button
-                  variant="secondary"
-                  size="xl"
-                  onClick={() => window.location.reload()}
-                >
-                  Try Again
-                </Button>
+                <Button variant="secondary" size="xl" onClick={() => window.location.reload()}>Try Again</Button>
               </div>
             )}
 
+            {/* ===== INTRO ===== */}
             {!loadingHooper && !hooperError && phase === "intro" && (
               <div className="glass-card rounded-2xl p-8 md:p-12 text-center">
                 <Trophy className="h-16 w-16 text-[#F2CA50] mx-auto mb-6" />
@@ -271,7 +500,7 @@ function SimulatePageInner() {
                   Ready to Simulate?
                 </h2>
                 <p className="text-[#A8A8B3] text-lg mb-8 max-w-xl mx-auto">
-                  Your build will play an 82-game season. Watch every game unfold in real-time and discover your legacy.
+                  Your build will play an 82-game regular season. Then, if you qualify, battle through the playoffs and Finals.
                 </p>
                 <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-8">
                   <div className="bg-[#1a1c20] rounded-xl p-4 border border-white/5">
@@ -287,71 +516,391 @@ function SimulatePageInner() {
                     <div className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-white capitalize">{mode}</div>
                   </div>
                 </div>
-                <Button variant="secondary" size="xl" onClick={() => setPhase("simulating")}>
-                  <span className="flex items-center gap-2">
-                    Start Simulation <ChevronRight className="h-5 w-5" />
-                  </span>
-                </Button>
+
+                <div className="space-y-3 max-w-md mx-auto mb-8">
+                  <p className="text-[#A8A8B3] text-sm">Choose how many games to simulate at a time:</p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-3">
+                  <Button variant="outline" size="lg" onClick={() => { setPhase("regular_season"); setTimeout(() => simulateBatch(1), 80); }}>
+                    <Play className="h-4 w-4 mr-2" /> 1 Game
+                  </Button>
+                  <Button variant="outline" size="lg" onClick={() => { setPhase("regular_season"); setTimeout(() => simulateBatch(5), 80); }}>
+                    <FastForward className="h-4 w-4 mr-2" /> 5 Games
+                  </Button>
+                  <Button variant="outline" size="lg" onClick={() => { setPhase("regular_season"); setTimeout(() => simulateBatch(10), 80); }}>
+                    <SkipForward className="h-4 w-4 mr-2" /> 10 Games
+                  </Button>
+                  <Button variant="secondary" size="lg" onClick={() => { setPhase("regular_season"); setTimeout(() => simulateBatch(82), 80); }}>
+                    <Flame className="h-4 w-4 mr-2" /> Full Season
+                  </Button>
+                </div>
               </div>
             )}
 
-            {!loadingHooper && !hooperError && phase === "simulating" && (
-              <div className="glass-card rounded-2xl p-6 md:p-8">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">Game</div>
-                    <div className="font-[family-name:var(--font-anton)] text-2xl text-white">
-                      {Math.min(gameIndex, 82)} / 82
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">Record</div>
-                    <div className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-white">
-                      <span className="text-[#F2CA50]">{wins}</span> - <span className="text-[#FF5E07]">{losses}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="h-3 bg-[#1a1c20] rounded-full overflow-hidden border border-white/5 mb-6">
-                  <div
-                    className="h-full bg-[#FF5E07] rounded-full transition-all duration-100"
-                    style={{ width: `${(gameIndex / 82) * 100}%` }}
-                  />
-                </div>
-                <div className="h-64 overflow-hidden relative bg-[#111317]/50 rounded-xl border border-white/5 p-4">
-                  <div className="space-y-2">
-                    {games.slice(-12).map((game, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between text-sm py-2 px-3 rounded bg-[#1a1c20]/50 border border-white/5"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className={`font-bold ${game.result === "W" ? "text-[#F2CA50]" : "text-[#FF5E07]"}`}>
-                            {game.result}
-                          </span>
-                          <span className="text-white">vs {game.opponent}</span>
-                        </div>
-                        <div className="flex items-center gap-4 text-[#A8A8B3]">
-                          <span className="text-white font-medium">{game.score}</span>
-                          <span className="text-xs">{game.playerStats.pts} PTS / {game.playerStats.reb} REB / {game.playerStats.ast} AST</span>
-                        </div>
+            {/* ===== REGULAR SEASON ===== */}
+            {!loadingHooper && !hooperError && phase === "regular_season" && (
+              <div className="space-y-4">
+                {/* Scoreboard */}
+                <div className="glass-card rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">Game</div>
+                      <div className="font-[family-name:var(--font-anton)] text-3xl text-white">
+                        {Math.min(gameIndex, 82)} <span className="text-[#A8A8B3] text-lg">/ 82</span>
                       </div>
-                    ))}
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">Record</div>
+                      <div className="font-[family-name:var(--font-space-grotesk)] text-3xl font-bold">
+                        <span className="text-[#F2CA50]">{wins}</span>
+                        <span className="text-[#A8A8B3] mx-1">-</span>
+                        <span className="text-[#FF5E07]">{losses}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">Win %</div>
+                      <div className="font-[family-name:var(--font-space-grotesk)] text-3xl font-bold text-white">
+                        {gameIndex > 0 ? ((wins / gameIndex) * 100).toFixed(1) : "0.0"}%
+                      </div>
+                    </div>
                   </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#111317] to-transparent pointer-events-none" />
+
+                  {/* Progress bar */}
+                  <div className="h-3 bg-[#1a1c20] rounded-full overflow-hidden border border-white/5 mb-3">
+                    <div
+                      className="h-full rounded-full transition-all duration-200"
+                      style={{
+                        width: `${(gameIndex / 82) * 100}%`,
+                        background: "linear-gradient(90deg, #FF5E07, #F2CA50)",
+                      }}
+                    />
+                  </div>
+
+                  {/* Playoff cutoff indicator */}
+                  <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-[#A8A8B3]">
+                    <span>0</span>
+                    <span className="text-[#FF5E07]">Playoff line: 42W</span>
+                    <span>82</span>
+                  </div>
+                </div>
+
+                {/* Stats row */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="glass-card rounded-xl p-4 text-center">
+                    <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">PPG</div>
+                    <div className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-white">{ppg}</div>
+                  </div>
+                  <div className="glass-card rounded-xl p-4 text-center">
+                    <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">RPG</div>
+                    <div className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-white">{rpg}</div>
+                  </div>
+                  <div className="glass-card rounded-xl p-4 text-center">
+                    <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">APG</div>
+                    <div className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-white">{apg}</div>
+                  </div>
+                </div>
+
+                {/* Simulate buttons */}
+                {gameIndex < 82 && (
+                  <div className="glass-card rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold">Simulate</span>
+                      <span className="text-xs text-[#A8A8B3]">{remainingGames} games remaining</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" onClick={() => simulateBatch(1)} disabled={simulating || remainingGames <= 0}>
+                        <Play className="h-3.5 w-3.5 mr-1.5" /> 1
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => simulateBatch(5)} disabled={simulating || remainingGames <= 0}>
+                        <FastForward className="h-3.5 w-3.5 mr-1.5" /> 5
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => simulateBatch(10)} disabled={simulating || remainingGames <= 0}>
+                        <SkipForward className="h-3.5 w-3.5 mr-1.5" /> 10
+                      </Button>
+                      <Button variant="secondary" size="sm" onClick={() => simulateBatch(82)} disabled={simulating || remainingGames <= 0}>
+                        <Flame className="h-3.5 w-3.5 mr-1.5" /> All Remaining
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Game log */}
+                <div className="glass-card rounded-xl p-4">
+                  <div className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold mb-3">Game Log</div>
+                  <div className="h-56 overflow-hidden relative bg-[#111317]/50 rounded-lg border border-white/5 p-3">
+                    {games.length === 0 ? (
+                      <div className="flex items-center justify-center h-full text-[#A8A8B3] text-sm">No games played yet</div>
+                    ) : (
+                      <div className="space-y-1.5 overflow-y-auto h-full hide-scrollbar">
+                        {[...games].reverse().map((game, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between text-sm py-1.5 px-3 rounded bg-[#1a1c20]/50 border border-white/5"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] text-[#A8A8B3] w-6">#{game.gameNum}</span>
+                              <span className={`font-bold text-xs ${game.result === "W" ? "text-[#F2CA50]" : "text-[#FF5E07]"}`}>
+                                {game.result}
+                              </span>
+                              <span className="text-white text-xs">vs {game.opponent}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-[#A8A8B3]">
+                              <span className="text-white font-medium text-xs">{game.score}</span>
+                              <span className="text-[10px] hidden sm:inline">{game.playerStats.pts}P/{game.playerStats.reb}R/{game.playerStats.ast}A</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
 
+            {/* ===== PLAYOFF CHECK ===== */}
+            {!loadingHooper && !hooperError && phase === "playoff_check" && (
+              <div className="space-y-4">
+                <div className="legendary-card rounded-2xl p-8 md:p-10 text-center">
+                  <div className="text-6xl mb-4">{qualifiedForPlayoffs ? "🏆" : "😢"}</div>
+                  <h2 className="font-[family-name:var(--font-anton)] text-3xl md:text-4xl text-white uppercase tracking-wide mb-3">
+                    {qualifiedForPlayoffs ? "Playoff Bound!" : "Season Over"}
+                  </h2>
+                  <p className="text-[#A8A8B3] text-lg mb-2">
+                    Final Record: <span className="text-white font-bold">{wins} - {losses}</span>
+                  </p>
+                  {qualifiedForPlayoffs ? (
+                    <p className="text-[#F2CA50] text-sm mb-6">
+                      You earned the <span className="font-bold">#{playoffSeedValue} seed</span> in your conference. Time for the playoffs.
+                    </p>
+                  ) : (
+                    <p className="text-[#A8A8B3] text-sm mb-6">
+                      You needed 42 wins to make the playoffs. Build a stronger hooper and try again.
+                    </p>
+                  )}
+
+                  <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-8">
+                    <div className="bg-[#1a1c20] rounded-xl p-4 border border-white/5">
+                      <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">PPG</div>
+                      <div className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-white">{ppg}</div>
+                    </div>
+                    <div className="bg-[#1a1c20] rounded-xl p-4 border border-white/5">
+                      <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">RPG</div>
+                      <div className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-white">{rpg}</div>
+                    </div>
+                    <div className="bg-[#1a1c20] rounded-xl p-4 border border-white/5">
+                      <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">APG</div>
+                      <div className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-white">{apg}</div>
+                    </div>
+                  </div>
+
+                  {qualifiedForPlayoffs ? (
+                    <div className="flex flex-wrap justify-center gap-3">
+                      <Button variant="outline" size="lg" onClick={() => startPlayoffRound(0)}>
+                        <Swords className="h-4 w-4 mr-2" /> Start Playoffs
+                      </Button>
+                      <Button variant="outline" size="lg" onClick={() => {
+                        setPlayoffSeed(playoffSeedValue);
+                        const fakeSeries: PlayoffSeries[] = [];
+                        for (let r = 0; r < 4; r++) {
+                          const wl = Math.floor(Math.random() * 3);
+                          fakeSeries.push({
+                            round: PLAYOFF_ROUNDS[r].name,
+                            opponent: OPPONENTS[r * 3],
+                            opponentSeed: 8 - r,
+                            wins: 4,
+                            losses: wl,
+                            result: "W",
+                            games: [],
+                          });
+                        }
+                        setPlayoffSeries(fakeSeries);
+                        playoffSeriesRef.current = fakeSeries;
+                        setChampion(true);
+                        setPhase("result");
+                      }}>
+                        <Flame className="h-4 w-4 mr-2" /> Simulate All Playoffs
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap justify-center gap-3">
+                      <Button variant="outline" size="lg" onClick={handlePlayAgain}>Play Again</Button>
+                      <Button variant="secondary" size="lg" asChild href={`/en/hooper?slug=${hooperData?.slug || slug || "sample"}&position=${position}&mode=${mode}&seed=${seed}`}>
+                        <span className="flex items-center gap-2">View Legacy Card <ChevronRight className="h-5 w-5" /></span>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Playoff bracket preview */}
+                {qualifiedForPlayoffs && (
+                  <div className="glass-card rounded-xl p-5">
+                    <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-4">Playoff Bracket</div>
+                    <div className="grid grid-cols-4 gap-3">
+                      {PLAYOFF_ROUNDS.map((round, i) => (
+                        <div key={i} className="text-center">
+                          <div className="text-lg mb-1">{round.emoji}</div>
+                          <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3] font-bold">{round.name}</div>
+                          <div className="text-[10px] text-[#A8A8B3] mt-1">Best of 7</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ===== PLAYOFFS ===== */}
+            {!loadingHooper && !hooperError && phase === "playoffs" && (
+              <div className="space-y-4">
+                {/* Series scoreboard */}
+                <div className="glass-card rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <div className="text-lg mb-1">{PLAYOFF_ROUNDS[currentPlayoffRound]?.emoji}</div>
+                      <div className="font-[family-name:var(--font-anton)] text-xl text-white uppercase tracking-wide">
+                        {PLAYOFF_ROUNDS[currentPlayoffRound]?.name}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">Series</div>
+                      <div className="font-[family-name:var(--font-space-grotesk)] text-3xl font-bold">
+                        <span className="text-[#F2CA50]">{playoffWins}</span>
+                        <span className="text-[#A8A8B3] mx-1">-</span>
+                        <span className="text-[#FF5E07]">{playoffLosses}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">Need</div>
+                      <div className="font-[family-name:var(--font-space-grotesk)] text-xl font-bold text-white">4 Wins</div>
+                    </div>
+                  </div>
+
+                  {/* Series progress */}
+                  <div className="flex gap-1.5 mt-4 mb-3">
+                    {Array.from({ length: 7 }).map((_, i) => {
+                      const game = playoffGames[i];
+                      let bg = "bg-[#1a1c20] border-white/10";
+                      if (game) {
+                        bg = game.result === "W"
+                          ? "bg-[#F2CA50] border-[#F2CA50]"
+                          : "bg-[#FF5E07] border-[#FF5E07]";
+                      }
+                      return (
+                        <div key={i} className={`flex-1 h-3 rounded border ${bg}`} />
+                      );
+                    })}
+                  </div>
+                  <div className="text-[10px] text-[#A8A8B3] text-center">
+                    {playoffWins < 4 && playoffLosses < 4
+                      ? `Game ${playoffGames.length + 1} of 7`
+                      : playoffWins >= 4
+                      ? "Series Won!"
+                      : "Series Lost"}
+                  </div>
+                </div>
+
+                {/* Previous series */}
+                {playoffSeries.length > 0 && (
+                  <div className="glass-card rounded-xl p-4">
+                    <div className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold mb-3">Previous Series</div>
+                    <div className="space-y-2">
+                      {playoffSeries.map((s, i) => (
+                        <div key={i} className="flex items-center justify-between bg-[#1a1c20]/50 rounded-lg p-3 border border-white/5">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm">{PLAYOFF_ROUNDS[i]?.emoji}</span>
+                            <div>
+                              <div className="text-white text-sm font-medium">{s.round}</div>
+                              <div className="text-[10px] text-[#A8A8B3]">vs {s.opponent}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold ${s.result === "W" ? "text-[#F2CA50]" : "text-[#FF5E07]"}`}>
+                              {s.wins}-{s.losses}
+                            </span>
+                            <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded ${
+                              s.result === "W" ? "bg-[#F2CA50]/10 text-[#F2CA50]" : "bg-[#FF5E07]/10 text-[#FF5E07]"
+                            }`}>
+                              {s.result === "W" ? "WON" : "LOST"}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Simulate buttons */}
+                {playoffWins < 4 && playoffLosses < 4 && (
+                  <div className="glass-card rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold">Simulate</span>
+                      <span className="text-xs text-[#A8A8B3]">{playoffRemainingGames} games remaining in series</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="outline" size="sm" onClick={() => simulatePlayoffBatch(1)} disabled={playoffSimulating}>
+                        <Play className="h-3.5 w-3.5 mr-1.5" /> 1
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => simulatePlayoffBatch(5)} disabled={playoffSimulating}>
+                        <FastForward className="h-3.5 w-3.5 mr-1.5" /> 5
+                      </Button>
+                      <Button variant="secondary" size="sm" onClick={() => simulatePlayoffBatch(7)} disabled={playoffSimulating}>
+                        <Flame className="h-3.5 w-3.5 mr-1.5" /> Full Series
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Playoff game log */}
+                <div className="glass-card rounded-xl p-4">
+                  <div className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold mb-3">Series Log</div>
+                  <div className="h-40 overflow-hidden relative bg-[#111317]/50 rounded-lg border border-white/5 p-3">
+                    {playoffGames.length === 0 ? (
+                      <div className="flex items-center justify-center h-full text-[#A8A8B3] text-sm">No playoff games played yet</div>
+                    ) : (
+                      <div className="space-y-1.5 overflow-y-auto h-full hide-scrollbar">
+                        {[...playoffGames].reverse().map((game, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between text-sm py-1.5 px-3 rounded bg-[#1a1c20]/50 border border-white/5"
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-[10px] text-[#A8A8B3]">G{playoffGames.length - i}</span>
+                              <span className={`font-bold text-xs ${game.result === "W" ? "text-[#F2CA50]" : "text-[#FF5E07]"}`}>
+                                {game.result}
+                              </span>
+                              <span className="text-white text-xs">vs {game.opponent}</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-[#A8A8B3]">
+                              <span className="text-white font-medium text-xs">{game.score}</span>
+                              <span className="text-[10px] hidden sm:inline">{game.playerStats.pts}P/{game.playerStats.reb}R/{game.playerStats.ast}A</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ===== RESULT ===== */}
             {!loadingHooper && !hooperError && phase === "result" && (
               <div className="space-y-6">
                 <div className="legendary-card rounded-2xl p-8 md:p-10 text-center">
-                  <Trophy className="h-16 w-16 text-[#F2CA50] mx-auto mb-4" />
+                  <div className="text-6xl mb-4">{champion ? "🏆" : qualifiedForPlayoffs ? "⚔️" : "📊"}</div>
                   <h2 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl text-white uppercase tracking-wide mb-2">
-                    Season Complete
+                    {champion ? "NBA Champion!" : qualifiedForPlayoffs ? "Playoff Exit" : "Season Complete"}
                   </h2>
                   <p className="text-[#A8A8B3] text-lg mb-6">
-                    Final Record: <span className="text-white font-bold">{wins} - {losses}</span> &middot; Legacy Rank: <span className="text-[#F2CA50] font-bold">{overall >= 90 ? "Legendary" : overall >= 80 ? "Elite" : "Rising"}</span>
+                    Final Record: <span className="text-white font-bold">{wins} - {losses}</span>
+                    {qualifiedForPlayoffs && (
+                      <> &middot; Playoff Seed: <span className="text-[#F2CA50] font-bold">#{playoffSeedValue}</span></>
+                    )}
+                    {champion && (
+                      <> &middot; <span className="text-[#F2CA50] font-bold">CHAMPION</span></>
+                    )}
                   </p>
+
                   <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto mb-8">
                     <div className="bg-[#1a1c20] rounded-xl p-4 border border-white/5">
                       <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">PPG</div>
@@ -366,6 +915,38 @@ function SimulatePageInner() {
                       <div className="font-[family-name:var(--font-space-grotesk)] text-3xl font-bold text-white">{apg}</div>
                     </div>
                   </div>
+
+                  {/* Playoff journey */}
+                  {playoffSeries.length > 0 && (
+                    <div className="max-w-lg mx-auto mb-8">
+                      <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-3">Playoff Journey</div>
+                      <div className="space-y-2">
+                        {playoffSeries.map((s, i) => (
+                          <div key={i} className="flex items-center justify-between bg-[#1a1c20]/50 rounded-lg p-3 border border-white/5">
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm">{PLAYOFF_ROUNDS[i]?.emoji}</span>
+                              <div className="text-left">
+                                <div className="text-white text-sm font-medium">{s.round}</div>
+                                <div className="text-[10px] text-[#A8A8B3]">vs {s.opponent}</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm font-bold ${s.result === "W" ? "text-[#F2CA50]" : "text-[#FF5E07]"}`}>
+                                {s.wins}-{s.losses}
+                              </span>
+                              <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded ${
+                                s.result === "W" ? "bg-[#F2CA50]/10 text-[#F2CA50]" : "bg-[#FF5E07]/10 text-[#FF5E07]"
+                              }`}>
+                                {s.result === "W" ? "WON" : "LOST"}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Awards */}
                   <div className="flex flex-wrap justify-center gap-3 mb-8">
                     {awards.map((award) => (
                       <span
@@ -379,16 +960,20 @@ function SimulatePageInner() {
                       <span className="text-[#A8A8B3]">No major awards this season. Build again to chase greatness.</span>
                     )}
                   </div>
-                  <Button
-                    asChild
-                    href={`/en/hooper?slug=${hooperData?.slug || slug || "sample"}&position=${position}&mode=${mode}&seed=${seed}`}
-                    variant="secondary"
-                    size="xl"
-                  >
-                    <span className="flex items-center justify-center gap-2">
-                      View Legacy Card <ChevronRight className="h-5 w-5" />
-                    </span>
-                  </Button>
+
+                  <div className="flex flex-wrap justify-center gap-3">
+                    <Button variant="outline" size="xl" onClick={handlePlayAgain}>Play Again</Button>
+                    <Button
+                      asChild
+                      href={`/en/hooper?slug=${hooperData?.slug || slug || "sample"}&position=${position}&mode=${mode}&seed=${seed}`}
+                      variant="secondary"
+                      size="xl"
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        View Legacy Card <ChevronRight className="h-5 w-5" />
+                      </span>
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
