@@ -88,10 +88,10 @@ const OPPONENTS = [
 ];
 
 const PLAYOFF_ROUNDS = [
-  { name: "First Round", emoji: "🏀", opponentStrength: 0.55 },
-  { name: "Conference Semifinals", emoji: "🔥", opponentStrength: 0.65 },
-  { name: "Conference Finals", emoji: "⚡", opponentStrength: 0.75 },
-  { name: "NBA Finals", emoji: "🏆", opponentStrength: 0.82 },
+  { name: "First Round", emoji: "🏀", opponentStrength: 0.15 },
+  { name: "Conference Semifinals", emoji: "🔥", opponentStrength: 0.22 },
+  { name: "Conference Finals", emoji: "⚡", opponentStrength: 0.28 },
+  { name: "NBA Finals", emoji: "🏆", opponentStrength: 0.34 },
 ];
 
 function generateSchedule(seed: number): string[] {
@@ -152,6 +152,19 @@ function SimulatePageInner() {
   type Phase = "intro" | "regular_season" | "playoff_check" | "playoffs" | "result";
   const [phase, setPhase] = useState<Phase>("intro");
 
+  // --- Custom hooper identity ---
+  const [customName, setCustomName] = useState("");
+  const [customImage, setCustomImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const hooperDisplayName = customName.trim() || "Your Hooper";
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setCustomImage(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
   // --- Regular season state ---
   const [gameIndex, setGameIndex] = useState(0);
   const [wins, setWins] = useState(0);
@@ -211,7 +224,9 @@ function SimulatePageInner() {
     const baseWin = (overall + (attributes.clutch - 60) * 0.2) / 100;
     const noise = (Math.sin(idx * 123.45 + seed * 0.7 + idx * 0.3) + 1) / 2;
     const strength = strengthBoost ?? 0;
-    const isWin = noise < baseWin + 0.15 - strength;
+    // Playoff clutch bonus: higher OVR gives bigger edge in playoffs
+    const playoffBonus = strength > 0 ? Math.max(0, (overall - 50) * 0.012) : 0;
+    const isWin = noise < baseWin + 0.15 - strength + playoffBonus;
 
     const teamScore = isWin ? 105 + Math.floor(noise * 25) : 95 + Math.floor(noise * 20);
     const oppScore = isWin ? teamScore - 4 - Math.floor(noise * 8) : teamScore + 4 + Math.floor(noise * 8);
@@ -320,10 +335,13 @@ function SimulatePageInner() {
     }
 
     const interval = count >= 7 ? 30 : count === 1 ? 250 : 100;
+    let seriesEnded = false;
 
     for (let i = 0; i < toSim; i++) {
       const delayMs = i * interval;
       setTimeout(() => {
+        if (seriesEnded || !playoffSimulatingRef.current) return;
+
         const gameIdx = playoffWinsRef.current + playoffLossesRef.current;
         const game = simulatePlayoffGame(roundIdx, gameIdx);
 
@@ -340,6 +358,7 @@ function SimulatePageInner() {
           setPlayoffWins(playoffWinsRef.current);
 
           if (playoffWinsRef.current >= 4) {
+            seriesEnded = true;
             const seriesEntry: PlayoffSeries = {
               round: round.name,
               opponent: game.opponent,
@@ -369,6 +388,7 @@ function SimulatePageInner() {
           setPlayoffLosses(playoffLossesRef.current);
 
           if (playoffLossesRef.current >= 4) {
+            seriesEnded = true;
             const seriesEntry: PlayoffSeries = {
               round: round.name,
               opponent: game.opponent,
@@ -517,6 +537,45 @@ function SimulatePageInner() {
                   </div>
                 </div>
 
+                {/* Custom Hooper Identity */}
+                <div className="max-w-md mx-auto mb-8">
+                  <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-4 text-center">Customize Your Hooper</div>
+                  <div className="flex items-center gap-5 bg-[#1a1c20] rounded-xl p-5 border border-white/5">
+                    {/* Avatar */}
+                    <div className="flex-shrink-0">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-20 h-20 rounded-full border-2 border-dashed border-[#F2CA50]/40 bg-[#111317] flex items-center justify-center overflow-hidden hover:border-[#F2CA50] transition-colors cursor-pointer relative group"
+                      >
+                        {customImage ? (
+                          <img src={customImage} alt="Hooper" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="text-center">
+                            <svg className="w-6 h-6 text-[#A8A8B3] mx-auto mb-1 group-hover:text-[#F2CA50] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                            <span className="text-[8px] text-[#A8A8B3] group-hover:text-[#F2CA50] transition-colors">Upload</span>
+                          </div>
+                        )}
+                      </button>
+                      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                    </div>
+                    {/* Name */}
+                    <div className="flex-1 min-w-0">
+                      <label className="text-[10px] uppercase tracking-wider text-[#A8A8B3] mb-1.5 block">Player Name</label>
+                      <input
+                        type="text"
+                        value={customName}
+                        onChange={(e) => setCustomName(e.target.value)}
+                        placeholder="Enter your hooper's name"
+                        maxLength={24}
+                        className="w-full bg-[#111317] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm font-[family-name:var(--font-space-grotesk)] placeholder:text-[#A8A8B3]/50 focus:outline-none focus:border-[#F2CA50]/50 focus:ring-1 focus:ring-[#F2CA50]/20 transition-colors"
+                      />
+                      <div className="text-[9px] text-[#A8A8B3] mt-1.5">
+                        {customImage ? "✓ Avatar uploaded" : "Click the circle to upload an avatar"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-3 max-w-md mx-auto mb-8">
                   <p className="text-[#A8A8B3] text-sm">Choose how many games to simulate at a time:</p>
                 </div>
@@ -543,10 +602,16 @@ function SimulatePageInner() {
                 {/* Scoreboard */}
                 <div className="glass-card rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">Game</div>
-                      <div className="font-[family-name:var(--font-anton)] text-3xl text-white">
-                        {Math.min(gameIndex, 82)} <span className="text-[#A8A8B3] text-lg">/ 82</span>
+                    <div className="flex items-center gap-3">
+                      {customImage && (
+                        <img src={customImage} alt={hooperDisplayName} className="w-10 h-10 rounded-full object-cover border border-[#F2CA50]/30" />
+                      )}
+                      <div>
+                        <div className="font-[family-name:var(--font-anton)] text-lg text-white uppercase tracking-wide">{hooperDisplayName}</div>
+                        <div className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">Game</div>
+                        <div className="font-[family-name:var(--font-anton)] text-3xl text-white">
+                          {Math.min(gameIndex, 82)} <span className="text-[#A8A8B3] text-lg">/ 82</span>
+                        </div>
                       </div>
                     </div>
                     <div className="text-center">
@@ -661,10 +726,16 @@ function SimulatePageInner() {
             {!loadingHooper && !hooperError && phase === "playoff_check" && (
               <div className="space-y-4">
                 <div className="legendary-card rounded-2xl p-8 md:p-10 text-center">
+                  {customImage && (
+                    <img src={customImage} alt={hooperDisplayName} className="w-16 h-16 rounded-full object-cover border-2 border-[#F2CA50]/30 mx-auto mb-3" />
+                  )}
                   <div className="text-6xl mb-4">{qualifiedForPlayoffs ? "🏆" : "😢"}</div>
-                  <h2 className="font-[family-name:var(--font-anton)] text-3xl md:text-4xl text-white uppercase tracking-wide mb-3">
-                    {qualifiedForPlayoffs ? "Playoff Bound!" : "Season Over"}
+                  <h2 className="font-[family-name:var(--font-anton)] text-3xl md:text-4xl text-white uppercase tracking-wide mb-1">
+                    {hooperDisplayName}
                   </h2>
+                  <h3 className="font-[family-name:var(--font-anton)] text-xl md:text-2xl text-[#F2CA50] uppercase tracking-wide mb-3">
+                    {qualifiedForPlayoffs ? "Playoff Bound!" : "Season Over"}
+                  </h3>
                   <p className="text-[#A8A8B3] text-lg mb-2">
                     Final Record: <span className="text-white font-bold">{wins} - {losses}</span>
                   </p>
@@ -755,10 +826,16 @@ function SimulatePageInner() {
                 {/* Series scoreboard */}
                 <div className="glass-card rounded-2xl p-6">
                   <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <div className="text-lg mb-1">{PLAYOFF_ROUNDS[currentPlayoffRound]?.emoji}</div>
-                      <div className="font-[family-name:var(--font-anton)] text-xl text-white uppercase tracking-wide">
-                        {PLAYOFF_ROUNDS[currentPlayoffRound]?.name}
+                    <div className="flex items-center gap-3">
+                      {customImage && (
+                        <img src={customImage} alt={hooperDisplayName} className="w-10 h-10 rounded-full object-cover border border-[#F2CA50]/30" />
+                      )}
+                      <div>
+                        <div className="font-[family-name:var(--font-anton)] text-sm text-[#A8A8B3] uppercase tracking-wide">{hooperDisplayName}</div>
+                        <div className="text-lg mb-1">{PLAYOFF_ROUNDS[currentPlayoffRound]?.emoji}</div>
+                        <div className="font-[family-name:var(--font-anton)] text-xl text-white uppercase tracking-wide">
+                          {PLAYOFF_ROUNDS[currentPlayoffRound]?.name}
+                        </div>
                       </div>
                     </div>
                     <div className="text-center">
@@ -887,10 +964,16 @@ function SimulatePageInner() {
             {!loadingHooper && !hooperError && phase === "result" && (
               <div className="space-y-6">
                 <div className="legendary-card rounded-2xl p-8 md:p-10 text-center">
+                  {customImage && (
+                    <img src={customImage} alt={hooperDisplayName} className="w-20 h-20 rounded-full object-cover border-2 border-[#F2CA50]/30 mx-auto mb-3" />
+                  )}
                   <div className="text-6xl mb-4">{champion ? "🏆" : qualifiedForPlayoffs ? "⚔️" : "📊"}</div>
-                  <h2 className="font-[family-name:var(--font-anton)] text-4xl md:text-5xl text-white uppercase tracking-wide mb-2">
-                    {champion ? "NBA Champion!" : qualifiedForPlayoffs ? "Playoff Exit" : "Season Complete"}
+                  <h2 className="font-[family-name:var(--font-anton)] text-3xl md:text-4xl text-white uppercase tracking-wide mb-1">
+                    {hooperDisplayName}
                   </h2>
+                  <h3 className="font-[family-name:var(--font-anton)] text-2xl md:text-3xl text-[#F2CA50] uppercase tracking-wide mb-2">
+                    {champion ? "NBA Champion!" : qualifiedForPlayoffs ? "Playoff Exit" : "Season Complete"}
+                  </h3>
                   <p className="text-[#A8A8B3] text-lg mb-6">
                     Final Record: <span className="text-white font-bold">{wins} - {losses}</span>
                     {qualifiedForPlayoffs && (
