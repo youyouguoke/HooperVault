@@ -7,7 +7,7 @@ import { Eye, EyeOff, ChevronRight, Info } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Choose Your Draft Mode | HooperVault",
-  description: "Select Classic, Blind, or Chaos draft mode to build your ultimate basketball player in HooperVault.",
+  description: "Select Classic or Blind draft mode to build your ultimate basketball player in HooperVault.",
 };
 
 const modes = [

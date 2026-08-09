@@ -7,7 +7,7 @@ import { Eye, EyeOff, ChevronRight, Info } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "选择选秀模式 | HooperVault",
-  description: "在 HooperVault 选择经典、盲选或混沌选秀模式，打造你的终极篮球球员。",
+  description: "在 HooperVault 选择经典或盲选选秀模式，打造你的终极篮球球员。",
 };
 
 const modes = [
