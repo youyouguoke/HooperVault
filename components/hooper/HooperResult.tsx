@@ -287,6 +287,75 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
 
   const playerName = simResult?.customName || (data?.first_name && data?.last_name ? `${data.first_name} ${data.last_name}` : generatePlayerName(seed, position));
 
+  // Dynamically update OG meta tags when simulation data is available
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (!playerName || !overall) return;
+
+    const ogTitle = `${playerName} - ${overall} OVR ${archetypeName} | HooperVault`;
+    const ogDesc = lang === "zh-CN"
+      ? `${playerName}，${overall} OVR ${archetypeName}。${hasSim && simResult.season ? `场均${simResult.season.ppg}分。` : ""}来 HooperVault 打造你的传奇球员。`
+      : `${playerName}, ${overall} OVR ${archetypeName}. ${hasSim && simResult.season ? `${simResult.season.ppg} PPG. ` : ""}Build your own legendary Hooper at HooperVault.`;
+
+    // Update og:title
+    let ogTitleEl = document.querySelector('meta[property="og:title"]');
+    if (!ogTitleEl) {
+      ogTitleEl = document.createElement("meta");
+      ogTitleEl.setAttribute("property", "og:title");
+      document.head.appendChild(ogTitleEl);
+    }
+    ogTitleEl.setAttribute("content", ogTitle);
+
+    // Update og:description
+    let ogDescEl = document.querySelector('meta[property="og:description"]');
+    if (!ogDescEl) {
+      ogDescEl = document.createElement("meta");
+      ogDescEl.setAttribute("property", "og:description");
+      document.head.appendChild(ogDescEl);
+    }
+    ogDescEl.setAttribute("content", ogDesc);
+
+    // Update og:image to dynamic OG endpoint
+    const ogImageUrl = `/api/og/${slug || "sample"}`;
+    let ogImageEl = document.querySelector('meta[property="og:image"]');
+    if (!ogImageEl) {
+      ogImageEl = document.createElement("meta");
+      ogImageEl.setAttribute("property", "og:image");
+      document.head.appendChild(ogImageEl);
+    }
+    ogImageEl.setAttribute("content", ogImageUrl);
+
+    // Update twitter:title
+    let twTitleEl = document.querySelector('meta[name="twitter:title"]');
+    if (!twTitleEl) {
+      twTitleEl = document.createElement("meta");
+      twTitleEl.setAttribute("name", "twitter:title");
+      document.head.appendChild(twTitleEl);
+    }
+    twTitleEl.setAttribute("content", ogTitle);
+
+    // Update twitter:description
+    let twDescEl = document.querySelector('meta[name="twitter:description"]');
+    if (!twDescEl) {
+      twDescEl = document.createElement("meta");
+      twDescEl.setAttribute("name", "twitter:description");
+      document.head.appendChild(twDescEl);
+    }
+    twDescEl.setAttribute("content", ogDesc);
+
+    // Update twitter:image
+    let twImageEl = document.querySelector('meta[name="twitter:image"]');
+    if (!twImageEl) {
+      twImageEl = document.createElement("meta");
+      twImageEl.setAttribute("name", "twitter:image");
+      document.head.appendChild(twImageEl);
+    }
+    twImageEl.setAttribute("content", ogImageUrl);
+
+    // Update page title
+    document.title = ogTitle;
+  }, [playerName, overall, archetypeName, hasSim, simResult, lang, slug]);
+
   const radarData = useMemo(() => {
     return ATTRIBUTES.map((attr) => ({
       attribute: ATTRIBUTE_LABELS[attr],

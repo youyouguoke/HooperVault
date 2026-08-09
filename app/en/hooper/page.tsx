@@ -2,13 +2,6 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { HooperResultClient } from "./ResultClient";
 
-const ogImageMeta = {
-  url: "/images/og-default.jpg",
-  width: 1200,
-  height: 630,
-  alt: "A legendary Hooper build on HooperVault",
-};
-
 export const metadata: Metadata = {
   title: "Your Hooper Legacy",
   description: "View your created Hooper legacy card on HooperVault.",
@@ -24,7 +17,14 @@ export const metadata: Metadata = {
     title: "Your Hooper Legacy | HooperVault",
     description: "View this legendary Hooper build on HooperVault.",
     url: "/en/hooper",
-    images: [ogImageMeta],
+    images: [
+      {
+        url: "/images/og-default.jpg",
+        width: 1200,
+        height: 630,
+        alt: "A legendary Hooper build on HooperVault",
+      },
+    ],
     locale: "en_US",
   },
   twitter: {
