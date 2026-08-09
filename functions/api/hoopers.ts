@@ -33,7 +33,6 @@ async function createUniqueSlug(db: D1Database, history: string, position: strin
     attempt++;
   }
 
-  // Fallback with random suffix
   return `${slug}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
@@ -83,27 +82,56 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 };
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
-  const { env } = context;
+  const { env, request } = context;
+  const url = new URL(request.url);
+
+  const limit = Math.min(parseInt(url.searchParams.get("limit") || "50"), 100);
+  const offset = parseInt(url.searchParams.get("offset") || "0");
+  const mode = url.searchParams.get("mode"); // "classic" | "blind" | null = all
 
   try {
-    const { results } = await env.DB
-      .prepare("SELECT slug, position, mode, seed, history, overall, archetype, first_name, last_name, created_at FROM hoopers ORDER BY created_at DESC LIMIT 20")
-      .all<{
-        slug: string;
-        position: string;
-        mode: string;
-        seed: number;
-        history: string;
-        overall: number;
-        archetype: string;
-        first_name: string | null;
-        last_name: string | null;
-        created_at: string;
-      }>();
+    let query = "SELECT slug, position, mode, overall, archetype, first_name, last_name, created_at FROM hoopers";
+    const bindings: (string | number)[] = [];
+
+    if (mode && (mode === "classic" || mode === "blind")) {
+      query += " WHERE mode = ?";
+      bindings.push(mode);
+    }
+
+    query += " ORDER BY overall DESC, created_at DESC LIMIT ? OFFSET ?";
+    bindings.push(limit, offset);
+
+    const stmt = env.DB.prepare(query).bind(...bindings);
+    const { results } = await stmt.all<{
+      slug: string;
+      position: string;
+      mode: string;
+      overall: number;
+      archetype: string;
+      first_name: string | null;
+      last_name: string | null;
+      created_at: string;
+    }>();
+
+    // Get total count for pagination
+    let countQuery = "SELECT COUNT(*) as total FROM hoopers";
+    const countBindings: string[] = [];
+    if (mode && (mode === "classic" || mode === "blind")) {
+      countQuery += " WHERE mode = ?";
+      countBindings.push(mode);
+    }
+    const countResult = await env.DB.prepare(countQuery).bind(...countBindings).first<{ total: number }>();
+    const total = countResult?.total || 0;
 
     return new Response(
-      JSON.stringify({ hoopers: results || [] }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ hoopers: results || [], total, limit, offset }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=60",
+        },
+      }
     );
   } catch (error) {
     return new Response(
