@@ -259,9 +259,9 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
       return simResult.attributes as Record<Attribute, number>;
     }
     const attrs: Record<Attribute, number> = {
-      shooting: 55, mid_range: 55, finishing: 55, dunk: 55, passing: 55,
-      ball_handle: 55, perimeter_defense: 55, interior_defense: 55, block: 55,
-      rebound: 55, speed: 55, strength: 55, clutch: 55,
+      shooting: 75, mid_range: 75, finishing: 75, dunk: 75, passing: 75,
+      ball_handle: 75, perimeter_defense: 75, interior_defense: 75, block: 75,
+      rebound: 75, speed: 75, strength: 75, clutch: 75,
     };
     const modifiers = POSITION_MODIFIERS[position] || {};
     Object.entries(modifiers).forEach(([key, value]) => {
@@ -354,7 +354,61 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
 
     // Update page title
     document.title = ogTitle;
-  }, [playerName, overall, archetypeName, hasSim, simResult, lang, slug]);
+
+    // Inject JSON-LD structured data
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: `${playerName} - ${overall} OVR ${archetypeName}`,
+      description: ogDesc,
+      url: `https://hoopervault.com/${lang}/hooper?slug=${slug || "sample"}`,
+      datePublished: simResult?.timestamp ? new Date(simResult.timestamp).toISOString() : undefined,
+      mainEntity: {
+        "@type": "Person",
+        name: playerName,
+        description: `${overall} OVR ${archetypeName} built on HooperVault`,
+        jobTitle: `${position} - ${archetypeName}`,
+        award: simResult?.awards?.length ? simResult.awards.join(", ") : undefined,
+        additionalProperty: [
+          ...(simResult?.season ? [
+            { "@type": "PropertyValue", name: "PPG", value: simResult.season.ppg },
+            { "@type": "PropertyValue", name: "RPG", value: simResult.season.rpg },
+            { "@type": "PropertyValue", name: "APG", value: simResult.season.apg },
+            { "@type": "PropertyValue", name: "Wins", value: simResult.season.wins },
+            { "@type": "PropertyValue", name: "Losses", value: simResult.season.losses },
+          ] : []),
+          { "@type": "PropertyValue", name: "Overall", value: overall },
+          { "@type": "PropertyValue", name: "Position", value: position },
+          { "@type": "PropertyValue", name: "Mode", value: mode },
+          ...(simResult?.playoffs?.champion ? [
+            { "@type": "PropertyValue", name: "Champion", value: true },
+          ] : []),
+        ],
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "HooperVault",
+        url: "https://hoopervault.com",
+      },
+      breadcrumb: {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: `https://hoopervault.com/${lang}` },
+          { "@type": "ListItem", position: 2, name: "Build", item: `https://hoopervault.com/${lang}/build/mode` },
+          { "@type": "ListItem", position: 3, name: playerName },
+        ],
+      },
+    };
+
+    // Remove existing JSON-LD if present
+    document.querySelectorAll('script[data-hooper-jsonld]').forEach(el => el.remove());
+
+    const scriptEl = document.createElement("script");
+    scriptEl.type = "application/ld+json";
+    scriptEl.setAttribute("data-hooper-jsonld", "true");
+    scriptEl.textContent = JSON.stringify(jsonLd);
+    document.head.appendChild(scriptEl);
+  }, [playerName, overall, archetypeName, hasSim, simResult, lang, slug, position, mode]);
 
   const radarData = useMemo(() => {
     return ATTRIBUTES.map((attr) => ({

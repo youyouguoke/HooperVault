@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Anton, Space_Grotesk, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
@@ -121,13 +122,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
-        <script
+      </head>
+      <body className="min-h-full flex flex-col bg-[#0B0B12] text-white">
+        {/* Plausible Analytics */}
+        <Script
           defer
           data-domain="hoopervault.com"
           src="https://plausible.shipsolo.io/js/script.js"
+          strategy="afterInteractive"
         />
-      </head>
-      <body className="min-h-full flex flex-col bg-[#0B0B12] text-white">
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-YCFDTDKMTQ"
+          strategy="afterInteractive"
+        />
+        <Script id="ga4" strategy="afterInteractive">{`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', 'G-YCFDTDKMTQ');
+        `}</Script>
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />

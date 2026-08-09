@@ -208,19 +208,19 @@ function TeamPageInner() {
 
   const currentAttributes = useMemo(() => {
     const attrs: Record<Attribute, number> = {
-      shooting: 55,
-      mid_range: 55,
-      finishing: 55,
-      dunk: 55,
-      passing: 55,
-      ball_handle: 55,
-      perimeter_defense: 55,
-      interior_defense: 55,
-      block: 55,
-      rebound: 55,
-      speed: 55,
-      strength: 55,
-      clutch: 55,
+      shooting: 75,
+      mid_range: 75,
+      finishing: 75,
+      dunk: 75,
+      passing: 75,
+      ball_handle: 75,
+      perimeter_defense: 75,
+      interior_defense: 75,
+      block: 75,
+      rebound: 75,
+      speed: 75,
+      strength: 75,
+      clutch: 75,
     };
     history.forEach((skill) => {
       attrs[skill.attribute] = Math.min(99, attrs[skill.attribute] + skill.bonus);
