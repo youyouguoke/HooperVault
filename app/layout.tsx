@@ -121,6 +121,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
+        <script
+          defer
+          data-domain="hoopervault.com"
+          src="https://plausible.shipsolo.io/js/script.js"
+        />
       </head>
       <body className="min-h-full flex flex-col bg-[#0B0B12] text-white">
         <Header />
