@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Section } from "@/components/ui/Section";
@@ -31,6 +31,7 @@ import {
   Medal,
   Crown,
 } from "lucide-react";
+import { ShareModal } from "@/components/ui/ShareModal";
 
 const ATTRIBUTE_LABELS: Record<Attribute, string> = {
   shooting: "3PT",
@@ -207,6 +208,7 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
   const [data, setData] = useState<HooperApiData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [simResult, setSimResult] = useState<SimResult | null>(null);
 
   // Try to load sim result from localStorage first
@@ -309,22 +311,6 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
   const tier = overall >= 95 ? "Legendary" : overall >= 90 ? "Elite" : overall >= 80 ? "Star" : "Rising";
   const tierColor = overall >= 95 ? "#F2CA50" : overall >= 90 ? "#6CB9FF" : overall >= 80 ? "#FF5E07" : "#A8A8B3";
 
-  const handleShare = () => {
-    const url = typeof window !== "undefined" ? window.location.href : "";
-    if (navigator.share) {
-      navigator.share({
-        title: `HooperVault - ${playerName}`,
-        text: lang === "zh-CN"
-          ? `我在 HooperVault 打造了一名总评 ${overall} 的 ${archetype.name}！`
-          : `I built a ${overall} OVR ${archetype.name} in HooperVault!`,
-        url,
-      }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(url);
-      alert(lang === "zh-CN" ? "链接已复制到剪贴板！" : "Link copied to clipboard!");
-    }
-  };
-
   const buildModeHref = lang === "zh-CN" ? "/zh-CN/build/mode" : "/en/build/mode";
 
   return (
@@ -404,7 +390,7 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
             <div className="max-w-6xl mx-auto grid gap-8 lg:grid-cols-12">
               {/* LEFT: Player Card */}
               <div className="lg:col-span-5">
-                <div className="legendary-card rounded-2xl overflow-hidden relative">
+                <div ref={cardRef} className="legendary-card rounded-2xl overflow-hidden relative">
                   <div className="h-[420px] relative bg-gradient-to-br from-[#333539] via-[#1a1c20] to-[#111317] flex items-center justify-center overflow-hidden">
                     {simResult?.customImage ? (
                       <img
@@ -669,9 +655,16 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
                 )}
 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button variant="secondary" fullWidth size="xl" onClick={handleShare}>
-                    <Share2 className="h-5 w-5 mr-2" /> {t("shareLegacy", lang)}
-                  </Button>
+                  <ShareModal
+                    playerName={playerName}
+                    overall={overall}
+                    archetype={archetype.name}
+                    stats={hasSim && simResult.season ? { ppg: simResult.season.ppg, rpg: simResult.season.rpg, apg: simResult.season.apg } : undefined}
+                    awards={badges}
+                    champion={hasSim && simResult.playoffs?.champion}
+                    lang={lang}
+                    cardRef={cardRef}
+                  />
                   <Button asChild href={buildModeHref} variant="outline" fullWidth size="xl">
                     <span className="flex items-center justify-center gap-2">
                       <RefreshCw className="h-5 w-5" /> {t("buildAnother", lang)}
