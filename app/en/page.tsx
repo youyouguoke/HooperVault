@@ -4,14 +4,13 @@ import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { FeaturedHoopers } from "@/components/leaderboard/FeaturedHoopers";
+import { HomeChallenge } from "@/components/challenge/HomeChallenge";
 import {
   Trophy,
   Users,
-  Calendar,
   TrendingUp,
   Sparkles,
   ChevronRight,
-  Flame,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -161,28 +160,7 @@ export default function HomePage() {
 
       <Section className="border-t border-white/8 bg-[#111317]">
         <Container>
-          <div className="glass-card rounded-2xl p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#FF5E07]/10 to-transparent pointer-events-none" />
-            <div className="relative z-10 flex-1">
-              <div className="flex items-center gap-2 mb-3">
-                <Flame className="h-5 w-5 text-[#FF5E07]" />
-                <span className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#FF5E07] font-bold">Daily Challenge</span>
-              </div>
-              <h2 className="font-[family-name:var(--font-anton)] text-2xl md:text-3xl text-white uppercase tracking-wide mb-2">Today&apos;s Challenge</h2>
-              <p className="text-[#A8A8B3] mb-4">Seed #20260805 &middot; 234 Players Joined</p>
-              <p className="text-white font-medium">Create a Champion Point Guard without Elite Shooting.</p>
-            </div>
-            <div className="relative z-10 flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-              <Button asChild href="/en/challenge" variant="secondary" size="lg">
-                <span className="flex items-center gap-2">
-                  Try Challenge <Calendar className="h-5 w-5" />
-                </span>
-              </Button>
-              <Button asChild href="/en/guides" variant="outline" size="lg">
-                <span>Guides</span>
-              </Button>
-            </div>
-          </div>
+          <HomeChallenge lang="en" />
         </Container>
       </Section>
 

@@ -13,11 +13,11 @@ export default function GuidesPage() {
       <Section className="relative border-b border-white/8 bg-[#111317] pt-16 pb-12 overflow-hidden">
         {/* Background image */}
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-20"
+          className="absolute inset-0 bg-cover bg-[position:30%_70%] opacity-40"
           style={{ backgroundImage: "url('/images/guides-bg.jpg')" }}
         />
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#111317]/60 via-[#111317]/80 to-[#111317]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#111317]/40 via-[#111317]/60 to-[#111317]" />
         <Container>
           <div className="relative z-10 max-w-3xl mx-auto text-center">
             <p className="font-[family-name:var(--font-space-grotesk)] text-xs uppercase tracking-widest text-[#F2CA50] font-bold mb-3">玩转 Vault</p>

@@ -160,26 +160,45 @@ function TableRow({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: 
 const PAGE_SIZE = 20;
 
 export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
-  const [data, setData] = useState<LeaderboardData | null>(null);
+  const [top3Data, setTop3Data] = useState<Hooper[]>([]);
+  const [tableData, setTableData] = useState<LeaderboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"all" | "classic" | "blind">("all");
   const [page, setPage] = useState(0);
 
-  const fetchData = useCallback(async (modeFilter: string, currentPage: number) => {
+  // Fetch overall top 3 (independent of pagination, only depends on mode)
+  const fetchTop3 = useCallback(async (modeFilter: string) => {
+    try {
+      const params = new URLSearchParams({ limit: "3", offset: "0" });
+      if (modeFilter !== "all") params.set("mode", modeFilter);
+      const res = await fetch(`/api/hoopers?${params}`);
+      if (!res.ok) throw new Error("Failed to load top 3");
+      const json = await res.json();
+      setTop3Data(json.hoopers || []);
+    } catch {
+      // top3 fetch failure is non-critical
+    }
+  }, []);
+
+  // Fetch paginated table data (offset starts from rank 4 onward)
+  const fetchTable = useCallback(async (modeFilter: string, currentPage: number) => {
     setLoading(true);
     setError(null);
     try {
+      // Page 0 = ranks 4-23 (offset 3), page 1 = ranks 24-43 (offset 23), etc.
+      const offset = currentPage === 0 ? 3 : 3 + currentPage * PAGE_SIZE;
+      const limit = currentPage === 0 ? PAGE_SIZE : PAGE_SIZE;
       const params = new URLSearchParams({
-        limit: String(PAGE_SIZE),
-        offset: String(currentPage * PAGE_SIZE),
+        limit: String(limit),
+        offset: String(offset),
       });
       if (modeFilter !== "all") params.set("mode", modeFilter);
 
       const res = await fetch(`/api/hoopers?${params}`);
       if (!res.ok) throw new Error("Failed to load");
       const json = await res.json();
-      setData(json);
+      setTableData(json);
     } catch {
       setError("Failed to load leaderboard");
     } finally {
@@ -188,20 +207,23 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
   }, []);
 
   useEffect(() => {
-    fetchData(mode, page);
-  }, [mode, page, fetchData]);
+    fetchTop3(mode);
+  }, [mode, fetchTop3]);
+
+  useEffect(() => {
+    fetchTable(mode, page);
+  }, [mode, page, fetchTable]);
 
   const handleModeChange = (newMode: "all" | "classic" | "blind") => {
     setMode(newMode);
     setPage(0);
   };
 
-  const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
-  const startRank = page * PAGE_SIZE + 1;
-  const endRank = data ? Math.min(startRank + data.hoopers.length - 1, data.total) : 0;
-
-  const top3 = data?.hoopers.slice(0, 3) || [];
-  const rest = data?.hoopers.slice(3) || [];
+  // Total count minus the top 3 shown separately
+  const totalRemaining = tableData ? tableData.total - 3 : 0;
+  const totalPages = totalRemaining > 0 ? Math.ceil(totalRemaining / PAGE_SIZE) : 0;
+  const startRank = page === 0 ? 4 : 4 + page * PAGE_SIZE;
+  const endRank = tableData ? Math.min(startRank + tableData.hoopers.length - 1, tableData.total) : 0;
 
   return (
     <>
@@ -242,7 +264,7 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
             ))}
           </div>
 
-          {loading && !data ? (
+          {loading && !tableData ? (
             <div className="text-center py-20">
               <div className="inline-block w-8 h-8 border-2 border-[#F2CA50]/30 border-t-[#F2CA50] rounded-full animate-spin" />
               <p className="mt-4 text-sm text-[#A8A8B3]">{t("loading", lang)}</p>
@@ -251,7 +273,7 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
             <div className="text-center py-20">
               <p className="text-sm text-red-400">{error}</p>
             </div>
-          ) : !data || data.hoopers.length === 0 ? (
+          ) : top3Data.length === 0 && (!tableData || tableData.hoopers.length === 0) ? (
             <div className="text-center py-20">
               <Trophy className="w-12 h-12 text-[#A8A8B3]/30 mx-auto mb-4" />
               <p className="text-sm text-[#A8A8B3]">{t("empty", lang)}</p>
@@ -264,33 +286,32 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
             </div>
           ) : (
             <>
-              {/* Top 3 */}
-              {top3.length > 0 && (
-                <div className={`grid gap-4 mb-10 ${top3.length === 1 ? "grid-cols-1 max-w-xs mx-auto" : top3.length === 2 ? "grid-cols-2 max-w-md mx-auto" : "grid-cols-1 sm:grid-cols-3"}`}>
-                  {/* On mobile, show #1 first; on desktop, show #2 #1 #3 */}
-                  {top3.length === 3 ? (
+              {/* Top 3 — always the same regardless of page */}
+              {top3Data.length > 0 && (
+                <div className={`grid gap-4 mb-10 ${top3Data.length === 1 ? "grid-cols-1 max-w-xs mx-auto" : top3Data.length === 2 ? "grid-cols-2 max-w-md mx-auto" : "grid-cols-1 sm:grid-cols-3"}`}>
+                  {top3Data.length === 3 ? (
                     <>
                       <div className="order-2 sm:order-1">
-                        <TopCard hooper={top3[1]} rank={2} lang={lang} />
+                        <TopCard hooper={top3Data[1]} rank={2} lang={lang} />
                       </div>
                       <div className="order-1 sm:order-2">
-                        <TopCard hooper={top3[0]} rank={1} lang={lang} />
+                        <TopCard hooper={top3Data[0]} rank={1} lang={lang} />
                       </div>
                       <div className="order-3">
-                        <TopCard hooper={top3[2]} rank={3} lang={lang} />
+                        <TopCard hooper={top3Data[2]} rank={3} lang={lang} />
                       </div>
                     </>
                   ) : (
-                    top3.map((h, i) => <TopCard key={h.slug} hooper={h} rank={i + 1} lang={lang} />)
+                    top3Data.map((h, i) => <TopCard key={h.slug} hooper={h} rank={i + 1} lang={lang} />)
                   )}
                 </div>
               )}
 
               {/* Table (4th+) */}
-              {rest.length > 0 && (
+              {tableData && tableData.hoopers.length > 0 && (
                 <div className="space-y-2">
-                  {rest.map((h, i) => (
-                    <TableRow key={h.slug} hooper={h} rank={i + 4 + page * PAGE_SIZE} lang={lang} />
+                  {tableData.hoopers.map((h, i) => (
+                    <TableRow key={h.slug} hooper={h} rank={startRank + i} lang={lang} />
                   ))}
                 </div>
               )}
@@ -299,7 +320,7 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/5">
                   <p className="text-xs text-[#A8A8B3]">
-                    {t("showing", lang)} {startRank} {t("to", lang)} {endRank} {t("of", lang)} {data.total} {t("results", lang)}
+                    {t("showing", lang)} {startRank} {t("to", lang)} {endRank} {t("of", lang)} {tableData?.total} {t("results", lang)}
                   </p>
                   <div className="flex items-center gap-2">
                     <button
