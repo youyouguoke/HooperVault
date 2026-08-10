@@ -135,6 +135,7 @@ function PreviewPageInner() {
   const teamId = searchParams.get("team") || "95-96-bulls";
   const seedParam = parseInt(searchParams.get("seed") || "1", 10);
   const historyParam = searchParams.get("history") || "";
+  const challengeId = searchParams.get("challenge");
 
   const team = useMemo(() => getTeamById(teamId), [teamId]);
 
@@ -362,7 +363,8 @@ function PreviewPageInner() {
                         console.error("保存失败:", res.status, data);
                         return;
                       }
-                      const redirectUrl = `/zh-CN/simulate?position=${position}&mode=${mode}&team=${teamId}&seed=${seedParam}&slug=${data.slug}&history=${encodeURIComponent(historyParam || skills.map((s) => s.id).join(","))}`;
+                      const challengeParam = challengeId ? `&challenge=${challengeId}` : "";
+                      const redirectUrl = `/zh-CN/simulate?position=${position}&mode=${mode}&team=${teamId}&seed=${seedParam}&slug=${data.slug}&history=${encodeURIComponent(historyParam || skills.map((s) => s.id).join(","))}${challengeParam}`;
                       router.push(redirectUrl);
                     } catch (err) {
                       console.error("保存并模拟出错:", err);
