@@ -26,6 +26,8 @@ import {
   SkipForward,
   Crown,
   Flame,
+  Target,
+  CheckCircle,
 } from "lucide-react";
 
 const ATTRIBUTE_LABELS: Record<Attribute, string> = {
@@ -121,6 +123,7 @@ function SimulatePageInner() {
   const modeParam = searchParams.get("mode") || "classic";
   const seedParam = parseInt(searchParams.get("seed") || "1", 10);
   const historyParam = searchParams.get("history") || "";
+  const challengeId = searchParams.get("challenge"); // Challenge ID from URL
 
   const [hooperData, setHooperData] = useState<HooperApiData | null>(null);
   const [loadingHooper, setLoadingHooper] = useState(!!slug);
@@ -190,6 +193,12 @@ function SimulatePageInner() {
   const playoffWinsRef = useRef(0);
   const playoffLossesRef = useRef(0);
   const playoffSeriesRef = useRef<PlayoffSeries[]>([]);
+
+  // --- Challenge submission state ---
+  const [submittingChallenge, setSubmittingChallenge] = useState(false);
+  const [challengeSubmitted, setChallengeSubmitted] = useState(false);
+  const [challengeRank, setChallengeRank] = useState<number | null>(null);
+  const [challengeError, setChallengeError] = useState<string | null>(null);
 
   // --- Derived data ---
   const skills = useMemo(() => {
@@ -468,6 +477,9 @@ function SimulatePageInner() {
     playoffLossesRef.current = 0;
     setPlayoffGames([]);
     setChampion(false);
+    setChallengeSubmitted(false);
+    setChallengeRank(null);
+    setChallengeError(null);
   };
 
   const saveAndGoLegacy = () => {
@@ -508,6 +520,56 @@ function SimulatePageInner() {
     }
   };
 
+  // --- Submit to Daily Challenge ---
+  const submitToChallenge = async () => {
+    if (!challengeId || challengeSubmitted) return;
+    
+    setSubmittingChallenge(true);
+    setChallengeError(null);
+    
+    try {
+      const response = await fetch("/api/challenge/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          challengeId,
+          slug: hooperData?.slug || slug || "sample",
+          overall,
+          archetype: (() => {
+            const archetypes = [
+              { name: "Two-Way Superstar", check: (a: Record<string, number>) => (a.perimeter_defense >= 80 || a.interior_defense >= 80 || a.block >= 80) && (a.shooting >= 80 || a.finishing >= 80 || a.mid_range >= 80) },
+              { name: "Legendary Slasher", check: (a: Record<string, number>) => a.finishing >= 85 && a.dunk >= 80 && a.speed >= 75 },
+              { name: "Floor General", check: (a: Record<string, number>) => a.passing >= 85 && a.ball_handle >= 80 && a.speed >= 75 },
+              { name: "Splash Legend", check: (a: Record<string, number>) => a.shooting >= 85 && a.mid_range >= 75 },
+              { name: "Rim Protector", check: (a: Record<string, number>) => a.block >= 85 && (a.interior_defense >= 80 || a.rebound >= 80) },
+              { name: "Versatile Wing", check: (a: Record<string, number>) => { const v = Object.values(a); return v.every(x => x >= 70) && v.reduce((s, x) => s + x, 0) / v.length >= 78; } },
+            ];
+            return archetypes.find(a => a.check(attributes))?.name || "Rising Prospect";
+          })(),
+          firstName: customName.split(" ")[0] || null,
+          lastName: customName.split(" ").slice(1).join(" ") || null,
+          seasonWins: wins,
+          seasonLosses: losses,
+          playoffWins: playoffSeries.reduce((sum, s) => sum + s.wins, 0),
+          championship: champion,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to submit to challenge");
+      }
+
+      const result = await response.json();
+      setChallengeSubmitted(true);
+      setChallengeRank(result.rank);
+    } catch (error) {
+      setChallengeError(error instanceof Error ? error.message : "Failed to submit to challenge");
+    } finally {
+      setSubmittingChallenge(false);
+    }
+  };
+
   const remainingGames = 82 - gameIndex;
   const playoffRemainingGames = Math.max(0, 7 - playoffWins - playoffLosses);
 
@@ -527,6 +589,13 @@ function SimulatePageInner() {
                 ? "Regular Season Complete"
                 : "Simulate Your Season"}
             </h1>
+            {challengeId && (
+              <div className="mt-4 inline-flex items-center gap-2 bg-[#FF5E07]/10 border border-[#FF5E07]/30 rounded-full px-4 py-2">
+                <Target className="w-4 h-4 text-[#FF5E07]" />
+                <span className="text-[#FF5E07] font-bold text-sm">Daily Challenge Mode</span>
+                <span className="text-[#A8A8B3] text-sm">• Seed #{seed}</span>
+              </div>
+            )}
           </div>
         </Container>
       </div>
@@ -560,7 +629,10 @@ function SimulatePageInner() {
                   Ready to Simulate?
                 </h2>
                 <p className="text-[#A8A8B3] text-lg mb-8 max-w-xl mx-auto">
-                  Your build will play an 82-game regular season. Then, if you qualify, battle through the playoffs and Finals.
+                  {challengeId 
+                    ? "Your build will play an 82-game regular season. Then, if you qualify, battle through the playoffs and Finals. Results will be submitted to the Daily Challenge."
+                    : "Your build will play an 82-game regular season. Then, if you qualify, battle through the playoffs and Finals."
+                  }
                 </p>
                 <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-8">
                   <div className="bg-[#1a1c20] rounded-xl p-4 border border-white/5">
@@ -1083,6 +1155,65 @@ function SimulatePageInner() {
                       <span className="text-[#A8A8B3]">No major awards this season. Build again to chase greatness.</span>
                     )}
                   </div>
+
+                  {/* Daily Challenge Submission */}
+                  {challengeId && (
+                    <div className="max-w-lg mx-auto mb-8">
+                      <div className="text-[10px] uppercase tracking-widest text-[#FF5E07] font-bold mb-4 text-center">Daily Challenge Submission</div>
+                      
+                      {challengeSubmitted ? (
+                        <div className="bg-[#F2CA50]/10 border border-[#F2CA50]/30 rounded-xl p-6 text-center">
+                          <CheckCircle className="h-12 w-12 text-[#F2CA50] mx-auto mb-3" />
+                          <h4 className="font-[family-name:var(--font-anton)] text-xl text-[#F2CA50] uppercase tracking-wide mb-2">
+                            Submitted to Challenge!
+                          </h4>
+                          {challengeRank && (
+                            <p className="text-[#A8A8B3] text-lg">
+                              Your rank: <span className="text-[#F2CA50] font-bold">#{challengeRank}</span>
+                            </p>
+                          )}
+                          <Link
+                            href="/en/challenge"
+                            className="inline-flex items-center gap-2 mt-4 text-[#F2CA50] hover:text-[#F2CA50]/80 transition-colors"
+                          >
+                            View Daily Podium <ChevronRight className="h-4 w-4" />
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="bg-[#1a1c20] rounded-xl p-6 border border-white/5">
+                          <p className="text-[#A8A8B3] text-sm mb-4 text-center">
+                            Submit your simulation results to compete in today's Daily Challenge.
+                          </p>
+                          
+                          {challengeError && (
+                            <div className="bg-[#FF5E07]/10 border border-[#FF5E07]/30 rounded-lg p-3 mb-4 text-center">
+                              <p className="text-[#FF5E07] text-sm">{challengeError}</p>
+                            </div>
+                          )}
+                          
+                          <Button
+                            variant="secondary"
+                            size="lg"
+                            onClick={submitToChallenge}
+                            disabled={submittingChallenge}
+                            className="w-full"
+                          >
+                            {submittingChallenge ? (
+                              <>
+                                <div className="h-4 w-4 border-2 border-[#F2CA50]/30 border-t-[#F2CA50] rounded-full animate-spin mr-2" />
+                                Submitting...
+                              </>
+                            ) : (
+                              <>
+                                <Target className="h-4 w-4 mr-2" />
+                                Submit to Daily Challenge
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex flex-wrap justify-center gap-3">
                     <Button variant="outline" size="xl" onClick={handlePlayAgain}>Play Again</Button>
