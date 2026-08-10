@@ -519,13 +519,13 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
                       <img
                         src={simResult.customImage}
                         alt={playerName}
-                        className="absolute inset-0 w-full h-full object-cover opacity-90"
+                        className="absolute inset-0 w-full h-full object-top opacity-90"
                       />
                     ) : (
                       <img
                         src="/images/result-card.jpg"
                         alt="A highly stylized, premium 3D render of a basketball player in a dynamic action pose mid-dunk."
-                        className="absolute inset-0 w-full h-full object-cover opacity-80 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-500"
+                        className="absolute inset-0 w-full h-full object-top opacity-80 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-500"
                       />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#111317] via-transparent to-transparent" />
@@ -782,9 +782,18 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
                     playerName={playerName}
                     overall={overall}
                     archetype={archetype.name}
+                    position={position}
                     stats={hasSim && simResult.season ? { ppg: simResult.season.ppg, rpg: simResult.season.rpg, apg: simResult.season.apg } : undefined}
+                    season={hasSim && simResult.season ? simResult.season : undefined}
+                    playoffs={hasSim && simResult.playoffs ? simResult.playoffs : undefined}
                     awards={badges}
                     champion={hasSim && simResult.playoffs?.champion}
+                    legacyStory={`${playerName} emerged as a ${archetypeName.toLowerCase()}, blending the ${Object.entries(attributes)
+                      .sort((a, b) => b[1] - a[1])
+                      .slice(0, 2)
+                      .map(([k]) => ATTRIBUTE_LABELS[k as Attribute])
+                      .join(" and ")} of the greatest to ever play. With a ${overall} OVR rating and ${tier} status, this build leaves a permanent mark on the HooperVault archives.`}
+                    customImage={hasSim ? simResult.customImage : undefined}
                     lang={lang}
                     cardRef={cardRef}
                   />

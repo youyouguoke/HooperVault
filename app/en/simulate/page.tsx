@@ -221,13 +221,13 @@ function SimulatePageInner() {
 
   const simulateGame = useCallback((idx: number, opponentOverride?: string, strengthBoost?: number, useRandom = false): GameResult => {
     const opponent = opponentOverride || schedule[idx % schedule.length];
-    const baseWin = (overall + (attributes.clutch - 60) * 0.2) / 100;
+    const baseWin = (overall - 40 + (attributes.clutch - 60) * 0.3) / 100;
     // Use true randomness for playoff games so outcomes aren't fixed per seed
     const noise = useRandom ? Math.random() : (Math.sin(idx * 123.45 + seed * 0.7 + idx * 0.3) + 1) / 2;
     const strength = strengthBoost ?? 0;
-    // Playoff clutch bonus: higher OVR gives bigger edge in playoffs
-    const playoffBonus = strength > 0 ? Math.max(0, (overall - 50) * 0.015) : 0;
-    const isWin = noise < baseWin + 0.15 - strength + playoffBonus;
+    // Playoff clutch bonus: small edge for higher OVR in playoffs
+    const playoffBonus = strength > 0 ? Math.max(0, (overall - 60) * 0.008) : 0;
+    const isWin = noise < baseWin - strength + playoffBonus;
 
     const teamScore = isWin ? 105 + Math.floor(noise * 25) : 95 + Math.floor(noise * 20);
     const oppScore = isWin ? teamScore - 4 - Math.floor(noise * 8) : teamScore + 4 + Math.floor(noise * 8);

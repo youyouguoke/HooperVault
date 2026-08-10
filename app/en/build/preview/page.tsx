@@ -245,11 +245,11 @@ function PreviewPageInner() {
                     </div>
                   </div>
                 </div>
-                <div className="relative h-64 rounded-lg overflow-hidden mb-6 border border-white/10">
+                <div className="relative h-80 rounded-lg overflow-hidden mb-6 border border-white/10">
                   <img
                     src="/images/preview-avatar.jpg"
                     alt="Premium basketball player avatar inside a digital card interface with dramatic stadium lighting"
-                    className="w-full h-full object-cover opacity-90"
+                    className="w-full h-full object-top opacity-90"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#111317] via-transparent to-transparent" />
                 </div>

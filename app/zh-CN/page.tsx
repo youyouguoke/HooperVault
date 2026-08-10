@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
+import { FeaturedHoopers } from "@/components/leaderboard/FeaturedHoopers";
 import {
   Trophy,
   Users,
@@ -154,33 +155,7 @@ export default function HomePage() {
               查看排行榜 <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { name: "Marcus Vale", ovr: 98, archetype: "Two-Way Superstar", badges: ["MVP", "Champion"] },
-              { name: "Eli Cross", ovr: 96, archetype: "Legendary Shooter", badges: ["Scoring Champ"] },
-              { name: "The Ghost", ovr: 98, archetype: "Two-Way Slasher", badges: ["DPOY", "HOF"] },
-              { name: "Jax Steele", ovr: 94, archetype: "Floor General", badges: ["All-Star"] },
-            ].map((hooper) => (
-              <Link key={hooper.name} href="/zh-CN/hooper?slug=sample" className="glass-card rounded-xl p-5 hover:bg-white/5 transition-colors group">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="font-[family-name:var(--font-anton)] text-lg text-white uppercase tracking-wide group-hover:text-[#F2CA50] transition-colors">{hooper.name}</h3>
-                    <p className="text-sm text-[#A8A8B3]">{hooper.archetype}</p>
-                  </div>
-                  <div className="bg-[#F2CA50]/20 border border-[#F2CA50]/30 rounded px-2 py-1 text-[#F2CA50] font-[family-name:var(--font-space-grotesk)] font-bold">
-                    {hooper.ovr}
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {hooper.badges.map((badge) => (
-                    <span key={badge} className="bg-[#1a1c20] text-[#D0C5AF] font-[family-name:var(--font-space-grotesk)] text-[10px] uppercase tracking-wider px-2 py-1 rounded">
-                      {badge}
-                    </span>
-                  ))}
-                </div>
-              </Link>
-            ))}
-          </div>
+          <FeaturedHoopers lang="zh-CN" />
           <div className="mt-6 md:hidden">
             <Button asChild href="/zh-CN/leaderboard" variant="outline" fullWidth>
               <span>查看排行榜</span>

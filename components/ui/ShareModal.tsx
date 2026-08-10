@@ -20,7 +20,7 @@ function XIcon({ className }: { className?: string }) {
   );
 }
 
-// Discord icon (not in lucide)
+// Discord icon
 function DiscordIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor">
@@ -53,9 +53,14 @@ type ShareModalProps = {
   playerName: string;
   overall: number;
   archetype: string;
+  position?: string;
   stats?: { ppg?: number; rpg?: number; apg?: number };
+  season?: { wins: number; losses: number; ppg: number; rpg: number; apg: number };
+  playoffs?: { qualified: boolean; seed: number; champion: boolean; series: { round: string; opponent: string; wins: number; losses: number; result: string }[] };
   awards?: string[];
   champion?: boolean;
+  legacyStory?: string;
+  customImage?: string | null;
   shareUrl?: string;
   lang?: "en" | "zh-CN";
   cardRef?: React.RefObject<HTMLDivElement | null>;
@@ -79,13 +84,77 @@ function t(key: keyof typeof UI, lang: "en" | "zh-CN"): string {
   return UI[key][lang];
 }
 
+// --- Canvas helpers ---
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let current = "";
+  for (const word of words) {
+    const test = current ? `${current} ${word}` : word;
+    if (ctx.measureText(test).width > maxWidth && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = test;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+function drawBadge(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, color: string): number {
+  ctx.font = "bold 11px sans-serif";
+  const textW = ctx.measureText(text).width;
+  const padX = 10;
+  const padY = 5;
+  const w = textW + padX * 2;
+  const h = 20;
+
+  // pill background
+  roundRect(ctx, x, y - h + padY, w, h, 10);
+  ctx.fillStyle = `${color}20`;
+  ctx.fill();
+  ctx.strokeStyle = `${color}50`;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // text
+  ctx.fillStyle = color;
+  ctx.textBaseline = "middle";
+  ctx.fillText(text, x + padX, y - h / 2 + padY);
+
+  return x + w + 6; // return next x position
+}
+
+// --- Main component ---
+
 export function ShareModal({
   playerName,
   overall,
   archetype,
+  position,
   stats,
+  season,
+  playoffs,
   awards = [],
   champion = false,
+  legacyStory,
+  customImage,
   shareUrl,
   lang = "en",
   cardRef,
@@ -94,6 +163,7 @@ export function ShareModal({
   const [copied, setCopied] = useState(false);
   const [copiedDiscord, setCopiedDiscord] = useState(false);
   const [copiedWechat, setCopiedWechat] = useState(false);
+  const [wechatGuide, setWechatGuide] = useState<"chat" | "moments" | null>(null);
   const [downloading, setDownloading] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -150,32 +220,41 @@ export function ShareModal({
   const generateShareImage = useCallback(async () => {
     setDownloading(true);
     try {
+      const W = 1200;
+      const H = 630;
       const canvas = document.createElement("canvas");
-      canvas.width = 1200;
-      canvas.height = 630;
+      canvas.width = W;
+      canvas.height = H;
       const ctx = canvas.getContext("2d")!;
 
-      // Background
-      const bgGrad = ctx.createLinearGradient(0, 0, 1200, 630);
+      const tierColor = overall >= 95 ? "#F2CA50" : overall >= 90 ? "#6CB9FF" : overall >= 80 ? "#FF5E07" : "#A8A8B3";
+      const tier = overall >= 95 ? "Legendary" : overall >= 90 ? "Elite" : overall >= 80 ? "Star" : "Rising";
+
+      // ============ BACKGROUND ============
+      const bgGrad = ctx.createLinearGradient(0, 0, W, H);
       bgGrad.addColorStop(0, "#0B0B12");
       bgGrad.addColorStop(0.5, "#111317");
       bgGrad.addColorStop(1, "#0B0B12");
       ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, 1200, 630);
+      ctx.fillRect(0, 0, W, H);
 
-      // Accent bar
-      const tierColor = overall >= 95 ? "#F2CA50" : overall >= 90 ? "#6CB9FF" : overall >= 80 ? "#FF5E07" : "#A8A8B3";
+      // Left accent bar
       ctx.fillStyle = tierColor;
-      ctx.fillRect(0, 0, 8, 630);
+      ctx.fillRect(0, 0, 6, H);
 
-      // Glow effect
-      const glow = ctx.createRadialGradient(600, 315, 0, 600, 315, 500);
-      glow.addColorStop(0, `${tierColor}15`);
+      // Subtle radial glow
+      const glow = ctx.createRadialGradient(500, 315, 0, 500, 315, 550);
+      glow.addColorStop(0, `${tierColor}12`);
       glow.addColorStop(1, "transparent");
       ctx.fillStyle = glow;
-      ctx.fillRect(0, 0, 1200, 630);
+      ctx.fillRect(0, 0, W, H);
 
-      // Try to draw the player card image if cardRef is provided
+      // ============ LEFT: PLAYER CARD IMAGE ============
+      const cardAreaX = 30;
+      const cardAreaY = 20;
+      const cardAreaW = 460;
+      const cardAreaH = H - 40;
+
       if (cardRef?.current) {
         try {
           const html2canvas = (await import("html2canvas")).default;
@@ -184,77 +263,220 @@ export function ShareModal({
             scale: 2,
             useCORS: true,
           });
-          // Draw card image on the left side
           const cardAspect = cardCanvas.width / cardCanvas.height;
-          const drawHeight = 500;
-          const drawWidth = drawHeight * cardAspect;
-          ctx.drawImage(cardCanvas, 60, 65, drawWidth, drawHeight);
+          let drawW = cardAreaW;
+          let drawH = drawW / cardAspect;
+          if (drawH > cardAreaH) {
+            drawH = cardAreaH;
+            drawW = drawH * cardAspect;
+          }
+          const cx = cardAreaX + (cardAreaW - drawW) / 2;
+          const cy = cardAreaY + (cardAreaH - drawH) / 2;
+          // clip rounded rect
+          ctx.save();
+          roundRect(ctx, cx, cy, drawW, drawH, 16);
+          ctx.clip();
+          ctx.drawImage(cardCanvas, cx, cy, drawW, drawH);
+          ctx.restore();
         } catch {
-          // Fallback: just draw text
+          // fallback: draw custom image or placeholder
+          await drawFallbackCard(ctx, cardAreaX, cardAreaY, cardAreaW, cardAreaH, tierColor, customImage);
         }
+      } else {
+        await drawFallbackCard(ctx, cardAreaX, cardAreaY, cardAreaW, cardAreaH, tierColor, customImage);
       }
 
-      // Title area
-      const textX = 650;
+      // ============ RIGHT: INFO PANEL ============
+      const rx = 520;
+      const rw = W - rx - 30;
+      let cy = 50;
 
-      // "HooperVault" brand
+      // Brand
       ctx.fillStyle = "#F2CA50";
-      ctx.font = "bold 18px sans-serif";
-      ctx.fillText("HOOPERVAULT", textX, 80);
+      ctx.font = "bold 14px sans-serif";
+      ctx.textBaseline = "top";
+      ctx.fillText("HOOPERVAULT", rx, cy);
+      cy += 28;
 
-      // Player name
+      // Divider line
+      ctx.strokeStyle = `${tierColor}30`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(rx, cy);
+      ctx.lineTo(rx + rw, cy);
+      ctx.stroke();
+      cy += 14;
+
+      // Player name (large)
       ctx.fillStyle = "#FFFFFF";
-      ctx.font = "bold 52px sans-serif";
-      ctx.fillText(playerName, textX, 150);
+      ctx.font = "bold 44px sans-serif";
+      ctx.fillText(playerName, rx, cy);
+      cy += 52;
 
-      // Archetype
+      // Position + Archetype
       ctx.fillStyle = tierColor;
-      ctx.font = "24px sans-serif";
-      ctx.fillText(archetype, textX, 190);
+      ctx.font = "18px sans-serif";
+      const posLabel = position ? `${position} · ` : "";
+      ctx.fillText(`${posLabel}${archetype}`, rx, cy);
+      cy += 30;
 
-      // OVR box
+      // OVR badge
+      const ovrBoxW = 90;
+      const ovrBoxH = 56;
+      roundRect(ctx, rx, cy, ovrBoxW, ovrBoxH, 10);
       ctx.fillStyle = "#1a1c20";
-      ctx.strokeStyle = `${tierColor}80`;
-      ctx.lineWidth = 2;
-      roundRect(ctx, textX, 220, 120, 80, 12);
       ctx.fill();
+      ctx.strokeStyle = `${tierColor}50`;
+      ctx.lineWidth = 1.5;
       ctx.stroke();
 
       ctx.fillStyle = "#A8A8B3";
-      ctx.font = "12px sans-serif";
-      ctx.fillText("OVR", textX + 10, 245);
+      ctx.font = "10px sans-serif";
+      ctx.textBaseline = "top";
+      ctx.fillText("OVR", rx + 10, cy + 8);
 
       ctx.fillStyle = tierColor;
-      ctx.font = "bold 36px sans-serif";
-      ctx.fillText(String(overall), textX + 10, 285);
+      ctx.font = "bold 28px sans-serif";
+      ctx.fillText(String(overall), rx + 10, cy + 22);
 
-      // Stats
-      if (stats?.ppg) {
-        ctx.fillStyle = "#FFFFFF";
-        ctx.font = "20px sans-serif";
-        ctx.fillText(`${stats.ppg} PPG  ·  ${stats.rpg} RPG  ·  ${stats.apg} APG`, textX, 340);
-      }
+      // Tier badge next to OVR
+      const tierBadgeX = rx + ovrBoxW + 12;
+      roundRect(ctx, tierBadgeX, cy + 8, 80, 20, 10);
+      ctx.fillStyle = `${tierColor}20`;
+      ctx.fill();
+      ctx.strokeStyle = `${tierColor}50`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = tierColor;
+      ctx.font = "bold 11px sans-serif";
+      ctx.textBaseline = "middle";
+      ctx.fillText(tier.toUpperCase(), tierBadgeX + 12, cy + 18);
+      ctx.textBaseline = "top";
 
       // Champion badge
       if (champion) {
+        const champX = tierBadgeX + 88;
+        roundRect(ctx, champX, cy + 8, 110, 20, 10);
+        ctx.fillStyle = "#F2CA5020";
+        ctx.fill();
+        ctx.strokeStyle = "#F2CA5050";
+        ctx.lineWidth = 1;
+        ctx.stroke();
         ctx.fillStyle = "#F2CA50";
-        ctx.font = "bold 18px sans-serif";
-        ctx.fillText("🏆 NBA Champion", textX, 380);
+        ctx.font = "bold 11px sans-serif";
+        ctx.textBaseline = "middle";
+        ctx.fillText("🏆 CHAMPION", champX + 10, cy + 18);
+        ctx.textBaseline = "top";
       }
 
-      // Awards
-      if (awards.length > 0) {
+      cy += ovrBoxH + 16;
+
+      // ============ SEASON STATUS ============
+      if (season) {
+        // Divider
+        ctx.strokeStyle = "rgba(255,255,255,0.06)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(rx, cy);
+        ctx.lineTo(rx + rw, cy);
+        ctx.stroke();
+        cy += 10;
+
+        ctx.fillStyle = "#F2CA50";
+        ctx.font = "bold 10px sans-serif";
+        ctx.letterSpacing = "2px";
+        ctx.fillText("SEASON STATUS", rx, cy);
+        ctx.letterSpacing = "0px";
+        cy += 18;
+
+        // Record + stats row
+        ctx.font = "15px sans-serif";
+        const recordStr = `${season.wins}W - ${season.losses}L`;
+        const statsStr = `${season.ppg} PPG  ·  ${season.rpg} RPG  ·  ${season.apg} APG`;
+
+        ctx.fillStyle = "#FFFFFF";
+        ctx.font = "bold 16px sans-serif";
+        ctx.fillText(recordStr, rx, cy);
         ctx.fillStyle = "#A8A8B3";
-        ctx.font = "16px sans-serif";
-        ctx.fillText(awards.join("  ·  "), textX, 410);
+        ctx.font = "14px sans-serif";
+        ctx.fillText(statsStr, rx + ctx.measureText(recordStr).width + 16, cy + 1);
+        cy += 26;
+
+        // Playoff status
+        if (playoffs?.qualified) {
+          ctx.fillStyle = "#A8A8B3";
+          ctx.font = "12px sans-serif";
+          ctx.fillText(`Playoff Seed #${playoffs.seed}`, rx, cy);
+          cy += 6;
+
+          // Playoff series (compact)
+          if (playoffs.series && playoffs.series.length > 0) {
+            cy += 10;
+            for (const s of playoffs.series) {
+              const won = s.result === "W";
+              const emoji = s.round === "NBA Finals" ? "🏆" : s.round === "Conference Finals" ? "⚡" : s.round === "Conference Semifinals" ? "🔥" : "🏀";
+              ctx.fillStyle = won ? "#F2CA50" : "#FF5E07";
+              ctx.font = "11px sans-serif";
+              ctx.fillText(`${emoji} ${s.round}: ${s.wins}-${s.losses} vs ${s.opponent} ${won ? "✓" : "✗"}`, rx + 8, cy);
+              cy += 16;
+            }
+          }
+        } else {
+          ctx.fillStyle = "#A8A8B380";
+          ctx.font = "12px sans-serif";
+          ctx.fillText("Missed Playoffs", rx, cy);
+          cy += 20;
+        }
       }
 
-      // Bottom CTA
-      ctx.fillStyle = "#A8A8B380";
-      ctx.font = "14px sans-serif";
-      ctx.fillText("Build your own Hooper at hoopervault.com", textX, 560);
+      // ============ AWARDS ============
+      if (awards.length > 0) {
+        cy += 6;
+        let badgeX = rx;
+        for (const award of awards) {
+          badgeX = drawBadge(ctx, award, badgeX, cy + 12, tierColor);
+          if (badgeX > rx + rw - 60) {
+            badgeX = rx;
+            cy += 24;
+          }
+        }
+        cy += 28;
+      }
 
-      // Download
+      // ============ LEGACY STORY ============
+      if (legacyStory) {
+        cy += 4;
+        // Divider
+        ctx.strokeStyle = "rgba(255,255,255,0.06)";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(rx, cy);
+        ctx.lineTo(rx + rw, cy);
+        ctx.stroke();
+        cy += 10;
+
+        ctx.fillStyle = "#F2CA50";
+        ctx.font = "bold 10px sans-serif";
+        ctx.fillText("LEGACY STORY", rx, cy);
+        cy += 16;
+
+        ctx.fillStyle = "#A8A8B3";
+        ctx.font = "12px sans-serif";
+        const storyLines = wrapText(ctx, legacyStory, rw);
+        for (const line of storyLines.slice(0, 4)) {
+          ctx.fillText(line, rx, cy);
+          cy += 16;
+        }
+        cy += 4;
+      }
+
+      // ============ BOTTOM CTA ============
+      ctx.fillStyle = "#A8A8B360";
+      ctx.font = "12px sans-serif";
+      ctx.textBaseline = "top";
+      ctx.fillText("Build your own Hooper at hoopervault.com", rx, H - 32);
+
+      // ============ DOWNLOAD ============
       const link = document.createElement("a");
       link.download = `${playerName.replace(/\s+/g, "-").toLowerCase()}-${overall}ovr.png`;
       link.href = canvas.toDataURL("image/png");
@@ -264,7 +486,174 @@ export function ShareModal({
     } finally {
       setDownloading(false);
     }
-  }, [playerName, overall, archetype, stats, awards, champion, cardRef]);
+  }, [playerName, overall, archetype, position, stats, season, playoffs, awards, champion, legacyStory, customImage, cardRef]);
+
+  // Generate a 1:1 square image optimized for WeChat Moments
+  const generateMomentsImage = useCallback(async () => {
+    setDownloading(true);
+    try {
+      const S = 1080;
+      const canvas = document.createElement("canvas");
+      canvas.width = S;
+      canvas.height = S;
+      const ctx = canvas.getContext("2d")!;
+
+      const tierColor = overall >= 95 ? "#F2CA50" : overall >= 90 ? "#6CB9FF" : overall >= 80 ? "#FF5E07" : "#A8A8B3";
+      const tier = overall >= 95 ? "Legendary" : overall >= 90 ? "Elite" : overall >= 80 ? "Star" : "Rising";
+
+      // Background
+      const bgGrad = ctx.createLinearGradient(0, 0, S, S);
+      bgGrad.addColorStop(0, "#0B0B12");
+      bgGrad.addColorStop(0.5, "#111317");
+      bgGrad.addColorStop(1, "#0B0B12");
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, S, S);
+
+      // Radial glow
+      const glow = ctx.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, 500);
+      glow.addColorStop(0, `${tierColor}18`);
+      glow.addColorStop(1, "transparent");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, S, S);
+
+      // Top accent bar
+      ctx.fillStyle = tierColor;
+      ctx.fillRect(0, 0, S, 6);
+
+      // Try card image (top half)
+      const cardY = 20;
+      const cardH = 480;
+      const cardX = 40;
+      const cardW = S - 80;
+
+      if (cardRef?.current) {
+        try {
+          const html2canvas = (await import("html2canvas")).default;
+          const cardCanvas = await html2canvas(cardRef.current, { backgroundColor: null, scale: 2, useCORS: true });
+          const aspect = cardCanvas.width / cardCanvas.height;
+          let dw = cardW;
+          let dh = dw / aspect;
+          if (dh > cardH) { dh = cardH; dw = dh * aspect; }
+          ctx.save();
+          roundRect(ctx, cardX + (cardW - dw) / 2, cardY + (cardH - dh) / 2, dw, dh, 16);
+          ctx.clip();
+          ctx.drawImage(cardCanvas, cardX + (cardW - dw) / 2, cardY + (cardH - dh) / 2, dw, dh);
+          ctx.restore();
+        } catch {
+          await drawFallbackCard(ctx, cardX, cardY, cardW, cardH, tierColor, customImage);
+        }
+      } else {
+        await drawFallbackCard(ctx, cardX, cardY, cardW, cardH, tierColor, customImage);
+      }
+
+      // Bottom info area
+      let cy = cardY + cardH + 30;
+
+      // Brand
+      ctx.fillStyle = "#F2CA50";
+      ctx.font = "bold 16px sans-serif";
+      ctx.textBaseline = "top";
+      ctx.textAlign = "center";
+      ctx.fillText("HOOPERVAULT", S / 2, cy);
+      cy += 30;
+
+      // Player name
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "bold 38px sans-serif";
+      ctx.fillText(playerName, S / 2, cy);
+      cy += 48;
+
+      // Position + Archetype
+      ctx.fillStyle = tierColor;
+      ctx.font = "18px sans-serif";
+      const posLabel = position ? `${position} · ` : "";
+      ctx.fillText(`${posLabel}${archetype}`, S / 2, cy);
+      cy += 32;
+
+      // OVR + Tier
+      ctx.fillStyle = tierColor;
+      ctx.font = "bold 48px sans-serif";
+      ctx.fillText(String(overall), S / 2 - 60, cy);
+      ctx.fillStyle = "#A8A8B3";
+      ctx.font = "14px sans-serif";
+      ctx.fillText("OVR", S / 2 - 60, cy + 52);
+
+      // Tier badge
+      roundRect(ctx, S / 2 + 10, cy + 10, 80, 28, 14);
+      ctx.fillStyle = `${tierColor}20`;
+      ctx.fill();
+      ctx.strokeStyle = `${tierColor}50`;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = tierColor;
+      ctx.font = "bold 13px sans-serif";
+      ctx.textBaseline = "middle";
+      ctx.fillText(tier.toUpperCase(), S / 2 + 50, cy + 24);
+      ctx.textBaseline = "top";
+
+      // Champion
+      if (champion) {
+        ctx.fillStyle = "#F2CA50";
+        ctx.font = "bold 14px sans-serif";
+        ctx.fillText("🏆 CHAMPION", S / 2 + 10, cy + 50);
+      }
+      cy += 72;
+
+      // Season stats line
+      if (season) {
+        ctx.fillStyle = "#A8A8B3";
+        ctx.font = "15px sans-serif";
+        ctx.fillText(`${season.wins}W-${season.losses}L  ·  ${season.ppg} PPG  ·  ${season.rpg} RPG  ·  ${season.apg} APG`, S / 2, cy);
+        cy += 24;
+      }
+
+      // Awards
+      if (awards.length > 0) {
+        ctx.fillStyle = `${tierColor}90`;
+        ctx.font = "13px sans-serif";
+        ctx.fillText(awards.join("  ·  "), S / 2, cy);
+        cy += 24;
+      }
+
+      // CTA
+      ctx.fillStyle = "#A8A8B360";
+      ctx.font = "13px sans-serif";
+      ctx.fillText("hoopervault.com", S / 2, S - 40);
+
+      ctx.textAlign = "start";
+
+      // Download
+      const link = document.createElement("a");
+      link.download = `${playerName.replace(/\s+/g, "-").toLowerCase()}-${overall}ovr-moments.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } catch (e) {
+      console.error("Failed to generate moments image:", e);
+    } finally {
+      setDownloading(false);
+    }
+  }, [playerName, overall, archetype, position, season, awards, champion, customImage, cardRef]);
+
+  // WeChat share handlers
+  const handleWechatChat = useCallback(async () => {
+    // 1. Generate and download the wide share image
+    await generateShareImage();
+    // 2. Copy text to clipboard
+    try {
+      await navigator.clipboard.writeText(wechatText);
+    } catch {}
+    setCopiedWechat(true);
+    setTimeout(() => setCopiedWechat(false), 3000);
+    // 3. Show guide
+    setWechatGuide("chat");
+  }, [generateShareImage, wechatText]);
+
+  const handleWechatMoments = useCallback(async () => {
+    // 1. Generate and download square image
+    await generateMomentsImage();
+    // 2. Show guide
+    setWechatGuide("moments");
+  }, [generateMomentsImage]);
 
   if (!open) {
     return (
@@ -355,18 +744,40 @@ export function ShareModal({
             </div>
           </button>
 
-          {/* WeChat */}
+          {/* WeChat - Chat */}
           <button
-            onClick={handleWechat}
-            className="w-full flex items-center gap-4 p-4 rounded-xl bg-[#1a1c20] border border-white/5 hover:border-[#07C160]/30 hover:bg-[#07C160]/5 transition-all text-left"
+            onClick={handleWechatChat}
+            disabled={downloading}
+            className="w-full flex items-center gap-4 p-4 rounded-xl bg-[#1a1c20] border border-white/5 hover:border-[#07C160]/30 hover:bg-[#07C160]/5 transition-all text-left disabled:opacity-50"
           >
             <div className="w-10 h-10 rounded-lg bg-[#07C160]/10 flex items-center justify-center flex-shrink-0">
               {copiedWechat ? <Check className="h-5 w-5 text-green-400" /> : <WechatIcon className="h-5 w-5 text-[#07C160]" />}
             </div>
             <div>
-              <div className="text-white text-sm font-medium">{copiedWechat ? t("wechatHint", lang) : t("wechat", lang)}</div>
+              <div className="text-white text-sm font-medium">{lang === "zh-CN" ? "发给微信好友" : "Share to WeChat Chat"}</div>
               <div className="text-[10px] text-[#A8A8B3] mt-0.5">
-                {lang === "zh-CN" ? "复制文字，打开微信粘贴发送" : "Copy text, then paste in WeChat"}
+                {lang === "zh-CN" ? "自动下载图片并复制文字" : "Auto-download image + copy text"}
+              </div>
+            </div>
+          </button>
+
+          {/* WeChat - Moments */}
+          <button
+            onClick={handleWechatMoments}
+            disabled={downloading}
+            className="w-full flex items-center gap-4 p-4 rounded-xl bg-[#1a1c20] border border-white/5 hover:border-[#07C160]/30 hover:bg-[#07C160]/5 transition-all text-left disabled:opacity-50"
+          >
+            <div className="w-10 h-10 rounded-lg bg-[#07C160]/10 flex items-center justify-center flex-shrink-0">
+              <svg className="h-5 w-5 text-[#07C160]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M8 12h8" />
+                <path d="M12 8v8" />
+              </svg>
+            </div>
+            <div>
+              <div className="text-white text-sm font-medium">{lang === "zh-CN" ? "分享到朋友圈" : "Share to Moments"}</div>
+              <div className="text-[10px] text-[#A8A8B3] mt-0.5">
+                {lang === "zh-CN" ? "生成方形卡片图，保存后发朋友圈" : "Square card image for Moments"}
               </div>
             </div>
           </button>
@@ -382,25 +793,97 @@ export function ShareModal({
             </div>
             <div>
               <div className="text-white text-sm font-medium">{downloading ? t("downloading", lang) : t("download", lang)}</div>
-              <div className="text-[10px] text-[#A8A8B3] mt-0.5">1200×630 PNG</div>
+              <div className="text-[10px] text-[#A8A8B3] mt-0.5">1200×630 PNG · Full Legacy Card</div>
             </div>
           </button>
         </div>
+
+        {/* WeChat Guide Overlay */}
+        {wechatGuide && (
+          <div className="mt-4 p-4 rounded-xl bg-[#07C160]/10 border border-[#07C160]/30">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-bold text-[#07C160]">
+                {wechatGuide === "chat"
+                  ? (lang === "zh-CN" ? "📱 图片已下载，文字已复制" : "📱 Image saved, text copied")
+                  : (lang === "zh-CN" ? "📱 方形卡片图已下载" : "📱 Square card image saved")
+                }
+              </h4>
+              <button onClick={() => setWechatGuide(null)} className="text-[#A8A8B3] hover:text-white">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            {wechatGuide === "chat" ? (
+              <ol className="text-xs text-[#A8A8B3] space-y-1.5 list-decimal list-inside">
+                <li>{lang === "zh-CN" ? "打开微信，进入聊天" : "Open WeChat, go to a chat"}</li>
+                <li>{lang === "zh-CN" ? "长按输入框 → 粘贴文字" : "Long press input → Paste text"}</li>
+                <li>{lang === "zh-CN" ? "点击 + → 相册 → 选择刚下载的图片" : "Tap + → Album → Select the saved image"}</li>
+                <li>{lang === "zh-CN" ? "发送！" : "Send!"}</li>
+              </ol>
+            ) : (
+              <ol className="text-xs text-[#A8A8B3] space-y-1.5 list-decimal list-inside">
+                <li>{lang === "zh-CN" ? "打开微信 → 发现 → 朋友圈" : "Open WeChat → Discover → Moments"}</li>
+                <li>{lang === "zh-CN" ? "点右上角相机图标" : "Tap the camera icon (top right)"}</li>
+                <li>{lang === "zh-CN" ? "选择刚下载的方形卡片图" : "Select the square card image"}</li>
+                <li>{lang === "zh-CN" ? "可选：添加文字描述，然后发表" : "Optional: add text, then post"}</li>
+              </ol>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
+// Fallback: draw a styled placeholder when cardRef capture fails
+async function drawFallbackCard(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number,
+  tierColor: string,
+  customImage?: string | null,
+) {
+  // Card background
+  roundRect(ctx, x, y, w, h, 16);
+  ctx.fillStyle = "#1a1c20";
+  ctx.fill();
+
+  // Left color bar inside card
+  roundRect(ctx, x, y, 6, h, 3);
+  ctx.fillStyle = tierColor;
+  ctx.fill();
+
+  if (customImage) {
+    try {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.src = customImage;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+      ctx.save();
+      roundRect(ctx, x + 6, y, w - 6, h, 16);
+      ctx.clip();
+      const scale = Math.max(w / img.width, h / img.height);
+      const dw = img.width * scale;
+      const dh = img.height * scale;
+      ctx.drawImage(img, x + 6 + (w - 6 - dw) / 2, y + (h - dh) / 2, dw, dh);
+      ctx.restore();
+
+      // Gradient overlay
+      const grad = ctx.createLinearGradient(x, y + h * 0.5, x, y + h);
+      grad.addColorStop(0, "transparent");
+      grad.addColorStop(1, "#11131790");
+      ctx.fillStyle = grad;
+      ctx.fillRect(x, y, w, h);
+    } catch {}
+  } else {
+    // Generic basketball silhouette placeholder
+    ctx.fillStyle = `${tierColor}15`;
+    ctx.font = "bold 120px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("🏀", x + w / 2, y + h / 2);
+    ctx.textAlign = "start";
+    ctx.textBaseline = "top";
+  }
 }
