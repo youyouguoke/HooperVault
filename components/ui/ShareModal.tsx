@@ -54,6 +54,7 @@ type ShareModalProps = {
   overall: number;
   archetype: string;
   position?: string;
+  attributes?: Record<string, number>;
   stats?: { ppg?: number; rpg?: number; apg?: number };
   season?: { wins: number; losses: number; ppg: number; rpg: number; apg: number };
   playoffs?: { qualified: boolean; seed: number; champion: boolean; series: { round: string; opponent: string; wins: number; losses: number; result: string }[] };
@@ -85,6 +86,19 @@ function t(key: keyof typeof UI, lang: "en" | "zh-CN"): string {
 }
 
 // --- Canvas helpers ---
+
+const ATTR_LABELS: Record<string, string> = {
+  shooting: "3PT", mid_range: "MID", finishing: "FIN", dunk: "DNK",
+  passing: "PAS", ball_handle: "HAN", perimeter_defense: "PDEF",
+  interior_defense: "IDEF", block: "BLK", rebound: "REB",
+  speed: "SPD", strength: "STR", clutch: "CLU",
+};
+
+const ATTR_ORDER = [
+  "shooting", "mid_range", "finishing", "dunk", "passing", "ball_handle",
+  "perimeter_defense", "interior_defense", "block", "rebound",
+  "speed", "strength", "clutch",
+];
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
@@ -148,6 +162,7 @@ export function ShareModal({
   overall,
   archetype,
   position,
+  attributes,
   stats,
   season,
   playoffs,
@@ -196,14 +211,63 @@ export function ShareModal({
     window.open(tweetUrl, "_blank", "width=600,height=400");
   }, [shareText]);
 
-  const redditTitle = lang === "zh-CN"
-    ? `我打造了一名 ${overall} OVR 的 ${archetype}！来 HooperVault 挑战我`
-    : `I built a ${overall} OVR ${archetype} in HooperVault! Can you beat it?`;
+  const tier = overall >= 95 ? "Legendary" : overall >= 90 ? "Elite" : overall >= 80 ? "Star" : "Rising";
 
-  const handleReddit = useCallback(() => {
-    const redditUrl = `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(redditTitle)}`;
-    window.open(redditUrl, "_blank", "width=600,height=600");
-  }, [url, redditTitle]);
+  const redditTitle = lang === "zh-CN"
+    ? `${overall} OVR ${archetype} — 我在 HooperVault 打造的传奇球员`
+    : `${overall} OVR ${archetype} — My HooperVault Legacy Build`;
+
+  const redditBody = lang === "zh-CN"
+    ? [
+        `🏀 **${playerName}** — ${position ? `${position} · ` : ""}${overall} OVR · ${tier} 级别`,
+        "",
+        season ? `📊 **常规赛战绩:** ${season.wins}W-${season.losses}L` : null,
+        season ? `   ${season.ppg} PPG · ${season.rpg} RPG · ${season.apg} APG` : null,
+        playoffs?.qualified ? `🏀 **季后赛种子:** #${playoffs.seed}` : null,
+        playoffs?.series && playoffs.series.length > 0
+          ? playoffs.series.map(s => {
+              const emoji = s.round === "NBA Finals" ? "🏆" : s.round === "Conference Finals" ? "⚡" : s.round === "Conference Semifinals" ? "🔥" : "🏀";
+              return `   ${emoji} ${s.round}: ${s.wins}-${s.losses} vs ${s.opponent} (${s.result === "W" ? "胜" : "负"})`;
+            }).join("\n")
+          : null,
+        champion ? "\n🏆 **NBA 总冠军！**" : null,
+        awards.length > 0 ? `\n🎖️ ${awards.join(" · ")}` : null,
+        "",
+        attributes ? `属性亮点: ${Object.entries(attributes)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([k, v]) => `${ATTR_LABELS[k] || k.toUpperCase()} ${v}`)
+          .join(" · ")}` : null,
+        "",
+        "来 HooperVault 打造你的传奇球员，看你能走多远！",
+        "🔗 hoopervault.com",
+      ].filter(Boolean).join("\n")
+    : [
+        `🏀 **${playerName}** — ${position ? `${position} · ` : ""}${overall} OVR · ${tier} Tier`,
+        "",
+        season ? `📊 **Season Record:** ${season.wins}W-${season.losses}L` : null,
+        season ? `   ${season.ppg} PPG · ${season.rpg} RPG · ${season.apg} APG` : null,
+        playoffs?.qualified ? `🏀 **Playoff Seed:** #${playoffs.seed}` : null,
+        playoffs?.series && playoffs.series.length > 0
+          ? playoffs.series.map(s => {
+              const emoji = s.round === "NBA Finals" ? "🏆" : s.round === "Conference Finals" ? "⚡" : s.round === "Conference Semifinals" ? "🔥" : "🏀";
+              return `   ${emoji} ${s.round}: ${s.wins}-${s.losses} vs ${s.opponent} (${s.result === "W" ? "W" : "L"})`;
+            }).join("\n")
+          : null,
+        champion ? "\n🏆 **NBA CHAMPION!**" : null,
+        awards.length > 0 ? `\n🎖️ ${awards.join(" · ")}` : null,
+        "",
+        attributes ? `Top Attributes: ${Object.entries(attributes)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 3)
+          .map(([k, v]) => `${ATTR_LABELS[k] || k.toUpperCase()} ${v}`)
+          .join(" · ")}` : null,
+        "",
+        "Build your own legend at HooperVault — how far can your build go?",
+        "🔗 hoopervault.com",
+      ].filter(Boolean).join("\n");
+
+  const [redditGuide, setRedditGuide] = useState(false);
 
   const wechatText = lang === "zh-CN"
     ? `🏀 HooperVault — ${playerName}\n\n⭐ ${overall} OVR · ${archetype}${stats?.ppg ? `\n📊 ${stats.ppg} PPG · ${stats.rpg} RPG · ${stats.apg} APG` : ""}${champion ? "\n🏆 NBA Champion" : ""}${awards.length > 0 ? `\n🎖️ ${awards.join(" · ")}` : ""}\n\n🔗 ${url}`
@@ -243,135 +307,198 @@ export function ShareModal({
       ctx.fillRect(0, 0, 6, H);
 
       // Subtle radial glow
-      const glow = ctx.createRadialGradient(500, 315, 0, 500, 315, 550);
-      glow.addColorStop(0, `${tierColor}12`);
+      const glow = ctx.createRadialGradient(250, 315, 0, 250, 315, 400);
+      glow.addColorStop(0, `${tierColor}10`);
       glow.addColorStop(1, "transparent");
       ctx.fillStyle = glow;
       ctx.fillRect(0, 0, W, H);
 
-      // ============ LEFT: PLAYER CARD IMAGE ============
-      const cardAreaX = 30;
-      const cardAreaY = 20;
-      const cardAreaW = 460;
-      const cardAreaH = H - 40;
+      // ============ LEFT: AVATAR + BASIC INFO ============
+      const lx = 30;
+      const ly = 30;
+      const lw = 400;
 
-      if (cardRef?.current) {
+      // Avatar circle
+      const avatarSize = 180;
+      const avatarCx = lx + lw / 2;
+      const avatarCy = ly + avatarSize / 2 + 10;
+
+      if (customImage) {
         try {
-          const html2canvas = (await import("html2canvas")).default;
-          const cardCanvas = await html2canvas(cardRef.current, {
-            backgroundColor: null,
-            scale: 2,
-            useCORS: true,
+          const img = new Image();
+          img.crossOrigin = "anonymous";
+          img.src = customImage;
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
           });
-          const cardAspect = cardCanvas.width / cardCanvas.height;
-          let drawW = cardAreaW;
-          let drawH = drawW / cardAspect;
-          if (drawH > cardAreaH) {
-            drawH = cardAreaH;
-            drawW = drawH * cardAspect;
-          }
-          const cx = cardAreaX + (cardAreaW - drawW) / 2;
-          const cy = cardAreaY + (cardAreaH - drawH) / 2;
-          // clip rounded rect
           ctx.save();
-          roundRect(ctx, cx, cy, drawW, drawH, 16);
+          ctx.beginPath();
+          ctx.arc(avatarCx, avatarCy, avatarSize / 2, 0, Math.PI * 2);
           ctx.clip();
-          ctx.drawImage(cardCanvas, cx, cy, drawW, drawH);
+          const scale = Math.max(avatarSize / img.width, avatarSize / img.height);
+          const dw = img.width * scale;
+          const dh = img.height * scale;
+          ctx.drawImage(img, avatarCx - dw / 2, avatarCy - dh / 2, dw, dh);
           ctx.restore();
+          // Avatar border
+          ctx.beginPath();
+          ctx.arc(avatarCx, avatarCy, avatarSize / 2, 0, Math.PI * 2);
+          ctx.strokeStyle = `${tierColor}80`;
+          ctx.lineWidth = 3;
+          ctx.stroke();
         } catch {
-          // fallback: draw custom image or placeholder
-          await drawFallbackCard(ctx, cardAreaX, cardAreaY, cardAreaW, cardAreaH, tierColor, customImage);
+          // Fallback: basketball emoji
+          ctx.fillStyle = `${tierColor}15`;
+          ctx.font = "bold 100px sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("🏀", avatarCx, avatarCy);
+          ctx.textAlign = "start";
+          ctx.textBaseline = "top";
         }
       } else {
-        await drawFallbackCard(ctx, cardAreaX, cardAreaY, cardAreaW, cardAreaH, tierColor, customImage);
+        ctx.fillStyle = `${tierColor}15`;
+        ctx.font = "bold 100px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("🏀", avatarCx, avatarCy);
+        ctx.textAlign = "start";
+        ctx.textBaseline = "top";
       }
 
-      // ============ RIGHT: INFO PANEL ============
-      const rx = 520;
-      const rw = W - rx - 30;
-      let cy = 50;
-
-      // Brand
-      ctx.fillStyle = "#F2CA50";
-      ctx.font = "bold 14px sans-serif";
-      ctx.textBaseline = "top";
-      ctx.fillText("HOOPERVAULT", rx, cy);
-      cy += 28;
-
-      // Divider line
-      ctx.strokeStyle = `${tierColor}30`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(rx, cy);
-      ctx.lineTo(rx + rw, cy);
-      ctx.stroke();
-      cy += 14;
-
-      // Player name (large)
+      // Player name under avatar
+      let leftY = avatarCy + avatarSize / 2 + 20;
       ctx.fillStyle = "#FFFFFF";
-      ctx.font = "bold 44px sans-serif";
-      ctx.fillText(playerName, rx, cy);
-      cy += 52;
+      ctx.font = "bold 32px sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText(playerName, avatarCx, leftY);
+      leftY += 38;
 
       // Position + Archetype
       ctx.fillStyle = tierColor;
-      ctx.font = "18px sans-serif";
+      ctx.font = "16px sans-serif";
       const posLabel = position ? `${position} · ` : "";
-      ctx.fillText(`${posLabel}${archetype}`, rx, cy);
-      cy += 30;
+      ctx.fillText(`${posLabel}${archetype}`, avatarCx, leftY);
+      leftY += 28;
 
-      // OVR badge
-      const ovrBoxW = 90;
-      const ovrBoxH = 56;
-      roundRect(ctx, rx, cy, ovrBoxW, ovrBoxH, 10);
-      ctx.fillStyle = "#1a1c20";
-      ctx.fill();
-      ctx.strokeStyle = `${tierColor}50`;
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      ctx.fillStyle = "#A8A8B3";
-      ctx.font = "10px sans-serif";
-      ctx.textBaseline = "top";
-      ctx.fillText("OVR", rx + 10, cy + 8);
-
+      // OVR + Tier
       ctx.fillStyle = tierColor;
-      ctx.font = "bold 28px sans-serif";
-      ctx.fillText(String(overall), rx + 10, cy + 22);
-
-      // Tier badge next to OVR
-      const tierBadgeX = rx + ovrBoxW + 12;
-      roundRect(ctx, tierBadgeX, cy + 8, 80, 20, 10);
+      ctx.font = "bold 52px sans-serif";
+      ctx.fillText(String(overall), avatarCx - 40, leftY);
+      ctx.fillStyle = "#A8A8B3";
+      ctx.font = "14px sans-serif";
+      ctx.fillText("OVR", avatarCx - 40, leftY + 56);
+      // Tier badge
+      roundRect(ctx, avatarCx + 25, leftY + 14, 80, 28, 14);
       ctx.fillStyle = `${tierColor}20`;
       ctx.fill();
       ctx.strokeStyle = `${tierColor}50`;
       ctx.lineWidth = 1;
       ctx.stroke();
       ctx.fillStyle = tierColor;
-      ctx.font = "bold 11px sans-serif";
+      ctx.font = "bold 12px sans-serif";
       ctx.textBaseline = "middle";
-      ctx.fillText(tier.toUpperCase(), tierBadgeX + 12, cy + 18);
+      ctx.fillText(tier.toUpperCase(), avatarCx + 65, leftY + 28);
       ctx.textBaseline = "top";
+      leftY += 75;
 
       // Champion badge
       if (champion) {
-        const champX = tierBadgeX + 88;
-        roundRect(ctx, champX, cy + 8, 110, 20, 10);
+        roundRect(ctx, avatarCx - 55, leftY, 110, 24, 12);
         ctx.fillStyle = "#F2CA5020";
         ctx.fill();
         ctx.strokeStyle = "#F2CA5050";
         ctx.lineWidth = 1;
         ctx.stroke();
         ctx.fillStyle = "#F2CA50";
-        ctx.font = "bold 11px sans-serif";
-        ctx.textBaseline = "middle";
-        ctx.fillText("🏆 CHAMPION", champX + 10, cy + 18);
-        ctx.textBaseline = "top";
+        ctx.font = "bold 12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("🏆 CHAMPION", avatarCx, leftY + 12);
+        ctx.textAlign = "start";
+        leftY += 34;
       }
 
-      cy += ovrBoxH + 16;
+      // Awards under avatar
+      if (awards.length > 0) {
+        ctx.textAlign = "center";
+        ctx.fillStyle = `${tierColor}90`;
+        ctx.font = "11px sans-serif";
+        const awardText = awards.slice(0, 3).join(" · ");
+        ctx.fillText(awardText, avatarCx, leftY);
+        ctx.textAlign = "start";
+      }
 
-      // ============ SEASON STATUS ============
+      ctx.textAlign = "start";
+
+      // ============ RIGHT: ATTRIBUTES + SEASON ============
+      const rx = 470;
+      const rw = W - rx - 30;
+      let cy = 30;
+
+      // Brand
+      ctx.fillStyle = "#F2CA50";
+      ctx.font = "bold 14px sans-serif";
+      ctx.textBaseline = "top";
+      ctx.fillText("HOOPERVAULT", rx, cy);
+      cy += 26;
+
+      // Divider
+      ctx.strokeStyle = `${tierColor}30`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(rx, cy);
+      ctx.lineTo(rx + rw, cy);
+      ctx.stroke();
+      cy += 12;
+
+      // ============ ATTRIBUTES GRID ============
+      ctx.fillStyle = "#F2CA50";
+      ctx.font = "bold 10px sans-serif";
+      ctx.fillText("ATTRIBUTES", rx, cy);
+      cy += 16;
+
+      if (attributes) {
+        const colW = rw / 2;
+        const sortedAttrs = ATTR_ORDER.filter(k => attributes[k] !== undefined);
+        const leftCol = sortedAttrs.slice(0, 7);
+        const rightCol = sortedAttrs.slice(7);
+
+        const drawAttrRow = (key: string, x: number, y: number) => {
+          const val = attributes[key];
+          const label = ATTR_LABELS[key] || key.toUpperCase();
+          const isHigh = val >= 90;
+          const barColor = isHigh ? tierColor : val >= 80 ? "#6CB9FF" : "#A8A8B3";
+
+          // Label
+          ctx.fillStyle = "#A8A8B3";
+          ctx.font = "bold 10px sans-serif";
+          ctx.fillText(label, x, y);
+
+          // Value
+          ctx.fillStyle = isHigh ? "#FFFFFF" : "#A8A8B3";
+          ctx.font = isHigh ? "bold 13px sans-serif" : "13px sans-serif";
+          ctx.fillText(String(val), x + 40, y);
+
+          // Bar
+          const barX = x + 62;
+          const barW = colW - 80;
+          const barH = 6;
+          roundRect(ctx, barX, y + 3, barW, barH, 3);
+          ctx.fillStyle = "#1a1c20";
+          ctx.fill();
+          roundRect(ctx, barX, y + 3, barW * (val / 100), barH, 3);
+          ctx.fillStyle = barColor;
+          ctx.fill();
+        };
+
+        leftCol.forEach((key, i) => drawAttrRow(key, rx, cy + i * 22));
+        rightCol.forEach((key, i) => drawAttrRow(key, rx + colW, cy + i * 22));
+        cy += Math.max(leftCol.length, rightCol.length) * 22 + 8;
+      }
+
+      // ============ SEASON ============
       if (season) {
         // Divider
         ctx.strokeStyle = "rgba(255,255,255,0.06)";
@@ -384,90 +511,41 @@ export function ShareModal({
 
         ctx.fillStyle = "#F2CA50";
         ctx.font = "bold 10px sans-serif";
-        ctx.letterSpacing = "2px";
-        ctx.fillText("SEASON STATUS", rx, cy);
-        ctx.letterSpacing = "0px";
-        cy += 18;
-
-        // Record + stats row
-        ctx.font = "15px sans-serif";
-        const recordStr = `${season.wins}W - ${season.losses}L`;
-        const statsStr = `${season.ppg} PPG  ·  ${season.rpg} RPG  ·  ${season.apg} APG`;
+        ctx.fillText("SEASON", rx, cy);
+        cy += 16;
 
         ctx.fillStyle = "#FFFFFF";
-        ctx.font = "bold 16px sans-serif";
+        ctx.font = "bold 15px sans-serif";
+        const recordStr = `${season.wins}W-${season.losses}L`;
         ctx.fillText(recordStr, rx, cy);
         ctx.fillStyle = "#A8A8B3";
-        ctx.font = "14px sans-serif";
-        ctx.fillText(statsStr, rx + ctx.measureText(recordStr).width + 16, cy + 1);
-        cy += 26;
+        ctx.font = "13px sans-serif";
+        ctx.fillText(`${season.ppg} PPG · ${season.rpg} RPG · ${season.apg} APG`, rx + ctx.measureText(recordStr).width + 12, cy + 1);
+        cy += 22;
 
-        // Playoff status
+        // Playoffs
         if (playoffs?.qualified) {
           ctx.fillStyle = "#A8A8B3";
-          ctx.font = "12px sans-serif";
+          ctx.font = "11px sans-serif";
           ctx.fillText(`Playoff Seed #${playoffs.seed}`, rx, cy);
-          cy += 6;
+          cy += 16;
 
-          // Playoff series (compact)
           if (playoffs.series && playoffs.series.length > 0) {
-            cy += 10;
             for (const s of playoffs.series) {
               const won = s.result === "W";
               const emoji = s.round === "NBA Finals" ? "🏆" : s.round === "Conference Finals" ? "⚡" : s.round === "Conference Semifinals" ? "🔥" : "🏀";
               ctx.fillStyle = won ? "#F2CA50" : "#FF5E07";
               ctx.font = "11px sans-serif";
               ctx.fillText(`${emoji} ${s.round}: ${s.wins}-${s.losses} vs ${s.opponent} ${won ? "✓" : "✗"}`, rx + 8, cy);
-              cy += 16;
+              cy += 15;
             }
           }
         } else {
           ctx.fillStyle = "#A8A8B380";
-          ctx.font = "12px sans-serif";
+          ctx.font = "11px sans-serif";
           ctx.fillText("Missed Playoffs", rx, cy);
-          cy += 20;
-        }
-      }
-
-      // ============ AWARDS ============
-      if (awards.length > 0) {
-        cy += 6;
-        let badgeX = rx;
-        for (const award of awards) {
-          badgeX = drawBadge(ctx, award, badgeX, cy + 12, tierColor);
-          if (badgeX > rx + rw - 60) {
-            badgeX = rx;
-            cy += 24;
-          }
-        }
-        cy += 28;
-      }
-
-      // ============ LEGACY STORY ============
-      if (legacyStory) {
-        cy += 4;
-        // Divider
-        ctx.strokeStyle = "rgba(255,255,255,0.06)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(rx, cy);
-        ctx.lineTo(rx + rw, cy);
-        ctx.stroke();
-        cy += 10;
-
-        ctx.fillStyle = "#F2CA50";
-        ctx.font = "bold 10px sans-serif";
-        ctx.fillText("LEGACY STORY", rx, cy);
-        cy += 16;
-
-        ctx.fillStyle = "#A8A8B3";
-        ctx.font = "12px sans-serif";
-        const storyLines = wrapText(ctx, legacyStory, rw);
-        for (const line of storyLines.slice(0, 4)) {
-          ctx.fillText(line, rx, cy);
           cy += 16;
         }
-        cy += 4;
       }
 
       // ============ BOTTOM CTA ============
@@ -486,7 +564,7 @@ export function ShareModal({
     } finally {
       setDownloading(false);
     }
-  }, [playerName, overall, archetype, position, stats, season, playoffs, awards, champion, legacyStory, customImage, cardRef]);
+  }, [playerName, overall, archetype, position, attributes, stats, season, playoffs, awards, champion, legacyStory, customImage]);
 
   // Generate a 1:1 square image optimized for WeChat Moments
   const generateMomentsImage = useCallback(async () => {
@@ -654,6 +732,20 @@ export function ShareModal({
     // 2. Show guide
     setWechatGuide("moments");
   }, [generateMomentsImage]);
+
+  const handleReddit = useCallback(async () => {
+    // 1. Generate and download the image
+    await generateShareImage();
+    // 2. Copy rich text to clipboard
+    try {
+      await navigator.clipboard.writeText(redditBody);
+    } catch {}
+    // 3. Show guide
+    setRedditGuide(true);
+    // 4. Open Reddit submit page (link post with title)
+    const redditUrl = `https://reddit.com/submit?url=${encodeURIComponent(url)}&title=${encodeURIComponent(redditTitle)}`;
+    window.open(redditUrl, "_blank", "width=700,height=700");
+  }, [url, redditTitle, redditBody, generateShareImage]);
 
   if (!open) {
     return (
@@ -827,6 +919,26 @@ export function ShareModal({
                 <li>{lang === "zh-CN" ? "可选：添加文字描述，然后发表" : "Optional: add text, then post"}</li>
               </ol>
             )}
+          </div>
+        )}
+
+        {/* Reddit Guide Overlay */}
+        {redditGuide && (
+          <div className="mt-4 p-4 rounded-xl bg-[#FF4500]/10 border border-[#FF4500]/30">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-bold text-[#FF4500]">
+                {lang === "zh-CN" ? "📷 图片已下载，描述已复制" : "📷 Image saved, description copied"}
+              </h4>
+              <button onClick={() => setRedditGuide(false)} className="text-[#A8A8B3] hover:text-white">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <ol className="text-xs text-[#A8A8B3] space-y-1.5 list-decimal list-inside">
+              <li>{lang === "zh-CN" ? "在 Reddit 发帖页面选择 \"Image\" 标签" : "On the Reddit submit page, select the \"Image\" tab"}</li>
+              <li>{lang === "zh-CN" ? "上传刚下载的图片" : "Upload the saved image"}</li>
+              <li>{lang === "zh-CN" ? "标题已自动填好，描述文字已复制到剪贴板" : "Title is pre-filled, description copied to clipboard"}</li>
+              <li>{lang === "zh-CN" ? "粘贴描述文字到正文，然后发表！" : "Paste the description into the body, then post!"}</li>
+            </ol>
           </div>
         )}
       </div>

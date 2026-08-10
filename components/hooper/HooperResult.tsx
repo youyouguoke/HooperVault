@@ -783,6 +783,7 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
                     overall={overall}
                     archetype={archetype.name}
                     position={position}
+                    attributes={attributes ? Object.fromEntries(ATTRIBUTES.map(attr => [attr, attributes[attr]])) : undefined}
                     stats={hasSim && simResult.season ? { ppg: simResult.season.ppg, rpg: simResult.season.rpg, apg: simResult.season.apg } : undefined}
                     season={hasSim && simResult.season ? simResult.season : undefined}
                     playoffs={hasSim && simResult.playoffs ? simResult.playoffs : undefined}
