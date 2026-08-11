@@ -11,6 +11,8 @@ import {
   Link2,
 } from "lucide-react";
 
+import { trackEvent } from "@/lib/analytics";
+
 // X (Twitter) icon
 function XIcon({ className }: { className?: string }) {
   return (
@@ -191,6 +193,7 @@ export function ShareModal({
   const discordText = `🏀 **HooperVault** — ${playerName}\n\n⭐ ${overall} OVR · ${archetype}${stats?.ppg ? `\n📊 ${stats.ppg} PPG · ${stats.rpg} RPG · ${stats.apg} APG` : ""}${champion ? "\n🏆 **NBA Champion**" : ""}${awards.length > 0 ? `\n🎖️ ${awards.join(" · ")}` : ""}\n\n🔗 ${url}`;
 
   const handleCopy = useCallback(async () => {
+    trackEvent("share_click", { channel: "copy_link" });
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -199,6 +202,7 @@ export function ShareModal({
   }, [url]);
 
   const handleCopyDiscord = useCallback(async () => {
+    trackEvent("share_click", { channel: "discord" });
     try {
       await navigator.clipboard.writeText(discordText);
       setCopiedDiscord(true);
@@ -207,6 +211,7 @@ export function ShareModal({
   }, [discordText]);
 
   const handleTwitter = useCallback(() => {
+    trackEvent("share_click", { channel: "twitter" });
     const tweetUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
     window.open(tweetUrl, "_blank", "width=600,height=400");
   }, [shareText]);
@@ -282,6 +287,7 @@ export function ShareModal({
   }, [wechatText]);
 
   const generateShareImage = useCallback(async () => {
+    trackEvent("share_click", { channel: "download_image" });
     setDownloading(true);
     try {
       const W = 1200;

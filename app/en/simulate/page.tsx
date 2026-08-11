@@ -13,6 +13,7 @@ import {
   getSkillById,
   type Skill,
 } from "@/data/legends";
+import { trackEvent } from "@/lib/analytics";
 import {
   Trophy,
   Medal,
@@ -515,6 +516,7 @@ function SimulatePageInner() {
         timestamp: Date.now(),
       };
       localStorage.setItem("hoopervault_sim_result", JSON.stringify(simData));
+      trackEvent("simulation_complete", { mode, position, overall, archetype: simData.archetype, champion: String(champion) });
     } catch (e) {
       // localStorage might be full or disabled
     }

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { HISTORIC_TEAMS, type HistoricTeam, type LegendaryPlayer, type PlayerSkill } from "@/data/teams";
 import { ATTRIBUTES, type Attribute } from "@/data/legends";
 import { Trophy, Star, EyeOff, Lock, RefreshCw, Zap, Flame, Target } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 const DAILY_SEED = 20260805;
 const TOTAL_ROUNDS = 13;
@@ -296,6 +297,7 @@ function TeamPageInner() {
         } else {
           stealingRef.current = false;
           setState("completed");
+          trackEvent("draft_complete", { mode, team: selectedTeam?.teamName || "", rounds: TOTAL_ROUNDS });
         }
         return currentHistory;
       });

@@ -32,6 +32,7 @@ import {
   Crown,
 } from "lucide-react";
 import { ShareModal } from "@/components/ui/ShareModal";
+import { trackEvent } from "@/lib/analytics";
 
 const ATTRIBUTE_LABELS: Record<Attribute, string> = {
   shooting: "3PT",
@@ -799,7 +800,7 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
                     cardRef={cardRef}
                   />
                   <Button asChild href={buildModeHref} variant="outline" fullWidth size="xl">
-                    <span className="flex items-center justify-center gap-2">
+                    <span className="flex items-center justify-center gap-2" onClick={() => trackEvent("replay_click", { source: "result_page" })}>
                       <RefreshCw className="h-5 w-5" /> {t("buildAnother", lang)}
                     </span>
                   </Button>
