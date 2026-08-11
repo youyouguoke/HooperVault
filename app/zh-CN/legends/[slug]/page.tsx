@@ -9,8 +9,9 @@ export function generateStaticParams() {
   return LEGEND_SKILL_PAGES.map((legend) => ({ slug: legend.id }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const legend = getLegendSkillPageById(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const legend = getLegendSkillPageById(slug);
   if (!legend) return { title: "传奇技能未找到 | HooperVault" };
   return {
     title: `${legend.displayNameZh} 传奇技能 | HooperVault`,
@@ -27,8 +28,9 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   };
 }
 
-export default function Page({ params }: { params: { slug: string } }) {
-  const legend = getLegendSkillPageById(params.slug);
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const legend = getLegendSkillPageById(slug);
   if (!legend) return notFound();
   return <LegendSkillPageComponent legend={legend} lang="zh-CN" />;
 }

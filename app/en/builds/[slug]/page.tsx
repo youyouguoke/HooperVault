@@ -9,8 +9,9 @@ export function generateStaticParams() {
   return BUILDS.map((build) => ({ slug: build.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const build = getBuildBySlug(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const build = getBuildBySlug(slug);
   if (!build) return { title: "Build Not Found | HooperVault" };
   return {
     title: `${build.title} | HooperVault`,
@@ -27,8 +28,9 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   };
 }
 
-export default function Page({ params }: { params: { slug: string } }) {
-  const build = getBuildBySlug(params.slug);
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const build = getBuildBySlug(slug);
   if (!build) return notFound();
   return <BuildGuidePage build={build} lang="en" />;
 }

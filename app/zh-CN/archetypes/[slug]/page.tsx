@@ -9,8 +9,9 @@ export function generateStaticParams() {
   return ARCHETYPES.map((archetype) => ({ slug: archetype.id }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const archetype = getArchetypeById(params.slug);
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const archetype = getArchetypeById(slug);
   if (!archetype) return { title: "球风未找到 | HooperVault" };
   return {
     title: `${archetype.nameZh} 球风 | HooperVault`,
@@ -27,8 +28,9 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   };
 }
 
-export default function Page({ params }: { params: { slug: string } }) {
-  const archetype = getArchetypeById(params.slug);
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const archetype = getArchetypeById(slug);
   if (!archetype) return notFound();
   return <ArchetypePage archetype={archetype} lang="zh-CN" />;
 }
