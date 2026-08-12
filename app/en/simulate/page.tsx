@@ -234,11 +234,12 @@ function SimulatePageInner() {
 
   const simulateGame = useCallback((idx: number, opponentOverride?: string, strengthBoost?: number, useRandom = false): GameResult => {
     const opponent = opponentOverride || schedule[idx % schedule.length];
-    const baseWin = (overall - 40 + (attributes.clutch - 60) * 0.3) / 100;
-    // Use true randomness for playoff games, and per-session offset for regular season
-    const noise = useRandom
-      ? Math.random()
-      : (Math.sin(idx * 123.45 + seed * 0.7 + idx * 0.3 + sessionOffset * 17.13) + 1) / 2;
+    // Higher base win rate so decent builds usually reach the 38-win playoff threshold.
+    const baseWin = Math.min(0.85, Math.max(0.20,
+      (overall - 32 + (attributes.clutch - 60) * 0.35 + (attributes.speed - 75) * 0.05) / 100
+    ));
+    // Regular season is random per game so each Play Again feels different; playoffs are random too.
+    const noise = Math.random();
     const strength = strengthBoost ?? 0;
     // Playoff clutch bonus: small edge for higher OVR in playoffs
     const playoffBonus = strength > 0 ? Math.max(0, (overall - 60) * 0.008) : 0;
