@@ -96,10 +96,10 @@ const PLAYOFF_ROUNDS = [
   { name: "NBA Finals", emoji: "🏆", opponentStrength: 0.28 },
 ];
 
-function generateSchedule(seed: number): string[] {
+function generateSchedule(seed: number, sessionOffset: number = 0): string[] {
   const schedule: string[] = [];
   const rng = (i: number) => {
-    const x = Math.sin(seed * 9301 + i * 49297 + 233280) * 10000;
+    const x = Math.sin(seed * 9301 + i * 49297 + sessionOffset * 12345 + 233280) * 10000;
     return x - Math.floor(x);
   };
   for (let i = 0; i < 82; i++) {
@@ -200,6 +200,10 @@ function SimulatePageInner() {
   const [challengeRank, setChallengeRank] = useState<number | null>(null);
   const [challengeError, setChallengeError] = useState<string | null>(null);
 
+  // --- Per-session randomness so every "Play Again" produces a different season ---
+  const [sessionOffset, setSessionOffset] = useState(0);
+  const sessionOffsetRef = useRef(0);
+
   // --- Derived data ---
   const skills = useMemo(() => {
     const historyString = hooperData?.history || historyParam;
@@ -226,13 +230,15 @@ function SimulatePageInner() {
     return Math.round(Object.values(attributes).reduce((a, b) => a + b, 0) / 13);
   }, [attributes]);
 
-  const schedule = useMemo(() => generateSchedule(seed), [seed]);
+  const schedule = useMemo(() => generateSchedule(seed, sessionOffset), [seed, sessionOffset]);
 
   const simulateGame = useCallback((idx: number, opponentOverride?: string, strengthBoost?: number, useRandom = false): GameResult => {
     const opponent = opponentOverride || schedule[idx % schedule.length];
     const baseWin = (overall - 40 + (attributes.clutch - 60) * 0.3) / 100;
-    // Use true randomness for playoff games so outcomes aren't fixed per seed
-    const noise = useRandom ? Math.random() : (Math.sin(idx * 123.45 + seed * 0.7 + idx * 0.3) + 1) / 2;
+    // Use true randomness for playoff games, and per-session offset for regular season
+    const noise = useRandom
+      ? Math.random()
+      : (Math.sin(idx * 123.45 + seed * 0.7 + idx * 0.3 + sessionOffset * 17.13) + 1) / 2;
     const strength = strengthBoost ?? 0;
     // Playoff clutch bonus: small edge for higher OVR in playoffs
     const playoffBonus = strength > 0 ? Math.max(0, (overall - 60) * 0.008) : 0;
@@ -309,14 +315,14 @@ function SimulatePageInner() {
   const simulatePlayoffGame = useCallback((roundIdx: number, gameIdx: number): GameResult => {
     const round = PLAYOFF_ROUNDS[roundIdx];
     const opponentSeedNum = 8 - roundIdx;
-    const opponentName = `${OPPONENTS[Math.floor((seed * 7 + roundIdx * 13) % OPPONENTS.length)]}`;
+    const opponentName = `${OPPONENTS[Math.floor((seed * 7 + roundIdx * 13 + sessionOffset * 31) % OPPONENTS.length)]} (#${opponentSeedNum})`;
     return simulateGame(
       82 + roundIdx * 7 + gameIdx,
       opponentName,
       round.opponentStrength,
       true  // use Math.random() for playoffs
     );
-  }, [seed, simulateGame]);
+  }, [seed, sessionOffset, simulateGame]);
 
   const startPlayoffRound = useCallback((roundIdx: number) => {
     setCurrentPlayoffRound(roundIdx);
@@ -441,8 +447,8 @@ function SimulatePageInner() {
   const apg = apgValue.toFixed(1);
 
   // Playoff qualification
-  const qualifiedForPlayoffs = wins >= 42;
-  const playoffSeedValue = wins >= 60 ? 1 : wins >= 55 ? 2 : wins >= 50 ? 3 : wins >= 47 ? 4 : wins >= 44 ? 5 : 6;
+  const qualifiedForPlayoffs = wins >= 38;
+  const playoffSeedValue = wins >= 60 ? 1 : wins >= 55 ? 2 : wins >= 50 ? 3 : wins >= 45 ? 4 : wins >= 42 ? 5 : wins >= 38 ? 6 : 8;
 
   const awards = useMemo(() => {
     const list = [];
@@ -460,6 +466,9 @@ function SimulatePageInner() {
   }, [overall, wins, ppgValue, apgValue, rpgValue, qualifiedForPlayoffs, playoffSeries, champion]);
 
   const handlePlayAgain = () => {
+    const nextOffset = sessionOffset + 1;
+    setSessionOffset(nextOffset);
+    sessionOffsetRef.current = nextOffset;
     setPhase("intro");
     setGameIndex(0);
     setWins(0);
@@ -756,7 +765,7 @@ function SimulatePageInner() {
                   {/* Playoff cutoff indicator */}
                   <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-[#A8A8B3]">
                     <span>0</span>
-                    <span className="text-[#FF5E07]">Playoff line: 42W</span>
+                    <span className="text-[#FF5E07]">Playoff line: 38W</span>
                     <span>82</span>
                   </div>
                 </div>
@@ -857,7 +866,7 @@ function SimulatePageInner() {
                     </p>
                   ) : (
                     <p className="text-[#A8A8B3] text-sm mb-6">
-                      You needed 42 wins to make the playoffs. Build a stronger hooper and try again.
+                      You needed 38 wins to make the playoffs. Build a stronger hooper and try again.
                     </p>
                   )}
 
