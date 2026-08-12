@@ -186,9 +186,9 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
     setLoading(true);
     setError(null);
     try {
-      // Page 0 = ranks 4-23 (offset 3), page 1 = ranks 24-43 (offset 23), etc.
-      const offset = currentPage === 0 ? 3 : 3 + currentPage * PAGE_SIZE;
-      const limit = currentPage === 0 ? PAGE_SIZE : PAGE_SIZE;
+      // Page 0 = ranks 4-23 (offset 3, limit 20), page 1 = ranks 24-43 (offset 23, limit 20), etc.
+      const offset = 3 + page * PAGE_SIZE;
+      const limit = PAGE_SIZE;
       const params = new URLSearchParams({
         limit: String(limit),
         offset: String(offset),
@@ -219,10 +219,9 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
     setPage(0);
   };
 
-  // Total count minus the top 3 shown separately
   const totalRemaining = tableData ? tableData.total - 3 : 0;
   const totalPages = totalRemaining > 0 ? Math.ceil(totalRemaining / PAGE_SIZE) : 0;
-  const startRank = page === 0 ? 4 : 4 + page * PAGE_SIZE;
+  const startRank = 4 + page * PAGE_SIZE;
   const endRank = tableData ? Math.min(startRank + tableData.hoopers.length - 1, tableData.total) : 0;
 
   return (

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
-import { Menu, X, Globe } from "lucide-react";
+import { Menu, X, Globe, ChevronDown } from "lucide-react";
 
 function useLang() {
   const pathname = usePathname();
@@ -28,9 +28,17 @@ const UI = {
       { href: "/en/build/mode", label: "Build" },
       { href: "/en/leaderboard", label: "Leaderboard" },
       { href: "/en/challenge", label: "Daily Challenge" },
-      { href: "/en/guides", label: "Guides" },
-      { href: "/en/about", label: "About" },
     ],
+    explore: {
+      label: "Explore",
+      items: [
+        { href: "/en/guides", label: "Guides" },
+        { href: "/en/builds", label: "Build Guides" },
+        { href: "/en/archetypes", label: "Archetypes" },
+        { href: "/en/legends", label: "Legend Skills" },
+        { href: "/en/about", label: "About" },
+      ],
+    },
     cta: "Start Building",
     switchLang: "EN",
     switchLabel: "Switch to 中文",
@@ -40,14 +48,54 @@ const UI = {
       { href: "/zh-CN/build/mode", label: "构建" },
       { href: "/zh-CN/leaderboard", label: "排行榜" },
       { href: "/zh-CN/challenge", label: "每日挑战" },
-      { href: "/zh-CN/guides", label: "指南" },
-      { href: "/zh-CN/about", label: "关于" },
     ],
+    explore: {
+      label: "探索",
+      items: [
+        { href: "/zh-CN/guides", label: "指南" },
+        { href: "/zh-CN/builds", label: "构建指南" },
+        { href: "/zh-CN/archetypes", label: "球风" },
+        { href: "/zh-CN/legends", label: "传奇技能" },
+        { href: "/zh-CN/about", label: "关于" },
+      ],
+    },
     cta: "开始构建",
     switchLang: "中文",
     switchLabel: "Switch to English",
   },
 };
+
+function ExploreDropdown({ lang }: { lang: "en" | "zh-CN" }) {
+  const [open, setOpen] = useState(false);
+  const ui = UI[lang];
+
+  return (
+    <div
+      className="relative"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button className="flex items-center gap-1 text-sm font-medium text-[#A8A8B3] transition-colors hover:text-white">
+        {ui.explore.label} <ChevronDown className="h-3.5 w-3.5" />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 pt-2 w-44">
+          <div className="rounded-xl border border-white/10 bg-[#111317]/95 backdrop-blur-xl p-2 shadow-xl">
+            {ui.explore.items.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="block rounded-lg px-3 py-2 text-sm text-[#A8A8B3] transition-colors hover:bg-white/5 hover:text-white"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -74,7 +122,7 @@ export function Header() {
             </span>
           </Link>
 
-          <nav className="hidden items-center gap-8 md:flex">
+          <nav className="hidden items-center gap-6 md:flex">
             {ui.nav.map((link) => (
               <Link
                 key={link.href}
@@ -84,6 +132,7 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
+            <ExploreDropdown lang={lang} />
           </nav>
 
           <div className="hidden items-center gap-3 md:flex">
@@ -123,6 +172,21 @@ export function Header() {
                   {link.label}
                 </Link>
               ))}
+              <div className="border-t border-white/8 pt-2">
+                <p className="px-3 py-2 text-xs uppercase tracking-wider text-[#A8A8B3]/60">
+                  {ui.explore.label}
+                </p>
+                {ui.explore.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="block rounded-lg px-3 py-2 text-sm font-medium text-[#A8A8B3] transition-colors hover:bg-white/5 hover:text-white"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
               <div className="mt-3 flex flex-col gap-3 border-t border-white/8 pt-4">
                 <Button asChild fullWidth>
                   <Link href={ui.nav[0].href} onClick={() => setMobileOpen(false)}>

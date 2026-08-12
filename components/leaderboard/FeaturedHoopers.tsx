@@ -28,7 +28,7 @@ export function FeaturedHoopers({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
   const [hoopers, setHoopers] = useState<Hooper[]>([]);
 
   useEffect(() => {
-    fetch("/api/hoopers?limit=4")
+    fetch("/api/hoopers?limit=20")
       .then((res) => res.json())
       .then((data) => setHoopers(data.hoopers || []))
       .catch(() => {});

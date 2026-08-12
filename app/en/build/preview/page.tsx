@@ -31,28 +31,52 @@ const FIRST_NAMES = [
   "Orion", "Jax", "Kai", "Mason", "Eli", "Titan", "Duke", "Cade", "Axel", "Blaze",
   "Ryder", "Knox", "Zane", "Crew", "Jett", "Rhett", "Kash", "Slate", "Vance", "Dray",
   "Tate", "Miles", "Leo", "Finn", "Kobe", "Kyrie", "Giannis", "Luka", "Jalen", "Zion",
+  "Asher", "Beck", "Dash", "Enzo", "Felix", "Grey", "Huck", "Ira", "Jude", "Koa",
+  "Lennox", "Milo", "Nico", "Otto", "Pax", "Quinn", "Remy", "Sage", "Tobe", "Wolf",
 ];
 const LAST_NAMES = [
   "Steele", "Vale", "Cross", "Knight", "Storm", "Frost", "Holt", "Reign", "Brooks", "Prime",
   "Blaze", "King", "Ward", "Dane", "Cruz", "Hale", "Stone", "Fox", "Graves", "Mercer",
   "Wright", "Young", "Carter", "Davis", "Evans", "Green", "Hall", "Lewis", "Morgan", "Parker",
+  "Adams", "Baker", "Cooper", "Fisher", "Gray", "Hayes", "Ingram", "Jennings", "Kemp", "Lane",
+  "Mason", "Newton", "Owens", "Perry", "Reed", "Sloan", "Tate", "Underwood", "Vaughn", "Wells",
 ];
 
-function deterministicIndex(seed: number, position: string, length: number): number {
-  const combined = `${seed}:${position.toUpperCase()}`;
+function deterministicIndex(seed: number, position: string, length: number, salt = ""): number {
+  const combined = `${salt}${seed}:${position.toUpperCase()}`;
   let hash = 0;
   for (let i = 0; i < combined.length; i++) {
-    hash = (hash << 5) - hash + combined.charCodeAt(i);
-    hash |= 0;
+    hash = ((hash << 5) - hash + combined.charCodeAt(i)) & 0xffffffff;
   }
-  return Math.abs(hash) % length;
+  // mix bits (MurmurHash-style finalization) for better distribution
+  hash ^= hash >>> 16;
+  hash = (hash * 0x85ebca6b) & 0xffffffff;
+  hash ^= hash >>> 13;
+  hash = (hash * 0xc2b2ae35) & 0xffffffff;
+  hash ^= hash >>> 16;
+  return hash % length;
 }
 
 function generatePlayerName(seed: number, position: string): { firstName: string; lastName: string } {
   const posKey = (position || "SG").toUpperCase();
-  const firstName = FIRST_NAMES[deterministicIndex(seed, posKey, FIRST_NAMES.length)];
-  const lastName = LAST_NAMES[deterministicIndex(seed * 7 + posKey.length, posKey, LAST_NAMES.length)];
+  const firstName = FIRST_NAMES[deterministicIndex(seed, posKey, FIRST_NAMES.length, "first")];
+  const lastName = LAST_NAMES[deterministicIndex(seed, posKey, LAST_NAMES.length, "last")];
   return { firstName, lastName };
+}
+
+function generateBaseAttributes(seed: number): Record<Attribute, number> {
+  // Deterministic per-seed attribute variance: base 65..84 gives more
+  // variety across builds while keeping the same build reproducible.
+  const base: Record<Attribute, number> = {
+    shooting: 75, mid_range: 75, finishing: 75, dunk: 75, passing: 75,
+    ball_handle: 75, perimeter_defense: 75, interior_defense: 75, block: 75,
+    rebound: 75, speed: 75, strength: 75, clutch: 75,
+  };
+  (Object.keys(base) as Attribute[]).forEach((attr) => {
+    const offset = deterministicIndex(seed, attr, 20, "base");
+    base[attr] = 65 + offset;
+  });
+  return base;
 }
 
 const ATTRIBUTE_LABELS: Record<Attribute, string> = {
@@ -154,21 +178,7 @@ function PreviewPageInner() {
   const playerName = useMemo(() => generatePlayerName(seedParam, position), [seedParam, position]);
 
   const attributes: Record<Attribute, number> = useMemo(() => {
-    const attrs: Record<Attribute, number> = {
-      shooting: 75,
-      mid_range: 75,
-      finishing: 75,
-      dunk: 75,
-      passing: 75,
-      ball_handle: 75,
-      perimeter_defense: 75,
-      interior_defense: 75,
-      block: 75,
-      rebound: 75,
-      speed: 75,
-      strength: 75,
-      clutch: 75,
-    };
+    const attrs = generateBaseAttributes(seedParam);
     const modifiers = POSITION_MODIFIERS[position] || {};
     for (const [key, value] of Object.entries(modifiers)) {
       attrs[key as Attribute] += value;
@@ -177,7 +187,7 @@ function PreviewPageInner() {
       attrs[skill.attribute as Attribute] = Math.min(99, attrs[skill.attribute as Attribute] + skill.bonus);
     });
     return attrs;
-  }, [position, skills]);
+  }, [position, skills, seedParam]);
 
   const overall = useMemo(() => {
     return Math.round(Object.values(attributes).reduce((a, b) => a + b, 0) / 13);
