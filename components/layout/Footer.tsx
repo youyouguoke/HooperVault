@@ -25,6 +25,9 @@ const UI = {
         title: "Explore",
         links: [
           { label: "Guides", href: "/en/guides" },
+          { label: "Build Guides", href: "/en/builds" },
+          { label: "Archetypes", href: "/en/archetypes" },
+          { label: "Legend Skills", href: "/en/legends" },
           { label: "About", href: "/en/about" },
         ],
       },
@@ -54,6 +57,9 @@ const UI = {
         title: "探索",
         links: [
           { label: "指南", href: "/zh-CN/guides" },
+          { label: "构建指南", href: "/zh-CN/builds" },
+          { label: "球风", href: "/zh-CN/archetypes" },
+          { label: "传奇技能", href: "/zh-CN/legends" },
           { label: "关于", href: "/zh-CN/about" },
         ],
       },

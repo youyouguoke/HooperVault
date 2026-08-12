@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { ShareModal } from "@/components/ui/ShareModal";
 import { trackEvent } from "@/lib/analytics";
+import Link from "next/link";
 
 const ATTRIBUTE_LABELS: Record<Attribute, string> = {
   shooting: "3PT",
@@ -444,6 +445,9 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
   const tierColor = overall >= 95 ? "#F2CA50" : overall >= 90 ? "#6CB9FF" : overall >= 80 ? "#FF5E07" : "#A8A8B3";
 
   const buildModeHref = lang === "zh-CN" ? "/zh-CN/build/mode" : "/en/build/mode";
+  const buildGuidesHref = lang === "zh-CN" ? "/zh-CN/builds" : "/en/builds";
+  const archetypesHref = lang === "zh-CN" ? "/zh-CN/archetypes" : "/en/archetypes";
+  const legendSkillsHref = lang === "zh-CN" ? "/zh-CN/legends" : "/en/legends";
 
   return (
     <>
@@ -812,6 +816,26 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
                       <RefreshCw className="h-5 w-5" /> {t("buildAnother", lang)}
                     </span>
                   </Button>
+                </div>
+
+                <div className="glass-card rounded-2xl p-6">
+                  <h4 className="font-[family-name:var(--font-anton)] text-xl text-white uppercase tracking-wide mb-4">
+                    {lang === "zh-CN" ? "学习如何变强" : "Learn How to Build Better"}
+                  </h4>
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <Link href={buildGuidesHref} className="group block rounded-xl bg-[#1a1c20]/50 border border-white/5 p-4 hover:border-[#F2CA50]/30 transition-all">
+                      <h5 className="font-[family-name:var(--font-space-grotesk)] text-sm font-bold text-white group-hover:text-[#F2CA50]">{lang === "zh-CN" ? "构建指南" : "Build Guides"}</h5>
+                      <p className="text-xs text-[#A8A8B3] mt-1">{lang === "zh-CN" ? "20 套优化构建与技能推荐" : "20 optimized builds with skill picks"}</p>
+                    </Link>
+                    <Link href={archetypesHref} className="group block rounded-xl bg-[#1a1c20]/50 border border-white/5 p-4 hover:border-[#F2CA50]/30 transition-all">
+                      <h5 className="font-[family-name:var(--font-space-grotesk)] text-sm font-bold text-white group-hover:text-[#F2CA50]">{lang === "zh-CN" ? "球风" : "Archetypes"}</h5>
+                      <p className="text-xs text-[#A8A8B3] mt-1">{lang === "zh-CN" ? "了解每种打法身份" : "Explore every play style"}</p>
+                    </Link>
+                    <Link href={legendSkillsHref} className="group block rounded-xl bg-[#1a1c20]/50 border border-white/5 p-4 hover:border-[#F2CA50]/30 transition-all">
+                      <h5 className="font-[family-name:var(--font-space-grotesk)] text-sm font-bold text-white group-hover:text-[#F2CA50]">{lang === "zh-CN" ? "传奇技能" : "Legend Skills"}</h5>
+                      <p className="text-xs text-[#A8A8B3] mt-1">{lang === "zh-CN" ? "按类别查看技能灵感" : "Browse skills by category"}</p>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

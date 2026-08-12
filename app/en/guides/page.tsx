@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 
@@ -38,7 +40,30 @@ export default function GuidesPage() {
           </div>
         </Container>
       </Section>
+
+      <Section className="border-t border-white/8 bg-[#111317]">
+        <Container>
+          <div className="max-w-4xl mx-auto">
+            <h2 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-6 text-center">Explore More</h2>
+            <div className="grid gap-4 md:grid-cols-3">
+              <ExploreCard href="/en/builds" title="Build Guides" body="20 optimized builds with skills and attribute targets." />
+              <ExploreCard href="/en/archetypes" title="Archetypes" body="Discover every play style your Hooper can become." />
+              <ExploreCard href="/en/legends" title="Legend Skills" body="Browse legendary skills by category and inspiration." />
+            </div>
+          </div>
+        </Container>
+      </Section>
     </>
+  );
+}
+
+function ExploreCard({ href, title, body }: { href: string; title: string; body: string }) {
+  return (
+    <Link href={href} className="group glass-card rounded-2xl p-6 hover:bg-white/5 transition-all block">
+      <h3 className="font-[family-name:var(--font-anton)] text-xl text-white uppercase tracking-wide group-hover:text-[#F2CA50] transition-colors mb-2">{title}</h3>
+      <p className="text-sm text-[#A8A8B3] mb-4">{body}</p>
+      <span className="inline-flex items-center gap-1 text-sm text-[#F2CA50]">View <ChevronRight className="h-4 w-4" /></span>
+    </Link>
   );
 }
 
