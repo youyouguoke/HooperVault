@@ -136,20 +136,6 @@ function UserMenu({ lang }: { lang: "en" | "zh-CN" }) {
       </button>
       {open && (
         <div className="absolute right-0 mt-2 w-44 rounded-xl border border-white/10 bg-[#111317]/95 backdrop-blur-xl p-2 shadow-xl z-50">
-          <div className="flex items-center gap-2 px-3 py-2 mb-1">
-            {user.image ? (
-              <img src={user.image} alt="" className="w-8 h-8 rounded-full" />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-[#F5C542] flex items-center justify-center">
-                <span className="text-sm font-bold text-black">{(user.name || "U").charAt(0)}</span>
-              </div>
-            )}
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user.name}</p>
-              <p className="text-xs text-[#A8A8B3] truncate">{user.email}</p>
-            </div>
-          </div>
-          <div className="border-t border-white/8 my-1" />
           <Link
             href={lang === "zh-CN" ? "/zh-CN/profile" : "/en/profile"}
             onClick={() => setOpen(false)}
