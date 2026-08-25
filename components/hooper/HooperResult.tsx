@@ -583,13 +583,13 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
                       <img
                         src={simResult?.customImage || fallbackImage || data?.custom_image || ""}
                         alt={playerName}
-                        className="absolute inset-0 w-full h-full object-cover opacity-90"
+                        className="absolute inset-0 w-full h-full object-cover object-top opacity-90"
                       />
                     ) : (
                       <img
                         src={CARTOON_AVATARS[hashSlug(slug || "default") % CARTOON_AVATARS.length]}
                         alt={`${playerName} - ${archetypeName}`}
-                        className="absolute inset-0 w-full h-full object-cover opacity-90"
+                        className="absolute inset-0 w-full h-full object-cover object-top opacity-90"
                       />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#111317] via-transparent to-transparent" />
