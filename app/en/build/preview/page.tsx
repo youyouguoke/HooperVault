@@ -210,7 +210,27 @@ function PreviewPageInner() {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setCustomImage(reader.result as string);
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        // Compress to max 200x200 JPEG for localStorage compatibility
+        const maxSize = 200;
+        let w = img.width, h = img.height;
+        if (w > maxSize || h > maxSize) {
+          const ratio = Math.min(maxSize / w, maxSize / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL("image/jpeg", 0.7);
+        setCustomImage(compressed);
+      };
+      img.src = reader.result as string;
+    };
     reader.readAsDataURL(file);
   };
 

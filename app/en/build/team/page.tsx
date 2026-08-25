@@ -266,14 +266,43 @@ function TeamPageInner() {
   // Track which attributes have been stolen
   const stolenAttrs = useMemo(() => new Set(history.map(s => s.attribute)), [history]);
 
+  // Animated radar values — transition from 0 to target for each stolen attribute
+  const [animatedValues, setAnimatedValues] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const targets: Record<string, number> = {};
+    ATTRIBUTES.forEach((attr) => {
+      targets[attr] = stolenAttrs.has(attr) ? currentAttributes[attr] : 0;
+    });
+
+    // Animate in steps for smooth transition
+    const steps = 12;
+    let step = 0;
+    const interval = setInterval(() => {
+      step++;
+      const progress = Math.min(1, step / steps);
+      const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+      const frame: Record<string, number> = {};
+      ATTRIBUTES.forEach((attr) => {
+        const prev = animatedValues[attr] || 0;
+        const target = targets[attr];
+        frame[attr] = Math.round(prev + (target - prev) * eased);
+      });
+      setAnimatedValues(frame);
+      if (step >= steps) clearInterval(interval);
+    }, 30);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [history.length, seed]);
+
   const radarData = useMemo(() => {
     return ATTRIBUTES.map((attr) => ({
       attribute: ATTRIBUTE_LABELS[attr],
       fullMark: 100,
-      // Show full value for stolen attributes, minimal base for untouched ones
-      value: stolenAttrs.has(attr) ? currentAttributes[attr] : 35,
+      value: animatedValues[attr] ?? (stolenAttrs.has(attr) ? currentAttributes[attr] : 0),
     }));
-  }, [currentAttributes, stolenAttrs]);
+  }, [animatedValues, currentAttributes, stolenAttrs]);
 
   const handleResetTeam = () => {
     if (teamResetsLeft > 0 && !isSpinning && !teamLocked) {

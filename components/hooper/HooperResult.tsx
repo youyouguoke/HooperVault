@@ -330,7 +330,20 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
 
   const archetype = ARCHETYPES.find(a => a.name === archetypeName) || { name: archetypeName, icon: Dices, desc: "A solid foundation with room to grow." };
 
-  const playerName = simResult?.customName || (data?.first_name && data?.last_name ? `${data.first_name} ${data.last_name}` : generatePlayerName(seed, position));
+  // Fallback: read name/image from localStorage if not in simResult
+  const [fallbackName, setFallbackName] = useState<string | null>(null);
+  const [fallbackImage, setFallbackImage] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const n = localStorage.getItem("hoopervault_hooper_name");
+      if (n && !simResult?.customName) setFallbackName(n);
+      const img = localStorage.getItem("hoopervault_hooper_image");
+      if (img && !simResult?.customImage) setFallbackImage(img);
+    } catch {}
+  }, [simResult]);
+
+  const playerName = simResult?.customName || fallbackName || (data?.first_name && data?.last_name ? `${data.first_name} ${data.last_name}` : generatePlayerName(seed, position));
 
   // Dynamically update OG meta tags when simulation data is available
   useEffect(() => {
@@ -563,9 +576,9 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
               <div className="lg:col-span-5">
                 <div ref={cardRef} className="legendary-card rounded-2xl overflow-hidden relative">
                   <div className="h-[420px] relative bg-gradient-to-br from-[#333539] via-[#1a1c20] to-[#111317] flex items-center justify-center overflow-hidden">
-                    {simResult?.customImage ? (
+                    {(simResult?.customImage || fallbackImage) ? (
                       <img
-                        src={simResult.customImage}
+                        src={simResult?.customImage || fallbackImage!}
                         alt={playerName}
                         className="absolute inset-0 w-full h-full object-cover opacity-90"
                       />
