@@ -44,16 +44,16 @@ const LAST_NAMES = [
 ];
 
 const CARTOON_AVATARS = [
-  "/images/cartoon-avatars/avatar-01.svg",
-  "/images/cartoon-avatars/avatar-02.svg",
-  "/images/cartoon-avatars/avatar-03.svg",
-  "/images/cartoon-avatars/avatar-04.svg",
-  "/images/cartoon-avatars/avatar-05.svg",
-  "/images/cartoon-avatars/avatar-06.svg",
-  "/images/cartoon-avatars/avatar-07.svg",
-  "/images/cartoon-avatars/avatar-08.svg",
-  "/images/cartoon-avatars/avatar-09.svg",
-  "/images/cartoon-avatars/avatar-10.svg",
+  "/images/cartoon-avatars/avatar-01.jpg",
+  "/images/cartoon-avatars/avatar-02.jpg",
+  "/images/cartoon-avatars/avatar-03.jpg",
+  "/images/cartoon-avatars/avatar-04.jpg",
+  "/images/cartoon-avatars/avatar-05.jpg",
+  "/images/cartoon-avatars/avatar-06.jpg",
+  "/images/cartoon-avatars/avatar-07.jpg",
+  "/images/cartoon-avatars/avatar-08.jpg",
+  "/images/cartoon-avatars/avatar-09.jpg",
+  "/images/cartoon-avatars/avatar-10.jpg",
 ];
 
 function deterministicIndex(seed: number, position: string, length: number, salt = ""): number {
