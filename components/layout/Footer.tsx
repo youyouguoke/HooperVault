@@ -19,6 +19,8 @@ const UI = {
           { label: "Start Building", href: "/en/build/mode" },
           { label: "Leaderboard", href: "/en/leaderboard" },
           { label: "Daily Challenge", href: "/en/challenge" },
+          { label: "Player Builder", href: "/en/basketball-player-builder" },
+          { label: "Build a Bucket Game", href: "/en/build-a-bucket-nba-game" },
         ],
       },
       {
@@ -52,6 +54,8 @@ const UI = {
           { label: "开始构建", href: "/zh-CN/build/mode" },
           { label: "排行榜", href: "/zh-CN/leaderboard" },
           { label: "每日挑战", href: "/zh-CN/challenge" },
+          { label: "球员构建器", href: "/zh-CN/basketball-player-builder" },
+          { label: "Build a Bucket 游戏", href: "/zh-CN/build-a-bucket-nba-game" },
         ],
       },
       {
