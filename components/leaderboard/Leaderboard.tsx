@@ -140,11 +140,7 @@ function TopCard({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: "
   const name = getDisplayName(hooper);
   const borderColor = rank === 1 ? "#F2CA50" : rank === 2 ? "#C0C0C0" : "#CD7F32";
   const href = `/${lang}/hooper?slug=${hooper.slug}`;
-  const rawUser = hooper.username;
-  const isPlaceholder = !rawUser || rawUser === "游客" || rawUser === "Guest";
-  const username = isPlaceholder
-    ? (hooper.first_name ? `${hooper.first_name}${hooper.last_name ? " " + hooper.last_name : ""}` : (lang === "zh-CN" ? "游客" : "Guest"))
-    : rawUser;
+  const username = hooper.username === "游客" ? (lang === "zh-CN" ? "游客" : "Guest") : (hooper.username || (lang === "zh-CN" ? "游客" : "Guest"));
   const timeAgo = formatTimeAgo(hooper.created_at);
   const hasStats = hooper.season_wins > 0 || hooper.season_losses > 0;
   const record = `${hooper.season_wins}-${hooper.season_losses}`;
@@ -229,11 +225,7 @@ function TableRow({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: 
   const tier = getTier(hooper.overall);
   const name = getDisplayName(hooper);
   const href = `/${lang}/hooper?slug=${hooper.slug}`;
-  const rawUser = hooper.username;
-  const isPlaceholder = !rawUser || rawUser === "游客" || rawUser === "Guest";
-  const username = isPlaceholder
-    ? (hooper.first_name ? `${hooper.first_name}${hooper.last_name ? " " + hooper.last_name : ""}` : (lang === "zh-CN" ? "游客" : "Guest"))
-    : rawUser;
+  const username = hooper.username === "游客" ? (lang === "zh-CN" ? "游客" : "Guest") : (hooper.username || (lang === "zh-CN" ? "游客" : "Guest"));
   const timeAgo = formatTimeAgo(hooper.created_at);
   const hasStats = hooper.season_wins > 0 || hooper.season_losses > 0;
   const record = `${hooper.season_wins}-${hooper.season_losses}`;

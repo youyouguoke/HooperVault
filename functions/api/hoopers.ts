@@ -82,11 +82,8 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       }
     }
 
-    // Derive display username: explicit username > firstName+lastName > JWT name > "Guest"
-    const displayName = username
-      || [firstName, lastName].filter(Boolean).join(" ")
-      || jwtName
-      || "Guest";
+    // Username = explicit username > JWT name > "Guest" (NOT firstName/lastName, those are the hooper's name)
+    const displayName = username || jwtName || "Guest";
 
     await env.DB
       .prepare(
@@ -148,12 +145,9 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
       setClauses.push("first_name = ?", "last_name = ?");
       updates.push(firstName || null, lastName || null);
     }
-    // Update username from explicit username, or derive from firstName/lastName, or JWT name
-    if (username !== undefined || firstName !== undefined || lastName !== undefined) {
-      const derivedName = username
-        || [firstName, lastName].filter(Boolean).join(" ")
-        || jwtName
-        || "Guest";
+    // Update username only if explicitly provided or from JWT name
+    if (username !== undefined) {
+      const derivedName = username || jwtName || "Guest";
       setClauses.push("username = ?");
       updates.push(derivedName);
     }
