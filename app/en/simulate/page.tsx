@@ -573,6 +573,7 @@ function SimulatePageInner() {
             rpg: parseFloat(rpg),
             apg: parseFloat(apg),
             championship: champion,
+            customImage: customImage || undefined,
           }),
         }).catch(() => {}); // fire-and-forget
       }
@@ -644,6 +645,7 @@ function SimulatePageInner() {
             rpg: parseFloat(rpg),
             apg: parseFloat(apg),
             championship: champion,
+            customImage: customImage || undefined,
           }),
         }).catch(() => {}); // fire-and-forget
       }

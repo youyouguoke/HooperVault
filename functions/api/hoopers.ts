@@ -57,9 +57,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       rpg?: number;
       apg?: number;
       championship?: boolean;
+      customImage?: string;
     }>();
 
-    const { position, mode, seed, history, overall, archetype, firstName, lastName, username, seasonWins, seasonLosses, ppg, rpg, apg, championship } = body;
+    const { position, mode, seed, history, overall, archetype, firstName, lastName, username, seasonWins, seasonLosses, ppg, rpg, apg, championship, customImage } = body;
 
     if (!position || !history || !overall || !archetype) {
       return new Response(
@@ -87,9 +88,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     await env.DB
       .prepare(
-        "INSERT INTO hoopers (slug, position, mode, seed, history, overall, archetype, first_name, last_name, username, season_wins, season_losses, ppg, rpg, apg, championship, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO hoopers (slug, position, mode, seed, history, overall, archetype, first_name, last_name, username, season_wins, season_losses, ppg, rpg, apg, championship, user_id, custom_image) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
       )
-      .bind(slug, position, mode, seed, history, overall, archetype, firstName || null, lastName || null, displayName, seasonWins || 0, seasonLosses || 0, ppg || 0, rpg || 0, apg || 0, championship ? 1 : 0, userId)
+      .bind(slug, position, mode, seed, history, overall, archetype, firstName || null, lastName || null, displayName, seasonWins || 0, seasonLosses || 0, ppg || 0, rpg || 0, apg || 0, championship ? 1 : 0, userId, customImage || null)
       .run();
 
     return new Response(
@@ -127,6 +128,7 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
       rpg?: number;
       apg?: number;
       championship?: boolean;
+      customImage?: string;
     }>();
 
     const { slug, firstName, lastName, username, seasonWins, seasonLosses, ppg, rpg, apg, championship } = body;
@@ -157,6 +159,7 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
     if (rpg !== undefined) { setClauses.push("rpg = ?"); updates.push(rpg); }
     if (apg !== undefined) { setClauses.push("apg = ?"); updates.push(apg); }
     if (championship !== undefined) { setClauses.push("championship = ?"); updates.push(championship ? 1 : 0); }
+    if (customImage !== undefined) { setClauses.push("custom_image = ?"); updates.push(customImage || null); }
     if (setClauses.length === 0) {
       return new Response(
         JSON.stringify({ error: "No fields to update" }),
@@ -191,7 +194,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const mode = url.searchParams.get("mode"); // "classic" | "blind" | null = all
 
   try {
-    let query = "SELECT slug, position, mode, overall, archetype, first_name, last_name, username, season_wins, season_losses, ppg, rpg, apg, championship, created_at FROM hoopers";
+    let query = "SELECT slug, position, mode, overall, archetype, first_name, last_name, username, season_wins, season_losses, ppg, rpg, apg, championship, custom_image, created_at FROM hoopers";
     const bindings: (string | number)[] = [];
 
     if (mode && (mode === "classic" || mode === "blind")) {
@@ -218,6 +221,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       rpg: number;
       apg: number;
       championship: number;
+      custom_image: string | null;
       created_at: string;
     }>();
 

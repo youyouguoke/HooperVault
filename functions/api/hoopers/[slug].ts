@@ -7,7 +7,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   try {
     const hooper = await env.DB
-      .prepare("SELECT slug, position, mode, seed, history, overall, archetype, first_name, last_name, created_at FROM hoopers WHERE slug = ?")
+      .prepare("SELECT slug, position, mode, seed, history, overall, archetype, first_name, last_name, custom_image, created_at FROM hoopers WHERE slug = ?")
       .bind(slug)
       .first<{
         slug: string;
@@ -19,6 +19,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         archetype: string;
         first_name: string | null;
         last_name: string | null;
+        custom_image: string | null;
         created_at: string;
       }>();
 

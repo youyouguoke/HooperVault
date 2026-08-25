@@ -179,6 +179,7 @@ type HooperApiData = {
   archetype: string;
   first_name: string | null;
   last_name: string | null;
+  custom_image: string | null;
   created_at: string;
 };
 
@@ -578,9 +579,9 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
               <div className="lg:col-span-5">
                 <div ref={cardRef} className="legendary-card rounded-2xl overflow-hidden relative">
                   <div className="h-[420px] relative bg-gradient-to-br from-[#333539] via-[#1a1c20] to-[#111317] flex items-center justify-center overflow-hidden">
-                    {(simResult?.customImage || fallbackImage) ? (
+                    {(simResult?.customImage || fallbackImage || data?.custom_image) ? (
                       <img
-                        src={simResult?.customImage || fallbackImage!}
+                        src={simResult?.customImage || fallbackImage || data?.custom_image || ""}
                         alt={playerName}
                         className="absolute inset-0 w-full h-full object-cover opacity-90"
                       />
