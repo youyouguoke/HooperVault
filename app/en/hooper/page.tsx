@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    title: "Your Hooper Legacy | HooperVault",
+    title: "Your Hooper Legacy",
     description: "View this legendary Hooper build on HooperVault.",
     url: "/en/hooper",
     images: [
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Your Hooper Legacy | HooperVault",
+    title: "Your Hooper Legacy",
     description: "View this legendary Hooper build on HooperVault.",
     images: ["/images/og-default.jpg"],
   },

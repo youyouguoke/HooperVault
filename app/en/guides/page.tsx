@@ -2,16 +2,56 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
+import { JsonLd, buildBreadcrumbList, buildFAQSchema, buildHowToSchema } from "@/components/seo/JsonLd";
 import { Section } from "@/components/ui/Section";
 
 export const metadata: Metadata = {
-  title: "Guides | HooperVault",
-  description: "HooperVault - Build your dream basketball player with legendary skills and simulate your legacy.",
+  title: "Vault Playbook — How to Build a Hooper",
+  description: "Learn how to draft legendary skills, build your dream basketball player, simulate an 82-game season, and share your legacy. Complete HooperVault beginner guide.",
+  keywords: ["hooper vault", "basketball player builder", "NBA build game", "basketball season simulator"],
+  alternates: {
+    canonical: "/en/guides",
+    languages: { en: "/en/guides", "zh-CN": "/zh-CN/guides", "x-default": "/en/guides" },
+  },
+  openGraph: {
+    type: "website",
+    siteName: "HooperVault",
+    title: "Guides",
+    description: "Learn how to draft legendary skills, build your dream basketball player, simulate an 82-game season, and share your legacy.",
+    url: "/en/guides",
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630 }],
+    locale: "en_US",
+  },
 };
 
 export default function GuidesPage() {
   return (
     <>
+      <JsonLd data={buildBreadcrumbList([{ name: "Home", href: "/en" }, { name: "Guides", href: "/en/guides" }])} />
+      <JsonLd data={buildHowToSchema(
+        "How to Build Your Hooper in HooperVault",
+        "Create your dream basketball player in 5 simple steps: draft skills, pick a mode, read your archetype, simulate the season, and share your legacy.",
+        [
+          { name: "Choose Legends", text: "Draft 13 legendary skills inspired by basketball greats across shooting, finishing, playmaking, defense, and mental attributes." },
+          { name: "Pick a Mode", text: "Select Classic mode for full visibility of ratings, or Blind mode to draft by instinct alone. Both unlock the same archetypes." },
+          { name: "Read the Archetype", text: "After 13 picks, receive your archetype identity such as Two-Way Superstar, Splash Legend, or Floor General. This determines your badges." },
+          { name: "Simulate the Season", text: "Run an 82-game schedule against generated opponents. Win games, build streaks, and fight through four playoff rounds for the championship." },
+          { name: "Share Your Legacy", text: "Get a permanent result page with your full legacy card including attributes, season stats, playoff journey, awards, and story. Share or download." },
+        ]
+      )} />
+      <JsonLd data={buildFAQSchema([
+        { question: "What is HooperVault?", answer: "HooperVault is a free basketball build simulator where you draft legendary skills inspired by real NBA greats, create a custom player, simulate an 82-game season, and share your unique legacy card." },
+        { question: "Is HooperVault a basketball player builder?", answer: "Yes. HooperVault is a browser-based basketball player builder where you draft 13 legendary skills, choose an archetype, and test your build across a full 82-game simulated season. No download or sign-up required." },
+        { question: "How many skills do I draft?", answer: "You draft 13 skills across five categories: Shooting, Finishing, Playmaking, Defense, and Mental. Each skill adds points to specific attributes and shapes your archetype." },
+        { question: "How does the HooperVault draft work?", answer: "The draft has 13 rounds. Each round you pick one legendary skill from a pool of basketball greats. Your picks determine your attribute ratings, archetype, and badge eligibility. You can play in Classic, Blind, or Chaos mode." },
+        { question: "What is the difference between Classic and Blind mode?", answer: "Classic mode shows you all attribute ratings as you draft, letting you optimize strategically. Blind mode hides ratings so you draft purely on skill names and basketball knowledge." },
+        { question: "Which draft mode is best for beginners?", answer: "Classic mode is best for beginners because it shows all attribute ratings. You can learn how skills distribute points across attributes by watching the numbers change as you draft." },
+        { question: "What is an archetype?", answer: "An archetype is your build identity determined by your 13 skill picks. Examples include Splash Legend (elite shooter), Floor General (playmaker), and Rim Protector (defensive anchor). Each archetype unlocks specific badges." },
+        { question: "What are the archetypes in HooperVault?", answer: "HooperVault has 6 archetypes: Splash Legend (shooter), Floor General (playmaker), Two-Way Superstar (balanced), Legendary Slasher (finisher), Rim Protector (defender), and Versatile Wing (all-around). Your archetype is determined by your skill picks." },
+        { question: "Can I share my build?", answer: "Yes! Every build gets a permanent shareable page with your full legacy card including attributes, season stats, playoff results, awards, and story. You can also download a card image for social media." },
+        { question: "Is HooperVault free?", answer: "Yes, HooperVault is completely free to use. No sign-up required, no pay-to-win mechanics. Just draft, build, simulate, and share." },
+        { question: "Is this an official NBA game?", answer: "No. HooperVault is an independent fan-made project and is not affiliated with, endorsed by, or connected to the NBA, NBPA, 2K, or any basketball organization. Player names and skill references are used for entertainment and informational purposes only." },
+      ])} />
       <Section className="relative border-b border-white/8 bg-[#111317] pt-16 pb-12 overflow-hidden">
         {/* Background image */}
         <div
@@ -49,6 +89,9 @@ export default function GuidesPage() {
               <ExploreCard href="/en/builds" title="Build Guides" body="20 optimized builds with skills and attribute targets." />
               <ExploreCard href="/en/archetypes" title="Archetypes" body="Discover every play style your Hooper can become." />
               <ExploreCard href="/en/legends" title="Legend Skills" body="Browse legendary skills by category and inspiration." />
+              <ExploreCard href="/en/basketball-player-builder" title="Basketball Player Builder" body="Create your custom player with the free browser-based builder." />
+              <ExploreCard href="/en/blog" title="Strategy Blog" body="Draft strategy guides, build breakdowns, and season tips." />
+              <ExploreCard href="/en/blog/build-a-bucket-nba-game" title="Build a Bucket" body="How to draft a scorer that lasts 82 games." />
             </div>
           </div>
         </Container>

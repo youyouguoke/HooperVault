@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
+import { JsonLd, buildBreadcrumbList, buildItemListSchema } from "@/components/seo/JsonLd";
 import { Section } from "@/components/ui/Section";
 import { ARCHETYPES } from "@/data/seo-content";
 
 export const metadata: Metadata = {
-  title: "Archetypes | HooperVault",
+  title: "Archetypes",
   description: "Explore every basketball archetype in HooperVault. Splash Legend, Floor General, Rim Protector, Two-Way Superstar and more.",
   alternates: {
     canonical: "/en/archetypes",
@@ -15,6 +16,15 @@ export const metadata: Metadata = {
       "zh-CN": "/zh-CN/archetypes",
       "x-default": "/en/archetypes",
     },
+  },
+  openGraph: {
+    type: "website",
+    siteName: "HooperVault",
+    title: "Archetypes",
+    description: "Explore every basketball archetype in HooperVault. Splash Legend, Floor General, Rim Protector, Two-Way Superstar and more.",
+    url: "/en/archetypes",
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630 }],
+    locale: "en_US",
   },
 };
 
@@ -30,6 +40,8 @@ const ICONS = {
 export default function ArchetypesIndexPage() {
   return (
     <>
+      <JsonLd data={buildBreadcrumbList([{ name: "Home", href: "/en" }, { name: "Archetypes", href: "/en/archetypes" }])} />
+      <JsonLd data={buildItemListSchema(ARCHETYPES.map(a => ({ name: a.name, url: `/en/archetypes/${a.id}` })))} />
       <div className="relative overflow-hidden border-b border-white/8 bg-[#111317] pt-16 pb-10">
         <div className="stadium-glow" />
         <Container>

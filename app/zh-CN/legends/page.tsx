@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
+import { JsonLd, buildBreadcrumbList, buildItemListSchema } from "@/components/seo/JsonLd";
 import { Section } from "@/components/ui/Section";
 import { LEGEND_SKILL_PAGES } from "@/data/seo-content";
 
 export const metadata: Metadata = {
-  title: "传奇技能 | HooperVault",
+  title: "传奇技能",
   description: "浏览 HooperVault 中的传奇篮球技能灵感：投射、组织、防守、内线和精神技能。",
   alternates: {
     canonical: "/zh-CN/legends",
@@ -29,6 +30,8 @@ const ICONS: Record<string, string> = {
 export default function LegendSkillsIndexPage() {
   return (
     <>
+      <JsonLd data={buildBreadcrumbList([{ name: "首页", href: "/zh-CN" }, { name: "传奇技能", href: "/zh-CN/legends" }])} />
+      <JsonLd data={buildItemListSchema(LEGEND_SKILL_PAGES.map(l => ({ name: l.displayNameZh, url: `/zh-CN/legends/${l.id}` })))} />
       <div className="relative overflow-hidden border-b border-white/8 bg-[#111317] pt-16 pb-10">
         <div className="stadium-glow" />
         <Container>

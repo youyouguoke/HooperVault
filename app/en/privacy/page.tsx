@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | HooperVault",
-  description: "HooperVault - Build your dream basketball player with legendary skills and simulate your legacy.",
+  title: "Privacy Policy",
+  description: "HooperVault privacy policy. Learn how we collect, use, and protect your personal information on our basketball build simulator.",
+  alternates: {
+    canonical: "/en/privacy",
+    languages: { en: "/en/privacy", "zh-CN": "/zh-CN/privacy", "x-default": "/en/privacy" },
+  },
+  robots: { index: false, follow: true },
 };
 
 export default function PrivacyPolicyPage() {

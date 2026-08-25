@@ -1,15 +1,31 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
+import { JsonLd, buildBreadcrumbList } from "@/components/seo/JsonLd";
 import { Section } from "@/components/ui/Section";
 
 export const metadata: Metadata = {
-  title: "关于 | HooperVault",
-  description: "HooperVault - 用传奇技能打造你的梦想篮球球员，模拟属于你的篮球传奇。",
+  title: "关于",
+  description: "HooperVault 是一个球迷自制的篮球实验室，草拟传奇技能、打造独特 Hooper、模拟82场比赛传奇。无真实阵容，无付费制胜。",
+  keywords: ["关于 hoopervault", "篮球构建模拟器", "球迷自制篮球游戏", "篮球草拟模拟器"],
+  alternates: {
+    canonical: "/zh-CN/about",
+    languages: { en: "/en/about", "zh-CN": "/zh-CN/about", "x-default": "/en/about" },
+  },
+  openGraph: {
+    type: "website",
+    siteName: "HooperVault",
+    title: "关于",
+    description: "HooperVault 是一个球迷自制的篮球实验室，草拟传奇技能、打造独特 Hooper、模拟82场比赛传奇。",
+    url: "/zh-CN/about",
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630 }],
+    locale: "zh_CN",
+  },
 };
 
 export default function AboutPage() {
   return (
     <>
+      <JsonLd data={buildBreadcrumbList([{ name: "首页", href: "/zh-CN" }, { name: "关于", href: "/zh-CN/about" }])} />
       <Section className="relative border-b border-white/8 bg-[#111317] pt-16 pb-8">
         <Container>
           <div className="max-w-3xl mx-auto text-center">

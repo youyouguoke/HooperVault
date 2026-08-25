@@ -4,8 +4,12 @@ import { Section } from "@/components/ui/Section";
 import { ModeCards } from "@/components/build/ModeCards";
 
 export const metadata: Metadata = {
-  title: "选择选秀模式 | HooperVault",
-  description: "在 HooperVault 选择经典或盲选选秀模式，打造你的终极篮球球员。",
+  title: "\u9009\u62e9\u9009\u79c0\u6a21\u5f0f",
+  description: "\u5728 HooperVault \u9009\u62e9\u7ecf\u5178\u6216\u76f2\u9009\u9009\u79c0\u6a21\u5f0f\uff0c\u6253\u9020\u4f60\u7684\u7ec8\u6781\u7bee\u7403\u7403\u5458\u3002",
+  alternates: {
+    canonical: "/zh-CN/build/mode",
+    languages: { en: "/en/build/mode", "zh-CN": "/zh-CN/build/mode", "x-default": "/en/build/mode" },
+  },
 };
 
 export default function ModePage() {

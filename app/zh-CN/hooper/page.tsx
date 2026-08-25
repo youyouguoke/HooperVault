@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    title: "你的 Hooper 传奇 | HooperVault",
+    title: "你的 Hooper 传奇",
     description: "在 HooperVault 查看这个传奇 Hooper 构建。",
     url: "/zh-CN/hooper",
     images: [ogImageMeta],
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "你的 Hooper 传奇 | HooperVault",
+    title: "你的 Hooper 传奇",
     description: "在 HooperVault 查看这个传奇 Hooper 构建。",
     images: ["/images/og-default.jpg"],
   },

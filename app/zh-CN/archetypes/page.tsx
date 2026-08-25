@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
+import { JsonLd, buildBreadcrumbList, buildItemListSchema } from "@/components/seo/JsonLd";
 import { Section } from "@/components/ui/Section";
 import { ARCHETYPES } from "@/data/seo-content";
 
 export const metadata: Metadata = {
-  title: "球风 | HooperVault",
+  title: "球风",
   description: "探索 HooperVault 中的每一种球风：水花传奇、球场指挥官、禁区守护者、攻防一体巨星等。",
   alternates: {
     canonical: "/zh-CN/archetypes",
@@ -30,6 +31,8 @@ const ICONS = {
 export default function ArchetypesIndexPage() {
   return (
     <>
+      <JsonLd data={buildBreadcrumbList([{ name: "首页", href: "/zh-CN" }, { name: "球风", href: "/zh-CN/archetypes" }])} />
+      <JsonLd data={buildItemListSchema(ARCHETYPES.map(a => ({ name: a.nameZh, url: `/zh-CN/archetypes/${a.id}` })))} />
       <div className="relative overflow-hidden border-b border-white/8 bg-[#111317] pt-16 pb-10">
         <div className="stadium-glow" />
         <Container>

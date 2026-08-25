@@ -45,13 +45,15 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     const { results } = await env.DB
       .prepare(`
         SELECT 
-          hooper_slug, overall, archetype, first_name, last_name,
-          season_wins, season_losses, playoff_wins, championship,
-          season_score, build_score, challenge_bonus, total_score,
-          submitted_at
-        FROM challenge_entries
-        WHERE challenge_id = ?
-        ORDER BY total_score DESC, submitted_at ASC
+          ce.hooper_slug, ce.overall, ce.archetype, ce.first_name, ce.last_name,
+          ce.season_wins, ce.season_losses, ce.playoff_wins, ce.championship,
+          ce.season_score, ce.build_score, ce.challenge_bonus, ce.total_score,
+          ce.submitted_at,
+          COALESCE(h.username, '游客') as username
+        FROM challenge_entries ce
+        LEFT JOIN hoopers h ON h.slug = ce.hooper_slug
+        WHERE ce.challenge_id = ?
+        ORDER BY ce.total_score DESC, ce.submitted_at ASC
         LIMIT ? OFFSET ?
       `)
       .bind(targetChallengeId, limit, offset)
@@ -61,6 +63,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         archetype: string;
         first_name: string | null;
         last_name: string | null;
+        username: string;
         season_wins: number;
         season_losses: number;
         playoff_wins: number;

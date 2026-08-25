@@ -1,15 +1,31 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
+import { JsonLd, buildBreadcrumbList } from "@/components/seo/JsonLd";
 import { Section } from "@/components/ui/Section";
 
 export const metadata: Metadata = {
-  title: "About | HooperVault",
-  description: "HooperVault - Build your dream basketball player with legendary skills and simulate your legacy.",
+  title: "About",
+  description: "HooperVault is a fan-built basketball lab where you draft legendary skills, build a unique Hooper, and simulate an 82-game legacy. No real rosters, no pay-to-win.",
+  keywords: ["hooper vault", "basketball player builder", "NBA build game", "basketball season simulator"],
+  alternates: {
+    canonical: "/en/about",
+    languages: { en: "/en/about", "zh-CN": "/zh-CN/about", "x-default": "/en/about" },
+  },
+  openGraph: {
+    type: "website",
+    siteName: "HooperVault",
+    title: "About",
+    description: "HooperVault is a fan-built basketball lab where you draft legendary skills, build a unique Hooper, and simulate an 82-game legacy.",
+    url: "/en/about",
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630 }],
+    locale: "en_US",
+  },
 };
 
 export default function AboutPage() {
   return (
     <>
+      <JsonLd data={buildBreadcrumbList([{ name: "Home", href: "/en" }, { name: "About", href: "/en/about" }])} />
       <Section className="relative border-b border-white/8 bg-[#111317] pt-16 pb-8">
         <Container>
           <div className="max-w-3xl mx-auto text-center">

@@ -22,6 +22,7 @@ type Entry = {
   archetype: string;
   first_name: string | null;
   last_name: string | null;
+  username: string;
   season_wins: number;
   season_losses: number;
   playoff_wins: number;
@@ -76,6 +77,21 @@ function RankIcon({ rank }: { rank: number }) {
   if (rank === 2) return <Medal className="w-5 h-5 text-[#C0C0C0]" />;
   if (rank === 3) return <Award className="w-5 h-5 text-[#CD7F32]" />;
   return <span className="text-sm text-[#A8A8B3] font-mono w-5 text-center">{rank}</span>;
+}
+
+function formatTimeAgo(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diff = now - then;
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months}mo ago`;
 }
 
 function formatTime(ms: number): string {
@@ -242,6 +258,8 @@ export function Challenge({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
                       const href = `/${lang}/hooper?slug=${entry.hooper_slug}`;
                       const record = `${entry.season_wins}-${entry.season_losses}`;
                       const isChampion = entry.championship === 1;
+                      const username = entry.username === "游客" ? (lang === "zh-CN" ? "游客" : "Guest") : (entry.username || (lang === "zh-CN" ? "游客" : "Guest"));
+                      const timeAgo = formatTimeAgo(entry.submitted_at);
 
                       return (
                         <Link
@@ -268,6 +286,11 @@ export function Challenge({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
                             <p className="text-xs text-[#A8A8B3]">
                               {entry.archetype} · {record}
                             </p>
+                          </div>
+
+                          <div className="hidden sm:flex flex-col items-end gap-0.5">
+                            <span className="text-[10px] text-[#A8A8B3]">👤 {username}</span>
+                            <span className="text-[10px] text-[#A8A8B3]/60">{timeAgo}</span>
                           </div>
 
                           <span

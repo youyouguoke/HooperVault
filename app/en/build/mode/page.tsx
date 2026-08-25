@@ -4,8 +4,13 @@ import { Section } from "@/components/ui/Section";
 import { ModeCards } from "@/components/build/ModeCards";
 
 export const metadata: Metadata = {
-  title: "Choose Your Draft Mode | HooperVault",
-  description: "Select Classic or Blind draft mode to build your ultimate basketball player in HooperVault.",
+  title: "Vault Draft — Choose Your Mode",
+  description: "Start your Vault Draft. Choose Classic, Blind, or Chaos mode to build your custom basketball player with legendary skills in HooperVault.",
+  keywords: ["hooper vault", "basketball player builder", "vault draft", "NBA build game", "draft mode"],
+  alternates: {
+    canonical: "/en/build/mode",
+    languages: { en: "/en/build/mode", "zh-CN": "/zh-CN/build/mode", "x-default": "/en/build/mode" },
+  },
 };
 
 export default function ModePage() {

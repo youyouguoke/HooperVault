@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
+import { JsonLd, buildBreadcrumbList, buildItemListSchema } from "@/components/seo/JsonLd";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { BUILDS } from "@/data/seo-content";
 
 export const metadata: Metadata = {
-  title: "构建指南 | HooperVault",
+  title: "构建指南",
   description: "浏览 HooperVault 中最优秀的篮球球员构建。射手、防守者、突破手、组织者和全能巨星构建，附推荐技能。",
   alternates: {
     canonical: "/zh-CN/builds",
@@ -22,6 +23,8 @@ export const metadata: Metadata = {
 export default function BuildGuidesIndexPage() {
   return (
     <>
+      <JsonLd data={buildBreadcrumbList([{ name: "首页", href: "/zh-CN" }, { name: "构建指南", href: "/zh-CN/builds" }])} />
+      <JsonLd data={buildItemListSchema(BUILDS.map(b => ({ name: b.titleZh, url: `/zh-CN/builds/${b.slug}` })))} />
       <div className="relative overflow-hidden border-b border-white/8 bg-[#111317] pt-16 pb-10">
         <div className="stadium-glow" />
         <Container>

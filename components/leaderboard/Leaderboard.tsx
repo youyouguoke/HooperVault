@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Trophy, Medal, Award, ChevronLeft, ChevronRight, Crown, Zap, Star, Shield } from "lucide-react";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
@@ -14,6 +15,13 @@ type Hooper = {
   archetype: string;
   first_name: string | null;
   last_name: string | null;
+  username: string;
+  season_wins: number;
+  season_losses: number;
+  ppg: number;
+  rpg: number;
+  apg: number;
+  championship: number;
   created_at: string;
 };
 
@@ -49,9 +57,36 @@ function t(key: keyof typeof UI, lang: "en" | "zh-CN"): string {
   return UI[key][lang];
 }
 
+const FIRST_NAMES = [
+  "Orion", "Jax", "Kai", "Mason", "Eli", "Titan", "Duke", "Cade", "Axel", "Blaze",
+  "Ryder", "Knox", "Zane", "Crew", "Jett", "Rhett", "Kash", "Slate", "Vance", "Dray",
+  "Tate", "Miles", "Leo", "Finn", "Kobe", "Kyrie", "Giannis", "Luka", "Jalen", "Zion",
+];
+const LAST_NAMES = [
+  "Steele", "Vale", "Cross", "Knight", "Storm", "Frost", "Holt", "Reign", "Brooks", "Prime",
+  "Blaze", "King", "Ward", "Dane", "Cruz", "Hale", "Stone", "Fox", "Graves", "Mercer",
+  "Wright", "Young", "Carter", "Davis", "Evans", "Green", "Hall", "Lewis", "Morgan", "Parker",
+];
+
+function hashSlug(slug: string): number {
+  let hash = 0;
+  for (let i = 0; i < slug.length; i++) {
+    hash = ((hash << 5) - hash + slug.charCodeAt(i)) & 0xffffffff;
+  }
+  hash ^= hash >>> 16;
+  hash = (hash * 0x85ebca6b) & 0xffffffff;
+  hash ^= hash >>> 13;
+  hash = (hash * 0xc2b2ae35) & 0xffffffff;
+  hash ^= hash >>> 16;
+  return Math.abs(hash);
+}
+
 function getDisplayName(h: Hooper): string {
   if (h.first_name && h.last_name) return `${h.first_name} ${h.last_name}`;
-  return h.slug.split("-")[0].toUpperCase() + " Builder";
+  const hash = hashSlug(h.slug);
+  const first = FIRST_NAMES[hash % FIRST_NAMES.length];
+  const last = LAST_NAMES[(hash >> 8) % LAST_NAMES.length];
+  return `${first} ${last}`;
 }
 
 function getTier(overall: number): { label: string; color: string; bg: string } {
@@ -68,11 +103,30 @@ function RankIcon({ rank }: { rank: number }) {
   return <span className="text-sm text-[#A8A8B3] font-mono w-5 text-center">{rank}</span>;
 }
 
+function formatTimeAgo(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diff = now - then;
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months}mo ago`;
+}
+
 function TopCard({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: "en" | "zh-CN" }) {
   const tier = getTier(hooper.overall);
   const name = getDisplayName(hooper);
   const borderColor = rank === 1 ? "#F2CA50" : rank === 2 ? "#C0C0C0" : "#CD7F32";
   const href = `/${lang}/hooper?slug=${hooper.slug}`;
+  const username = hooper.username === "游客" ? (lang === "zh-CN" ? "游客" : "Guest") : (hooper.username || (lang === "zh-CN" ? "游客" : "Guest"));
+  const timeAgo = formatTimeAgo(hooper.created_at);
+  const hasStats = hooper.season_wins > 0 || hooper.season_losses > 0;
+  const record = `${hooper.season_wins}-${hooper.season_losses}`;
 
   return (
     <Link
@@ -114,6 +168,30 @@ function TopCard({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: "
       </div>
       <p className="mt-1 text-xs text-[#A8A8B3] text-center">{hooper.archetype}</p>
       <p className="text-[10px] text-[#A8A8B3]/60 uppercase tracking-wider">{hooper.position}</p>
+
+      {/* Game Stats */}
+      {hasStats && (
+        <div className="mt-2 w-full border-t border-white/5 pt-2">
+          <div className="flex items-center justify-center gap-3 text-[10px]">
+            <span className="text-[#F2CA50] font-bold">{record}</span>
+            {hooper.championship === 1 && <span className="text-[#F2CA50]">🏆</span>}
+          </div>
+          <div className="flex items-center justify-center gap-2 text-[9px] text-[#A8A8B3]/80 mt-0.5">
+            <span>{hooper.ppg.toFixed(1)} PPG</span>
+            <span>·</span>
+            <span>{hooper.rpg.toFixed(1)} RPG</span>
+            <span>·</span>
+            <span>{hooper.apg.toFixed(1)} APG</span>
+          </div>
+        </div>
+      )}
+
+      {/* Username + Time */}
+      <div className="mt-2 flex items-center gap-2 text-[10px] text-[#A8A8B3]/80">
+        <span>👤 {username}</span>
+        <span>·</span>
+        <span>{timeAgo}</span>
+      </div>
     </Link>
   );
 }
@@ -122,34 +200,64 @@ function TableRow({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: 
   const tier = getTier(hooper.overall);
   const name = getDisplayName(hooper);
   const href = `/${lang}/hooper?slug=${hooper.slug}`;
+  const username = hooper.username === "游客" ? (lang === "zh-CN" ? "游客" : "Guest") : (hooper.username || (lang === "zh-CN" ? "游客" : "Guest"));
+  const timeAgo = formatTimeAgo(hooper.created_at);
+  const hasStats = hooper.season_wins > 0 || hooper.season_losses > 0;
+  const record = `${hooper.season_wins}-${hooper.season_losses}`;
+  const totalGames = hooper.season_wins + hooper.season_losses;
+  const winPct = totalGames > 0 ? ((hooper.season_wins / totalGames) * 100).toFixed(0) : "—";
 
   return (
     <Link
       href={href}
       className="group flex items-center gap-3 rounded-xl border border-white/5 bg-[#111317]/50 px-4 py-3 transition-all hover:border-white/10 hover:bg-[#111317]"
     >
+      {/* Rank */}
       <div className="flex items-center justify-center w-8">
         <RankIcon rank={rank} />
       </div>
 
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white truncate group-hover:text-[#F2CA50] transition-colors">
-          {name}
-        </p>
-        <p className="text-xs text-[#A8A8B3]">
-          {hooper.archetype} · {hooper.position}
-        </p>
+      {/* Name + Archetype */}
+      <div className="w-36 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-semibold text-white truncate group-hover:text-[#F2CA50] transition-colors">
+            {name}
+          </p>
+          {hooper.championship === 1 && <span className="text-[10px]">🏆</span>}
+        </div>
+        <p className="text-[10px] text-[#A8A8B3] truncate">{hooper.archetype} · {hooper.position}</p>
       </div>
 
-      <span
-        className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
-        style={{ background: tier.bg, color: tier.color }}
-      >
-        {tier.label}
-      </span>
+      {/* Stats — middle column */}
+      <div className="flex-1 grid grid-cols-5 items-center text-xs text-center">
+        {hasStats ? (
+          <>
+            <span className="text-[#F2CA50] font-bold">{record}</span>
+            <span className="text-[#A8A8B3]">{winPct}%</span>
+            <span className="text-white">{hooper.ppg.toFixed(1)}</span>
+            <span className="text-white">{hooper.rpg.toFixed(1)}</span>
+            <span className="text-white">{hooper.apg.toFixed(1)}</span>
+          </>
+        ) : (
+          <span className="col-span-5 text-[#A8A8B3]/40 text-[10px]">—</span>
+        )}
+      </div>
 
-      <div className="text-right">
-        <span className="text-lg font-black" style={{ color: tier.color }}>
+      {/* Username + Time */}
+      <div className="hidden sm:flex flex-col items-end gap-0.5 w-20">
+        <span className="text-[10px] text-[#A8A8B3]">👤 {username}</span>
+        <span className="text-[10px] text-[#A8A8B3]/60">{timeAgo}</span>
+      </div>
+
+      {/* Tier + OVR */}
+      <div className="flex items-center gap-2">
+        <span
+          className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+          style={{ background: tier.bg, color: tier.color }}
+        >
+          {tier.label}
+        </span>
+        <span className="text-lg font-black w-8 text-right" style={{ color: tier.color }}>
           {hooper.overall}
         </span>
       </div>
@@ -160,37 +268,24 @@ function TableRow({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: 
 const PAGE_SIZE = 20;
 
 export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
-  const [top3Data, setTop3Data] = useState<Hooper[]>([]);
+  const searchParams = useSearchParams();
+  const initialMode = (searchParams.get("mode") as "all" | "classic" | "blind") || "all";
+  const initialPage = Math.max(0, parseInt(searchParams.get("page") || "0", 10));
+
   const [tableData, setTableData] = useState<LeaderboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [mode, setMode] = useState<"all" | "classic" | "blind">("all");
-  const [page, setPage] = useState(0);
+  const [mode, setMode] = useState<"all" | "classic" | "blind">(initialMode);
+  const [page, setPage] = useState(initialPage);
 
-  // Fetch overall top 3 (independent of pagination, only depends on mode)
-  const fetchTop3 = useCallback(async (modeFilter: string) => {
-    try {
-      const params = new URLSearchParams({ limit: "3", offset: "0" });
-      if (modeFilter !== "all") params.set("mode", modeFilter);
-      const res = await fetch(`/api/hoopers?${params}`);
-      if (!res.ok) throw new Error("Failed to load top 3");
-      const json = await res.json();
-      setTop3Data(json.hoopers || []);
-    } catch {
-      // top3 fetch failure is non-critical
-    }
-  }, []);
-
-  // Fetch paginated table data (offset starts from rank 4 onward)
-  const fetchTable = useCallback(async (modeFilter: string, currentPage: number) => {
+  // Fetch paginated data (all entries in one list, max100)
+  const fetchData = useCallback(async (modeFilter: string, currentPage: number) => {
     setLoading(true);
     setError(null);
     try {
-      // Page 0 = ranks 4-23 (offset 3, limit 20), page 1 = ranks 24-43 (offset 23, limit 20), etc.
-      const offset = 3 + page * PAGE_SIZE;
-      const limit = PAGE_SIZE;
+      const offset = currentPage * PAGE_SIZE;
       const params = new URLSearchParams({
-        limit: String(limit),
+        limit: String(PAGE_SIZE),
         offset: String(offset),
       });
       if (modeFilter !== "all") params.set("mode", modeFilter);
@@ -198,7 +293,7 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
       const res = await fetch(`/api/hoopers?${params}`);
       if (!res.ok) throw new Error("Failed to load");
       const json = await res.json();
-      setTableData(json);
+      setTableData({ ...json, total: Math.min(json.total, 100) });
     } catch {
       setError("Failed to load leaderboard");
     } finally {
@@ -207,21 +302,27 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
   }, []);
 
   useEffect(() => {
-    fetchTop3(mode);
-  }, [mode, fetchTop3]);
-
-  useEffect(() => {
-    fetchTable(mode, page);
-  }, [mode, page, fetchTable]);
+    fetchData(mode, page);
+  }, [mode, page, fetchData]);
 
   const handleModeChange = (newMode: "all" | "classic" | "blind") => {
     setMode(newMode);
     setPage(0);
+    // Sync to URL for deep linking
+    const params = new URLSearchParams(window.location.search);
+    if (newMode === "all") {
+      params.delete("mode");
+    } else {
+      params.set("mode", newMode);
+    }
+    params.delete("page");
+    const newUrl = `${window.location.pathname}${params.toString() ? "?" + params : ""}`;
+    window.history.replaceState(null, "", newUrl);
   };
 
-  const totalRemaining = tableData ? tableData.total - 3 : 0;
+  const totalRemaining = tableData ? tableData.total : 0;
   const totalPages = totalRemaining > 0 ? Math.ceil(totalRemaining / PAGE_SIZE) : 0;
-  const startRank = 4 + page * PAGE_SIZE;
+  const startRank = 1 + page * PAGE_SIZE;
   const endRank = tableData ? Math.min(startRank + tableData.hoopers.length - 1, tableData.total) : 0;
 
   return (
@@ -272,7 +373,7 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
             <div className="text-center py-20">
               <p className="text-sm text-red-400">{error}</p>
             </div>
-          ) : top3Data.length === 0 && (!tableData || tableData.hoopers.length === 0) ? (
+          ) : !tableData || tableData.hoopers.length === 0 ? (
             <div className="text-center py-20">
               <Trophy className="w-12 h-12 text-[#A8A8B3]/30 mx-auto mb-4" />
               <p className="text-sm text-[#A8A8B3]">{t("empty", lang)}</p>
@@ -285,35 +386,27 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
             </div>
           ) : (
             <>
-              {/* Top 3 — always the same regardless of page */}
-              {top3Data.length > 0 && (
-                <div className={`grid gap-4 mb-10 ${top3Data.length === 1 ? "grid-cols-1 max-w-xs mx-auto" : top3Data.length === 2 ? "grid-cols-2 max-w-md mx-auto" : "grid-cols-1 sm:grid-cols-3"}`}>
-                  {top3Data.length === 3 ? (
-                    <>
-                      <div className="order-2 sm:order-1">
-                        <TopCard hooper={top3Data[1]} rank={2} lang={lang} />
-                      </div>
-                      <div className="order-1 sm:order-2">
-                        <TopCard hooper={top3Data[0]} rank={1} lang={lang} />
-                      </div>
-                      <div className="order-3">
-                        <TopCard hooper={top3Data[2]} rank={3} lang={lang} />
-                      </div>
-                    </>
-                  ) : (
-                    top3Data.map((h, i) => <TopCard key={h.slug} hooper={h} rank={i + 1} lang={lang} />)
-                  )}
+              {/* Table header */}
+              <div className="flex items-center gap-3 px-4 py-2 text-[10px] uppercase tracking-wider text-[#A8A8B3]/60">
+                <div className="w-8 text-center">#</div>
+                <div className="w-36">Player</div>
+                <div className="flex-1 grid grid-cols-5 text-center">
+                  <span>Record</span>
+                  <span>Win%</span>
+                  <span>PPG</span>
+                  <span>RPG</span>
+                  <span>APG</span>
                 </div>
-              )}
+                <div className="hidden sm:block w-20 text-right">User</div>
+                <div className="flex items-center gap-2"><span className="w-12">Tier</span><span className="w-8 text-right">OVR</span></div>
+              </div>
 
-              {/* Table (4th+) */}
-              {tableData && tableData.hoopers.length > 0 && (
-                <div className="space-y-2">
-                  {tableData.hoopers.map((h, i) => (
-                    <TableRow key={h.slug} hooper={h} rank={startRank + i} lang={lang} />
-                  ))}
-                </div>
-              )}
+              {/* Unified list */}
+              <div className="space-y-2">
+                {tableData.hoopers.map((h, i) => (
+                  <TableRow key={h.slug} hooper={h} rank={startRank + i} lang={lang} />
+                ))}
+              </div>
 
               {/* Pagination */}
               {totalPages > 1 && (
@@ -323,7 +416,13 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
                   </p>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setPage((p) => Math.max(0, p - 1))}
+                      onClick={() => {
+                        const newPage = Math.max(0, page - 1);
+                        setPage(newPage);
+                        const params = new URLSearchParams(window.location.search);
+                        if (newPage === 0) { params.delete("page"); } else { params.set("page", String(newPage)); }
+                        window.history.replaceState(null, "", `${window.location.pathname}${params.toString() ? "?" + params : ""}`);
+                      }}
                       disabled={page === 0}
                       className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-[#A8A8B3] bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >
@@ -334,7 +433,13 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
                       {t("page", lang)} {page + 1} {t("of", lang)} {totalPages}
                     </span>
                     <button
-                      onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                      onClick={() => {
+                        const newPage = Math.min(totalPages - 1, page + 1);
+                        setPage(newPage);
+                        const params = new URLSearchParams(window.location.search);
+                        params.set("page", String(newPage));
+                        window.history.replaceState(null, "", `${window.location.pathname}?${params}`);
+                      }}
                       disabled={page >= totalPages - 1}
                       className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-[#A8A8B3] bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                     >

@@ -145,12 +145,13 @@ function TeamPageInner() {
   const [acquiredSkill, setAcquiredSkill] = useState<PlayerSkill | null>(null);
   const [stolenSkillKeys, setStolenSkillKeys] = useState<Set<string>>(new Set());
   const [teamLocked, setTeamLocked] = useState(false);
+  const [drawnTeamIds, setDrawnTeamIds] = useState<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stealingRef = useRef(false);
 
   const skillKey = (skill: PlayerSkill) => skill.attribute;
 
-  const lastDrawnRef = useRef<number>(-1);
+  const lastDrawnRef = useRef<string>("");
 
   const startSpin = () => {
     if (isSpinning) return;
@@ -163,19 +164,26 @@ function TeamPageInner() {
     setSelectedPlayer(null);
     setAcquiredSkill(null);
 
+    // Filter out already-drawn teams; fall back to full pool if all drawn
+    const availablePool = pool.filter(t => !drawnTeamIds.has(t.id));
+    const effectivePool = availablePool.length > 0 ? availablePool : pool;
+
     let frame = 0;
     // Use deterministic seed for challenge mode
     const useDeterministic = !!challengeId;
     let targetIndex = useDeterministic 
-      ? Math.floor(((seed * 9301 + round * 49297 + 233280) % 10000) / 10000 * pool.length)
-      : Math.floor(Math.random() * pool.length);
+      ? Math.floor(((seed * 9301 + round * 49297 + 233280) % 10000) / 10000 * effectivePool.length)
+      : Math.floor(Math.random() * effectivePool.length);
     
-    if (!useDeterministic && pool.length > 1) {
-      while (targetIndex === lastDrawnRef.current) {
-        targetIndex = Math.floor(Math.random() * pool.length);
+    if (!useDeterministic && effectivePool.length > 1) {
+      while (effectivePool[targetIndex]?.id === lastDrawnRef.current && effectivePool.length > 1) {
+        targetIndex = Math.floor(Math.random() * effectivePool.length);
       }
     }
-    lastDrawnRef.current = targetIndex;
+    const drawnTeam = effectivePool[targetIndex];
+    lastDrawnRef.current = drawnTeam?.id ?? "";
+    // Map back to pool index for display animation
+    const displayTarget = drawnTeam ? pool.findIndex(t => t.id === drawnTeam.id) : 0;
     setTeamLocked(true);
     intervalRef.current = setInterval(() => {
       frame += 1;
@@ -187,9 +195,13 @@ function TeamPageInner() {
           clearInterval(intervalRef.current);
           intervalRef.current = null;
         }
-        setDisplayIndex(targetIndex);
-        const drawnTeam = pool[targetIndex];
+        setDisplayIndex(displayTarget);
         setSelectedTeam(drawnTeam);
+        setDrawnTeamIds(prev => {
+          const next = new Set(prev);
+          next.add(drawnTeam.id);
+          return next;
+        });
         setIsSpinning(false);
         setTimeout(() => {
           setState("player");
@@ -312,6 +324,7 @@ function TeamPageInner() {
     setSelectedPlayer(null);
     setAcquiredSkill(null);
     setStolenSkillKeys(new Set());
+    setDrawnTeamIds(new Set());
     stealingRef.current = false;
     startSpin();
   };
@@ -427,16 +440,19 @@ function TeamPageInner() {
                   <>
                     <div className="text-center mb-8">
                       <h2 className="font-[family-name:var(--font-anton)] text-3xl uppercase tracking-wide mb-2">Spinning...</h2>
-                      <p className="text-[#A8A8B3] text-sm">19 legendary teams in the pool</p>
+                      <p className="text-[#A8A8B3] text-sm">{pool.length - drawnTeamIds.size} legendary teams remaining in pool</p>
                     </div>
                     <div className="grid grid-cols-5 sm:grid-cols-7 md:grid-cols-10 gap-3 max-w-4xl w-full">
                       {pool.map((t) => {
                         const active = t.id === team.id;
+                        const alreadyDrawn = drawnTeamIds.has(t.id);
                         return (
                           <div
                             key={t.id}
                             className={`rounded-xl p-3 border text-center transition-all ${
-                              active ? "bg-[#FF5E07]/10 border-[#FF5E07] text-white scale-105" : "bg-[#111317] border-white/10 text-[#A8A8B3] opacity-60"
+                              active ? "bg-[#FF5E07]/10 border-[#FF5E07] text-white scale-105" 
+                              : alreadyDrawn ? "bg-[#111317] border-white/5 text-[#A8A8B3] opacity-30 line-through"
+                              : "bg-[#111317] border-white/10 text-[#A8A8B3] opacity-60"
                             }`}
                           >
                             <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold mx-auto mb-2 overflow-hidden bg-white/5 ${active ? "ring-2 ring-[#FF5E07]" : "opacity-60"}`}>

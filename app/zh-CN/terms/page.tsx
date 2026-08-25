@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "使用条款 | HooperVault",
-  description: "HooperVault - 用传奇技能打造你的梦想篮球球员，模拟属于你的篮球传奇。",
+  title: "使用条款",
+  description: "HooperVault 使用条款。查看使用我们篮球构建模拟器平台的规则和指南。",
+  alternates: {
+    canonical: "/zh-CN/terms",
+    languages: { en: "/en/terms", "zh-CN": "/zh-CN/terms", "x-default": "/en/terms" },
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function TermsofUsePage() {

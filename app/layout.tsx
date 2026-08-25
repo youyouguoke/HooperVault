@@ -4,6 +4,8 @@ import { Anton, Space_Grotesk, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { AuthProvider } from "@/components/providers/AuthProvider";
+import { JsonLd, buildWebSiteSchema } from "@/components/seo/JsonLd";
 
 const anton = Anton({
   variable: "--font-anton",
@@ -40,11 +42,10 @@ export const metadata: Metadata = {
   description:
     "Combine legendary basketball skills, build your dream player, simulate your career, and create a shareable legacy. The basketball build simulator for NBA fans.",
   keywords: [
-    "basketball simulator",
-    "create basketball player",
+    "hooper vault",
+    "basketball player builder",
     "NBA build game",
-    "basketball build generator",
-    "basketball legacy simulator",
+    "basketball season simulator",
   ],
   metadataBase: new URL(siteUrl),
   alternates: {
@@ -97,20 +98,7 @@ export const metadata: Metadata = {
   },
 };
 
-const websiteJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  name: "HooperVault",
-  url: siteUrl,
-  description:
-    "A basketball build simulator where you draft legendary skills, create your dream Hooper, and simulate a shareable legacy.",
-  inLanguage: ["en", "zh-CN"],
-  potentialAction: {
-    "@type": "SearchAction",
-    target: `${siteUrl}/en/hooper?slug={{search_term_string}}`,
-    "query-input": "required name=search_term_string",
-  },
-};
+const websiteJsonLd = buildWebSiteSchema();
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -119,14 +107,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={`${anton.variable} ${spaceGrotesk.variable} ${hankenGrotesk.variable} h-full antialiased`}
     >
       <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
-        />
+        <JsonLd data={websiteJsonLd} />
       </head>
       <body className="min-h-full flex flex-col bg-[#0B0B12] text-white">
-        {/* Plausible Analytics */}
-        <Script
+        <AuthProvider>
+          {/* Plausible Analytics */}
+          <Script
           defer
           data-domain="hoopervault.com"
           src="https://plausible.shipsolo.io/js/script.js"
@@ -146,6 +132,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
+        </AuthProvider>
       </body>
     </html>
   );

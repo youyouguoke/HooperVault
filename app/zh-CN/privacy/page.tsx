@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "隐私政策 | HooperVault",
-  description: "HooperVault - 用传奇技能打造你的梦想篮球球员，模拟属于你的篮球传奇。",
+  title: "隐私政策",
+  description: "HooperVault 隐私政策。了解我们如何收集、使用和保护您在篮球构建模拟器上的个人信息。",
+  alternates: {
+    canonical: "/zh-CN/privacy",
+    languages: { en: "/en/privacy", "zh-CN": "/zh-CN/privacy", "x-default": "/en/privacy" },
+  },
+  robots: { index: true, follow: true },
 };
 
 export default function PrivacyPolicyPage() {

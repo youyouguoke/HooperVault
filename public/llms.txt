@@ -1,0 +1,38 @@
+# HooperVault
+
+> A free basketball build simulator where you draft legendary skills inspired by NBA greats, create your dream Hooper, simulate an 82-game season, and share your unique legacy.
+
+## What is HooperVault?
+
+HooperVault is a fan-built basketball lab. You draft 13 legendary skills across shooting, finishing, playmaking, defense, and mental attributes. Your picks determine your archetype, badges, and season story. Then simulate 82 games, chase the championship, and share your legacy card.
+
+## Key Features
+
+- **Draft System**: 13 rounds of skill picks from legendary basketball inspirations (Jordan, Curry, Kobe, Shaq, Magic, Bird, Duncan, Hakeem)
+- **6 Archetypes**: Splash Legend, Floor General, Two-Way Superstar, Legendary Slasher, Rim Protector, Versatile Wing
+- **20 Build Guides**: Optimized builds with attribute targets and recommended skills
+- **82-Game Simulation**: Full season with playoffs, awards, and legacy tracking
+- **Daily Challenge**: Fresh draft prompts with community leaderboard
+- **Shareable Legacy Cards**: Permanent result pages with stats, awards, and story
+
+## Pages
+
+- Homepage: https://hoopervault.com/en
+- Guides: https://hoopervault.com/en/guides
+- Build Guides: https://hoopervault.com/en/builds
+- Archetypes: https://hoopervault.com/en/archetypes
+- Legend Skills: https://hoopervault.com/en/legends
+- Leaderboard: https://hoopervault.com/en/leaderboard
+- Daily Challenge: https://hoopervault.com/en/challenge
+- About: https://hoopervault.com/en/about
+- Build Tool: https://hoopervault.com/en/build/mode
+
+## Languages
+
+- English: https://hoopervault.com/en
+- Chinese (Simplified): https://hoopervault.com/zh-CN
+
+## Contact
+
+- Twitter: @hoopervault
+- Website: https://hoopervault.com

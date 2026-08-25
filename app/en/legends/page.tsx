@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Container } from "@/components/ui/Container";
+import { JsonLd, buildBreadcrumbList, buildItemListSchema } from "@/components/seo/JsonLd";
 import { Section } from "@/components/ui/Section";
 import { LEGEND_SKILL_PAGES } from "@/data/seo-content";
 
 export const metadata: Metadata = {
-  title: "Legend Skills | HooperVault",
+  title: "Legend Skills",
   description: "Browse legendary basketball skill inspirations for your Hooper build. Shooting, playmaking, defense, and mental skills.",
   alternates: {
     canonical: "/en/legends",
@@ -15,6 +16,15 @@ export const metadata: Metadata = {
       "zh-CN": "/zh-CN/legends",
       "x-default": "/en/legends",
     },
+  },
+  openGraph: {
+    type: "website",
+    siteName: "HooperVault",
+    title: "Legend Skills",
+    description: "Browse legendary basketball skill inspirations for your Hooper build. Shooting, playmaking, defense, and mental skills.",
+    url: "/en/legends",
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630 }],
+    locale: "en_US",
   },
 };
 
@@ -29,6 +39,8 @@ const ICONS: Record<string, string> = {
 export default function LegendSkillsIndexPage() {
   return (
     <>
+      <JsonLd data={buildBreadcrumbList([{ name: "Home", href: "/en" }, { name: "Legend Skills", href: "/en/legends" }])} />
+      <JsonLd data={buildItemListSchema(LEGEND_SKILL_PAGES.map(l => ({ name: l.displayName, url: `/en/legends/${l.id}` })))} />
       <div className="relative overflow-hidden border-b border-white/8 bg-[#111317] pt-16 pb-10">
         <div className="stadium-glow" />
         <Container>

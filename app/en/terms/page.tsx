@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Use | HooperVault",
-  description: "HooperVault - Build your dream basketball player with legendary skills and simulate your legacy.",
+  title: "Terms of Use",
+  description: "HooperVault terms of use. Review the rules and guidelines for using our basketball build simulator platform.",
+  alternates: {
+    canonical: "/en/terms",
+    languages: { en: "/en/terms", "zh-CN": "/zh-CN/terms", "x-default": "/en/terms" },
+  },
+  robots: { index: false, follow: true },
 };
 
 export default function TermsofUsePage() {
