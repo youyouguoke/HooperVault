@@ -12,6 +12,36 @@ type Hooper = {
   last_name: string | null;
 };
 
+const CARTOON_AVATARS = [
+  "/images/cartoon-avatars/avatar-01.svg",
+  "/images/cartoon-avatars/avatar-02.svg",
+  "/images/cartoon-avatars/avatar-03.svg",
+  "/images/cartoon-avatars/avatar-04.svg",
+  "/images/cartoon-avatars/avatar-05.svg",
+  "/images/cartoon-avatars/avatar-06.svg",
+  "/images/cartoon-avatars/avatar-07.svg",
+  "/images/cartoon-avatars/avatar-08.svg",
+  "/images/cartoon-avatars/avatar-09.svg",
+  "/images/cartoon-avatars/avatar-10.svg",
+];
+
+function hashSlug(slug: string): number {
+  let hash = 0;
+  for (let i = 0; i < slug.length; i++) {
+    hash = ((hash << 5) - hash + slug.charCodeAt(i)) & 0xffffffff;
+  }
+  hash ^= hash >>> 16;
+  hash = (hash * 0x85ebca6b) & 0xffffffff;
+  hash ^= hash >>> 13;
+  hash = (hash * 0xc2b2ae35) & 0xffffffff;
+  hash ^= hash >>> 16;
+  return Math.abs(hash);
+}
+
+function getAvatar(slug: string): string {
+  return CARTOON_AVATARS[hashSlug(slug) % CARTOON_AVATARS.length];
+}
+
 function getDisplayName(h: Hooper): string {
   if (h.first_name && h.last_name) return `${h.first_name} ${h.last_name}`;
   return h.slug.split("-")[0].toUpperCase() + " Builder";
@@ -48,15 +78,20 @@ export function FeaturedHoopers({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
               href={`/${lang}/hooper?slug=${hooper.slug}`}
               className="glass-card rounded-xl p-5 hover:bg-white/5 transition-colors group"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-[family-name:var(--font-anton)] text-lg text-white uppercase tracking-wide group-hover:text-[#F2CA50] transition-colors">
+              <div className="flex items-start gap-3 mb-4">
+                <img
+                  src={getAvatar(hooper.slug)}
+                  alt={name}
+                  className="w-12 h-12 rounded-full object-cover flex-shrink-0 border border-white/10"
+                />
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-[family-name:var(--font-anton)] text-lg text-white uppercase tracking-wide group-hover:text-[#F2CA50] transition-colors truncate">
                     {name}
                   </h3>
                   <p className="text-sm text-[#A8A8B3]">{hooper.archetype}</p>
                 </div>
                 <div
-                  className="border rounded px-2 py-1 font-[family-name:var(--font-space-grotesk)] font-bold"
+                  className="border rounded px-2 py-1 font-[family-name:var(--font-space-grotesk)] font-bold flex-shrink-0"
                   style={{
                     color: tier.color,
                     backgroundColor: `${tier.color}20`,

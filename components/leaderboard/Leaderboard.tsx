@@ -81,6 +81,23 @@ function hashSlug(slug: string): number {
   return Math.abs(hash);
 }
 
+const CARTOON_AVATARS = [
+  "/images/cartoon-avatars/avatar-01.svg",
+  "/images/cartoon-avatars/avatar-02.svg",
+  "/images/cartoon-avatars/avatar-03.svg",
+  "/images/cartoon-avatars/avatar-04.svg",
+  "/images/cartoon-avatars/avatar-05.svg",
+  "/images/cartoon-avatars/avatar-06.svg",
+  "/images/cartoon-avatars/avatar-07.svg",
+  "/images/cartoon-avatars/avatar-08.svg",
+  "/images/cartoon-avatars/avatar-09.svg",
+  "/images/cartoon-avatars/avatar-10.svg",
+];
+
+function getAvatar(slug: string): string {
+  return CARTOON_AVATARS[hashSlug(slug) % CARTOON_AVATARS.length];
+}
+
 function getDisplayName(h: Hooper): string {
   if (h.first_name && h.last_name) return `${h.first_name} ${h.last_name}`;
   const hash = hashSlug(h.slug);
@@ -146,14 +163,22 @@ function TopCard({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: "
         {rank === 1 ? "#1" : rank === 2 ? "#2" : "#3"}
       </div>
 
+      {/* Avatar */}
+      <img
+        src={getAvatar(hooper.slug)}
+        alt={name}
+        className="w-16 h-16 rounded-full object-cover border-2 mt-2"
+        style={{ borderColor: `${borderColor}60` }}
+      />
+
       {/* OVR */}
-      <div className="mt-3 text-4xl font-black tracking-tight" style={{ color: tier.color }}>
+      <div className="mt-2 text-4xl font-black tracking-tight" style={{ color: tier.color }}>
         {hooper.overall}
       </div>
       <div className="text-[10px] uppercase tracking-widest text-[#A8A8B3] font-bold">{t("ovr", lang)}</div>
 
       {/* Name */}
-      <h3 className="mt-3 font-[family-name:var(--font-anton)] text-lg uppercase tracking-wide text-white text-center truncate max-w-full">
+      <h3 className="mt-2 font-[family-name:var(--font-anton)] text-lg uppercase tracking-wide text-white text-center truncate max-w-full">
         {name}
       </h3>
 
@@ -217,15 +242,22 @@ function TableRow({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: 
         <RankIcon rank={rank} />
       </div>
 
-      {/* Name + Archetype */}
-      <div className="w-36 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <p className="text-sm font-semibold text-white truncate group-hover:text-[#F2CA50] transition-colors">
-            {name}
-          </p>
-          {hooper.championship === 1 && <span className="text-[10px]">🏆</span>}
+      {/* Avatar + Name + Archetype */}
+      <div className="flex items-center gap-2.5 w-44 min-w-0">
+        <img
+          src={getAvatar(hooper.slug)}
+          alt={name}
+          className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/10"
+        />
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-semibold text-white truncate group-hover:text-[#F2CA50] transition-colors">
+              {name}
+            </p>
+            {hooper.championship === 1 && <span className="text-[10px]">🏆</span>}
+          </div>
+          <p className="text-[10px] text-[#A8A8B3] truncate">{hooper.archetype} · {hooper.position}</p>
         </div>
-        <p className="text-[10px] text-[#A8A8B3] truncate">{hooper.archetype} · {hooper.position}</p>
       </div>
 
       {/* Stats — middle column */}
@@ -389,7 +421,7 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
               {/* Table header */}
               <div className="flex items-center gap-3 px-4 py-2 text-[10px] uppercase tracking-wider text-[#A8A8B3]/60">
                 <div className="w-8 text-center">#</div>
-                <div className="w-36">Player</div>
+                <div className="w-44">Player</div>
                 <div className="flex-1 grid grid-cols-5 text-center">
                   <span>Record</span>
                   <span>Win%</span>
