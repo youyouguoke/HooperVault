@@ -31,7 +31,6 @@ const UI = {
           { label: "Archetypes", href: "/en/archetypes" },
           { label: "Legend Skills", href: "/en/legends" },
           { label: "Blog", href: "/en/blog" },
-          { label: "About", href: "/en/about" },
         ],
       },
       {
@@ -39,6 +38,7 @@ const UI = {
         links: [
           { label: "Privacy Policy", href: "/en/privacy" },
           { label: "Terms of Use", href: "/en/terms" },
+          { label: "About", href: "/en/about" },
         ],
       },
     ],
@@ -66,7 +66,6 @@ const UI = {
           { label: "球风", href: "/zh-CN/archetypes" },
           { label: "传奇技能", href: "/zh-CN/legends" },
           { label: "博客", href: "/zh-CN/blog" },
-          { label: "关于", href: "/zh-CN/about" },
         ],
       },
       {
@@ -74,6 +73,7 @@ const UI = {
         links: [
           { label: "隐私政策", href: "/zh-CN/privacy" },
           { label: "使用条款", href: "/zh-CN/terms" },
+          { label: "关于", href: "/zh-CN/about" },
         ],
       },
     ],
