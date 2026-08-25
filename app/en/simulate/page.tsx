@@ -259,16 +259,16 @@ function SimulatePageInner() {
 
   const simulateGame = useCallback((idx: number, opponentOverride?: string, strengthBoost?: number, useRandom = false): GameResult => {
     const opponent = opponentOverride || schedule[idx % schedule.length];
-    // Higher base win rate so decent builds usually reach the 38-win playoff threshold.
-    // 90+ OVR → ~72-80%, 80-89 → ~58-70%, 70-79 → ~45-55%
-    const baseWin = Math.min(0.88, Math.max(0.25,
-      (overall - 20 + (attributes.clutch - 60) * 0.45 + (attributes.speed - 75) * 0.08) / 100
+    // Win rate scales with OVR, clutch, and speed.
+    // 90+ OVR → ~80-90%, 85-89 → ~72-80%, 80-84 → ~64-72%, 75-79 → ~55-64%, 70-74 → ~45-55%
+    const baseWin = Math.min(0.92, Math.max(0.30,
+      (overall - 10 + (attributes.clutch - 60) * 0.50 + (attributes.speed - 75) * 0.10) / 100
     ));
     // Regular season is random per game so each Play Again feels different; playoffs are random too.
     const noise = Math.random();
     const strength = strengthBoost ?? 0;
-    // Playoff clutch bonus: stronger edge for higher OVR builds in playoffs
-    const playoffBonus = strength > 0 ? Math.max(0, (overall - 55) * 0.015) : 0;
+    // Playoff clutch bonus: significant edge for higher OVR builds
+    const playoffBonus = strength > 0 ? Math.max(0, (overall - 50) * 0.02) : 0;
     const isWin = noise < baseWin - strength + playoffBonus;
 
     const teamScore = isWin ? 105 + Math.floor(noise * 25) : 95 + Math.floor(noise * 20);
