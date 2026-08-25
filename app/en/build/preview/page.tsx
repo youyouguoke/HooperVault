@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, Suspense } from "react";
+import { useMemo, useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import { Container } from "@/components/ui/Container";
@@ -26,6 +26,7 @@ import {
   Shield,
   Star,
 } from "lucide-react";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 const FIRST_NAMES = [
   "Orion", "Jax", "Kai", "Mason", "Eli", "Titan", "Duke", "Cade", "Axel", "Blaze",
@@ -40,6 +41,19 @@ const LAST_NAMES = [
   "Wright", "Young", "Carter", "Davis", "Evans", "Green", "Hall", "Lewis", "Morgan", "Parker",
   "Adams", "Baker", "Cooper", "Fisher", "Gray", "Hayes", "Ingram", "Jennings", "Kemp", "Lane",
   "Mason", "Newton", "Owens", "Perry", "Reed", "Sloan", "Tate", "Underwood", "Vaughn", "Wells",
+];
+
+const CARTOON_AVATARS = [
+  "/images/cartoon-avatars/avatar-01.svg",
+  "/images/cartoon-avatars/avatar-02.svg",
+  "/images/cartoon-avatars/avatar-03.svg",
+  "/images/cartoon-avatars/avatar-04.svg",
+  "/images/cartoon-avatars/avatar-05.svg",
+  "/images/cartoon-avatars/avatar-06.svg",
+  "/images/cartoon-avatars/avatar-07.svg",
+  "/images/cartoon-avatars/avatar-08.svg",
+  "/images/cartoon-avatars/avatar-09.svg",
+  "/images/cartoon-avatars/avatar-10.svg",
 ];
 
 function deterministicIndex(seed: number, position: string, length: number, salt = ""): number {
@@ -174,6 +188,34 @@ function PreviewPageInner() {
   }, [historyParam, team]);
 
   const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Default cartoon avatar picked deterministically by seed
+  const defaultImage = CARTOON_AVATARS[deterministicIndex(seedParam, position, CARTOON_AVATARS.length, "avatar")];
+  const [customImage, setCustomImage] = useState<string | null>(null);
+  const [customName, setCustomName] = useState("");
+
+  // Set default name from auth or generated name
+  useEffect(() => {
+    if (user?.name) {
+      setCustomName(user.name);
+    } else {
+      const generated = generatePlayerName(seedParam, position);
+      setCustomName(`${generated.firstName} ${generated.lastName}`);
+    }
+  }, [user, seedParam, position]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setCustomImage(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const displayImage = customImage || defaultImage;
+  const displayName = customName.trim() || "Your Hooper";
 
   const playerName = useMemo(() => generatePlayerName(seedParam, position), [seedParam, position]);
 
@@ -256,13 +298,17 @@ function PreviewPageInner() {
                     </div>
                   </div>
                 </div>
-                <div className="relative h-80 rounded-lg overflow-hidden mb-6 border border-white/10">
+                <div className="relative h-80 rounded-lg overflow-hidden mb-6 border border-white/10 group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                   <img
-                    src="/images/preview-avatar.jpg"
-                    alt="Premium basketball player avatar inside a digital card interface with dramatic stadium lighting"
-                    className="w-full h-full object-top opacity-90"
+                    src={displayImage}
+                    alt={displayName}
+                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#111317] via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-white text-sm font-medium bg-black/60 px-4 py-2 rounded-full">Upload Photo</span>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                 </div>
                 <div className="h-80 w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -341,6 +387,27 @@ function PreviewPageInner() {
                 </div>
               </div>
 
+              {/* Player Identity */}
+              <div className="glass-card rounded-2xl p-6">
+                <h3 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-4">
+                  Name Your Hooper
+                </h3>
+                <p className="text-sm text-[#A8A8B3] mb-4">
+                  {user ? "Signed in as " + user.name + ". Customize your Hooper's name below." : "Give your Hooper a name. Click the image to upload a photo."}
+                </p>
+                <input
+                  type="text"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="Your Hooper Name"
+                  maxLength={30}
+                  className="w-full bg-[#1a1c20] border border-white/10 rounded-lg px-4 py-3 text-white font-[family-name:var(--font-space-grotesk)] text-sm placeholder:text-[#A8A8B3]/50 focus:outline-none focus:border-[#F2CA50]/50 transition-colors"
+                />
+                <p className="text-[10px] text-[#A8A8B3] mt-2">
+                  {user ? "Using your Google account name. Edit to customize." : "Click the player image above to upload a custom photo."}
+                </p>
+              </div>
+
               <div className="glass-card rounded-2xl p-6">
                 <h3 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-4">
                   Lock This Build
@@ -373,6 +440,15 @@ function PreviewPageInner() {
                         console.error("Save failed:", res.status, data);
                         return;
                       }
+                      // Store name and image for simulate page to pick up
+                      try {
+                        localStorage.setItem("hoopervault_hooper_name", displayName);
+                        if (customImage) {
+                          localStorage.setItem("hoopervault_hooper_image", customImage);
+                        } else {
+                          localStorage.removeItem("hoopervault_hooper_image");
+                        }
+                      } catch {}
                       const challengeParam = challengeId ? `&challenge=${challengeId}` : "";
                       const redirectUrl = `/en/simulate?position=${position}&mode=${mode}&team=${teamId}&seed=${seedParam}&slug=${data.slug}&history=${encodeURIComponent(historyParam || skills.map((s) => s.id).join(","))}${challengeParam}`;
                       router.push(redirectUrl);

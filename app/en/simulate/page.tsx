@@ -184,18 +184,20 @@ function SimulatePageInner() {
   type Phase = "intro" | "regular_season" | "playoff_check" | "playoffs" | "result";
   const [phase, setPhase] = useState<Phase>("intro");
 
-  // --- Custom hooper identity ---
+  // --- Custom hooper identity (set on preview page, read from localStorage) ---
   const [customName, setCustomName] = useState("");
   const [customImage, setCustomImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const hooperDisplayName = customName.trim() || "Your Hooper";
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setCustomImage(reader.result as string);
-    reader.readAsDataURL(file);
-  };
+
+  // Read name and image from localStorage (set by preview page)
+  useEffect(() => {
+    try {
+      const storedName = localStorage.getItem("hoopervault_hooper_name");
+      if (storedName) setCustomName(storedName);
+      const storedImage = localStorage.getItem("hoopervault_hooper_image");
+      if (storedImage) setCustomImage(storedImage);
+    } catch {}
+  }, []);
 
   // --- Regular season state ---
   const [gameIndex, setGameIndex] = useState(0);
@@ -731,43 +733,12 @@ function SimulatePageInner() {
                   </div>
                 </div>
 
-                {/* Custom Hooper Identity */}
-                <div className="max-w-md mx-auto mb-8">
-                  <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-4 text-center">Customize Your Hooper</div>
-                  <div className="flex items-center gap-5 bg-[#1a1c20] rounded-xl p-5 border border-white/5">
-                    {/* Avatar */}
-                    <div className="flex-shrink-0">
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-20 h-20 rounded-full border-2 border-dashed border-[#F2CA50]/40 bg-[#111317] flex items-center justify-center overflow-hidden hover:border-[#F2CA50] transition-colors cursor-pointer relative group"
-                      >
-                        {customImage ? (
-                          <img src={customImage} alt="Hooper" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="text-center">
-                            <svg className="w-6 h-6 text-[#A8A8B3] mx-auto mb-1 group-hover:text-[#F2CA50] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.5v15m7.5-7.5h-15" /></svg>
-                            <span className="text-[8px] text-[#A8A8B3] group-hover:text-[#F2CA50] transition-colors">Upload</span>
-                          </div>
-                        )}
-                      </button>
-                      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-                    </div>
-                    {/* Name */}
-                    <div className="flex-1 min-w-0">
-                      <label className="text-[10px] uppercase tracking-wider text-[#A8A8B3] mb-1.5 block">Player Name</label>
-                      <input
-                        type="text"
-                        value={customName}
-                        onChange={(e) => setCustomName(e.target.value)}
-                        placeholder="Enter your hooper's name"
-                        maxLength={24}
-                        className="w-full bg-[#111317] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm font-[family-name:var(--font-space-grotesk)] placeholder:text-[#A8A8B3]/50 focus:outline-none focus:border-[#F2CA50]/50 focus:ring-1 focus:ring-[#F2CA50]/20 transition-colors"
-                      />
-                      <div className="text-[9px] text-[#A8A8B3] mt-1.5">
-                        {customImage ? "✓ Avatar uploaded" : "Click the circle to upload an avatar"}
-                      </div>
-                    </div>
-                  </div>
+                {/* Hooper Identity (set on preview page) */}
+                <div className="flex items-center justify-center gap-3 mb-6">
+                  {customImage ? (
+                    <img src={customImage} alt={hooperDisplayName} className="w-12 h-12 rounded-full object-cover border border-[#F2CA50]/30" />
+                  ) : null}
+                  <div className="font-[family-name:var(--font-anton)] text-xl text-white uppercase tracking-wide">{hooperDisplayName}</div>
                 </div>
 
                 <div className="space-y-3 max-w-md mx-auto mb-8">
