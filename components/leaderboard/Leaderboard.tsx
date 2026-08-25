@@ -84,8 +84,8 @@ function hashSlug(slug: string): number {
 
 const CARTOON_AVATARS = [
   "/images/cartoon-avatars/avatar-01.jpg",
-  "/images/cartoon-avatars/avatar-02.svg",
-  "/images/cartoon-avatars/avatar-03.svg",
+  "/images/cartoon-avatars/avatar-02.jpg",
+  "/images/cartoon-avatars/avatar-03.jpg",
   "/images/cartoon-avatars/avatar-04.svg",
   "/images/cartoon-avatars/avatar-05.svg",
   "/images/cartoon-avatars/avatar-06.svg",
