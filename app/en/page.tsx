@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { JsonLd, buildBreadcrumbList } from "@/components/seo/JsonLd";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
@@ -17,6 +18,38 @@ export const metadata: Metadata = {
   title: "Build Your Legacy",
   description:
     "Combine legendary basketball skills, build your dream Hooper, simulate an entire career, and share your unique legacy with the world.",
+  keywords: [
+    "hooper vault",
+    "basketball player builder",
+    "NBA build game",
+    "basketball season simulator",
+  ],
+  alternates: {
+    canonical: "/en",
+    languages: {
+      en: "/en",
+      "zh-CN": "/zh-CN",
+      "x-default": "/en",
+    },
+  },
+  openGraph: {
+    type: "website",
+    siteName: "HooperVault",
+    title: "HooperVault - Build Your Ultimate Hooper",
+    description:
+      "Combine legendary basketball skills, build your dream Hooper, simulate an entire career, and share your unique legacy with the world.",
+    url: "/en",
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630, alt: "HooperVault - Build your dream basketball player with legendary skills" }],
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@hoopervault",
+    title: "HooperVault - Build Your Ultimate Hooper",
+    description:
+      "Combine legendary basketball skills, build your dream Hooper, simulate an entire career, and share your unique legacy with the world.",
+    images: ["https://hoopervault.com/images/og-default.jpg"],
+  },
 };
 
 function FeaturedPlayerCard() {
@@ -60,6 +93,7 @@ function FeaturedPlayerCard() {
 export default function HomePage() {
   return (
     <>
+      <JsonLd data={buildBreadcrumbList([{ name: "Home", href: "/en" }])} />
       <section className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-32">
         <div className="stadium-glow" />
         <Container>
@@ -176,6 +210,32 @@ export default function HomePage() {
                 Start Building Now <ChevronRight className="h-5 w-5" />
               </span>
             </Button>
+          </div>
+        </Container>
+      </Section>
+
+      <Section className="border-t border-white/8 bg-[#111317]">
+        <Container>
+          <div className="text-center mb-8">
+            <h2 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide">Learn More</h2>
+          </div>
+          <div className="grid gap-3 md:grid-cols-4 max-w-5xl mx-auto">
+            <Link href="/en/build-a-bucket-nba-game" className="group flex items-center justify-between glass-card rounded-xl p-4 hover:bg-white/5 transition-all">
+              <span className="text-white font-medium group-hover:text-[#F2CA50] transition-colors">Build a Bucket NBA Game</span>
+              <ChevronRight className="h-4 w-4 text-[#A8A8B3] group-hover:text-[#F2CA50]" />
+            </Link>
+            <Link href="/en/basketball-player-builder" className="group flex items-center justify-between glass-card rounded-xl p-4 hover:bg-white/5 transition-all">
+              <span className="text-white font-medium group-hover:text-[#F2CA50] transition-colors">Basketball Player Builder</span>
+              <ChevronRight className="h-4 w-4 text-[#A8A8B3] group-hover:text-[#F2CA50]" />
+            </Link>
+            <Link href="/en/blog" className="group flex items-center justify-between glass-card rounded-xl p-4 hover:bg-white/5 transition-all">
+              <span className="text-white font-medium group-hover:text-[#F2CA50] transition-colors">Draft Strategy Blog</span>
+              <ChevronRight className="h-4 w-4 text-[#A8A8B3] group-hover:text-[#F2CA50]" />
+            </Link>
+            <Link href="/en/guides" className="group flex items-center justify-between glass-card rounded-xl p-4 hover:bg-white/5 transition-all">
+              <span className="text-white font-medium group-hover:text-[#F2CA50] transition-colors">How to Play Guide</span>
+              <ChevronRight className="h-4 w-4 text-[#A8A8B3] group-hover:text-[#F2CA50]" />
+            </Link>
           </div>
         </Container>
       </Section>

@@ -106,6 +106,20 @@ const ARCHETYPES = [
   },
 ];
 
+// 10 diverse default result card images — one picked deterministically per build
+const DEFAULT_RESULT_IMAGES = [
+  "/images/player-avatars/michael-jordan-98.jpg",
+  "/images/player-avatars/kobe-bryant-09.jpg",
+  "/images/player-avatars/lebron-james-13.jpg",
+  "/images/player-avatars/stephen-curry-16.jpg",
+  "/images/player-avatars/shaquille-oneal-02.jpg",
+  "/images/player-avatars/kevin-garnett-08.jpg",
+  "/images/player-avatars/dwyane-wade-13.jpg",
+  "/images/player-avatars/dirk-nowitzki-07.jpg",
+  "/images/player-avatars/kawhi-leonard-14.jpg",
+  "/images/player-avatars/klay-thompson-16.jpg",
+];
+
 const FIRST_NAMES = [
   "Orion", "Jax", "Kai", "Mason", "Eli", "Titan", "Duke", "Cade", "Axel", "Blaze",
   "Ryder", "Knox", "Zane", "Crew", "Jett", "Rhett", "Kash", "Slate", "Vance", "Dray",
@@ -221,20 +235,23 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
   const cardRef = useRef<HTMLDivElement>(null);
   const [simResult, setSimResult] = useState<SimResult | null>(null);
 
-  // Try to load sim result from localStorage first
+  // Try to load sim result from localStorage ONLY for own builds (no slug or "sample")
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("hoopervault_sim_result");
-      if (stored) {
-        const parsed = JSON.parse(stored) as SimResult;
-        if (parsed.timestamp && Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
-          setSimResult(parsed);
-          setLoading(false);
-          return;
+    const isOwnBuild = !slug || slug === "sample";
+    if (isOwnBuild) {
+      try {
+        const stored = localStorage.getItem("hoopervault_sim_result");
+        if (stored) {
+          const parsed = JSON.parse(stored) as SimResult;
+          if (parsed.timestamp && Date.now() - parsed.timestamp < 24 * 60 * 60 * 1000) {
+            setSimResult(parsed);
+            setLoading(false);
+            return;
+          }
         }
-      }
-    } catch {}
-    // Fallback: fetch from API
+      } catch {}
+    }
+    // For specific slugs (from leaderboard/challenge), always fetch from API
     if (!slug || slug === "sample") {
       setLoading(false);
       return;
@@ -268,11 +285,16 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
     if (hasSim && simResult.attributes) {
       return simResult.attributes as Record<Attribute, number>;
     }
+    // Use same seed-varied base as preview page for consistency
     const attrs: Record<Attribute, number> = {
       shooting: 75, mid_range: 75, finishing: 75, dunk: 75, passing: 75,
       ball_handle: 75, perimeter_defense: 75, interior_defense: 75, block: 75,
       rebound: 75, speed: 75, strength: 75, clutch: 75,
     };
+    (Object.keys(attrs) as Attribute[]).forEach((attr) => {
+      const offset = deterministicIndex(seed, attr, 20, "base");
+      attrs[attr] = 65 + offset;
+    });
     const modifiers = POSITION_MODIFIERS[position] || {};
     Object.entries(modifiers).forEach(([key, value]) => {
       attrs[key as Attribute] += value;
@@ -281,7 +303,7 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
       attrs[skill.attribute as Attribute] = Math.min(99, attrs[skill.attribute as Attribute] + skill.bonus);
     });
     return attrs;
-  }, [hasSim, simResult, position, skills]);
+  }, [hasSim, simResult, position, skills, seed]);
 
   const computedOverall = useMemo(() => {
     return Math.round(Object.values(attributes).reduce((a, b) => a + b, 0) / 13);
@@ -536,8 +558,8 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
                       />
                     ) : (
                       <img
-                        src="/images/result-card.jpg"
-                        alt="A highly stylized, premium 3D render of a basketball player in a dynamic action pose mid-dunk."
+                        src={DEFAULT_RESULT_IMAGES[deterministicIndex(seed, position, DEFAULT_RESULT_IMAGES.length, "result-card")]}
+                        alt={`${playerName} - ${archetypeName}`}
                         className="absolute inset-0 w-full h-full object-top opacity-80 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-500"
                       />
                     )}

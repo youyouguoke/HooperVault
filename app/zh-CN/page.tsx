@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { JsonLd, buildBreadcrumbList } from "@/components/seo/JsonLd";
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/Container";
 import { Section } from "@/components/ui/Section";
@@ -17,6 +18,20 @@ export const metadata: Metadata = {
   title: "打造你的传奇",
   description:
     "融合传奇篮球技能，创建你的梦想 Hooper，模拟整个职业生涯，并与世界分享你的独特传奇。",
+  keywords: ["篮球模拟器", "创建篮球球员", "NBA 构建游戏", "篮球构建生成器", "篮球传奇模拟器"],
+  alternates: {
+    canonical: "/zh-CN",
+    languages: { en: "/en", "zh-CN": "/zh-CN", "x-default": "/en" },
+  },
+  openGraph: {
+    type: "website",
+    siteName: "HooperVault",
+    title: "HooperVault - 打造你的终极 Hooper",
+    description: "融合传奇篮球技能，构建你的梦想球员，模拟职业生涯，并创造可分享的球员传奇。",
+    url: "/zh-CN",
+    images: [{ url: "/images/og-default.jpg", width: 1200, height: 630 }],
+    locale: "zh_CN",
+  },
 };
 
 function FeaturedPlayerCard() {
@@ -60,6 +75,7 @@ function FeaturedPlayerCard() {
 export default function HomePage() {
   return (
     <>
+      <JsonLd data={buildBreadcrumbList([{ name: "首页", href: "/zh-CN" }])} />
       <section className="relative overflow-hidden pt-12 pb-20 md:pt-20 md:pb-32">
         <div className="stadium-glow" />
         <Container>
@@ -181,6 +197,32 @@ export default function HomePage() {
                 立即开始构建 <ChevronRight className="h-5 w-5" />
               </span>
             </Button>
+          </div>
+        </Container>
+      </Section>
+
+      <Section className="border-t border-white/8 bg-[#111317]">
+        <Container>
+          <div className="text-center mb-8">
+            <h2 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide">了解更多</h2>
+          </div>
+          <div className="grid gap-3 md:grid-cols-4 max-w-5xl mx-auto">
+            <Link href="/zh-CN/build-a-bucket-nba-game" className="group flex items-center justify-between glass-card rounded-xl p-4 hover:bg-white/5 transition-all">
+              <span className="text-white font-medium group-hover:text-[#F2CA50] transition-colors">Build a Bucket NBA 游戏</span>
+              <ChevronRight className="h-4 w-4 text-[#A8A8B3] group-hover:text-[#F2CA50]" />
+            </Link>
+            <Link href="/en/basketball-player-builder" className="group flex items-center justify-between glass-card rounded-xl p-4 hover:bg-white/5 transition-all">
+              <span className="text-white font-medium group-hover:text-[#F2CA50] transition-colors">篮球球员构建器</span>
+              <ChevronRight className="h-4 w-4 text-[#A8A8B3] group-hover:text-[#F2CA50]" />
+            </Link>
+            <Link href="/zh-CN/blog" className="group flex items-center justify-between glass-card rounded-xl p-4 hover:bg-white/5 transition-all">
+              <span className="text-white font-medium group-hover:text-[#F2CA50] transition-colors">选秀策略博客</span>
+              <ChevronRight className="h-4 w-4 text-[#A8A8B3] group-hover:text-[#F2CA50]" />
+            </Link>
+            <Link href="/zh-CN/guides" className="group flex items-center justify-between glass-card rounded-xl p-4 hover:bg-white/5 transition-all">
+              <span className="text-white font-medium group-hover:text-[#F2CA50] transition-colors">游玩指南</span>
+              <ChevronRight className="h-4 w-4 text-[#A8A8B3] group-hover:text-[#F2CA50]" />
+            </Link>
           </div>
         </Container>
       </Section>

@@ -96,6 +96,35 @@ const PLAYOFF_ROUNDS = [
   { name: "NBA Finals", emoji: "🏆", opponentStrength: 0.28 },
 ];
 
+function deterministicIndex(seed: number, position: string, length: number, salt = ""): number {
+  const combined = `${salt}${seed}:${position.toUpperCase()}`;
+  let hash = 0;
+  for (let i = 0; i < combined.length; i++) {
+    hash = ((hash << 5) - hash + combined.charCodeAt(i)) & 0xffffffff;
+  }
+  hash ^= hash >>> 16;
+  hash = (hash * 0x85ebca6b) & 0xffffffff;
+  hash ^= hash >>> 13;
+  hash = (hash * 0xc2b2ae35) & 0xffffffff;
+  hash ^= hash >>> 16;
+  return hash % length;
+}
+
+function generateBaseAttributes(seed: number): Record<Attribute, number> {
+  // Deterministic per-seed attribute variance: base 65..84 gives more
+  // variety across builds while keeping the same build reproducible.
+  const base: Record<Attribute, number> = {
+    shooting: 75, mid_range: 75, finishing: 75, dunk: 75, passing: 75,
+    ball_handle: 75, perimeter_defense: 75, interior_defense: 75, block: 75,
+    rebound: 75, speed: 75, strength: 75, clutch: 75,
+  };
+  (Object.keys(base) as Attribute[]).forEach((attr) => {
+    const offset = deterministicIndex(seed, attr, 20, "base");
+    base[attr] = 65 + offset;
+  });
+  return base;
+}
+
 function generateSchedule(seed: number, sessionOffset: number = 0): string[] {
   const schedule: string[] = [];
   const rng = (i: number) => {
@@ -211,11 +240,7 @@ function SimulatePageInner() {
   }, [hooperData, historyParam]);
 
   const attributes: Record<Attribute, number> = useMemo(() => {
-    const attrs: Record<Attribute, number> = {
-      shooting: 75, mid_range: 75, finishing: 75, dunk: 75, passing: 75,
-      ball_handle: 75, perimeter_defense: 75, interior_defense: 75, block: 75,
-      rebound: 75, speed: 75, strength: 75, clutch: 75,
-    };
+    const attrs = generateBaseAttributes(seed);
     const modifiers = POSITION_MODIFIERS[position] || {};
     Object.entries(modifiers).forEach(([key, value]) => {
       attrs[key as Attribute] += value;
@@ -224,7 +249,7 @@ function SimulatePageInner() {
       attrs[skill.attribute as Attribute] = Math.min(99, attrs[skill.attribute as Attribute] + skill.bonus);
     });
     return attrs;
-  }, [position, skills]);
+  }, [position, skills, seed]);
 
   const overall = useMemo(() => {
     return Math.round(Object.values(attributes).reduce((a, b) => a + b, 0) / 13);
@@ -235,14 +260,15 @@ function SimulatePageInner() {
   const simulateGame = useCallback((idx: number, opponentOverride?: string, strengthBoost?: number, useRandom = false): GameResult => {
     const opponent = opponentOverride || schedule[idx % schedule.length];
     // Higher base win rate so decent builds usually reach the 38-win playoff threshold.
-    const baseWin = Math.min(0.85, Math.max(0.20,
-      (overall - 32 + (attributes.clutch - 60) * 0.35 + (attributes.speed - 75) * 0.05) / 100
+    // 90+ OVR → ~72-80%, 80-89 → ~58-70%, 70-79 → ~45-55%
+    const baseWin = Math.min(0.88, Math.max(0.25,
+      (overall - 20 + (attributes.clutch - 60) * 0.45 + (attributes.speed - 75) * 0.08) / 100
     ));
     // Regular season is random per game so each Play Again feels different; playoffs are random too.
     const noise = Math.random();
     const strength = strengthBoost ?? 0;
-    // Playoff clutch bonus: small edge for higher OVR in playoffs
-    const playoffBonus = strength > 0 ? Math.max(0, (overall - 60) * 0.008) : 0;
+    // Playoff clutch bonus: stronger edge for higher OVR builds in playoffs
+    const playoffBonus = strength > 0 ? Math.max(0, (overall - 55) * 0.015) : 0;
     const isWin = noise < baseWin - strength + playoffBonus;
 
     const teamScore = isWin ? 105 + Math.floor(noise * 25) : 95 + Math.floor(noise * 20);
@@ -525,6 +551,29 @@ function SimulatePageInner() {
         timestamp: Date.now(),
       };
       localStorage.setItem("hoopervault_sim_result", JSON.stringify(simData));
+
+      // Also update the hooper's name and stats in the API if we have a slug
+      const hooperSlug = hooperData?.slug || slug;
+      if (hooperSlug) {
+        const nameParts = customName.trim().split(/\s+/);
+        const firstName = nameParts[0] || null;
+        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
+        fetch("/api/hoopers", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: hooperSlug,
+            firstName: customName.trim() ? firstName : undefined,
+            lastName: customName.trim() ? lastName : undefined,
+            seasonWins: wins,
+            seasonLosses: losses,
+            ppg: parseFloat(ppg),
+            rpg: parseFloat(rpg),
+            apg: parseFloat(apg),
+            championship: champion,
+          }),
+        }).catch(() => {}); // fire-and-forget
+      }
     } catch (e) {
       // localStorage might be full or disabled
     }
@@ -573,6 +622,29 @@ function SimulatePageInner() {
       const result = await response.json();
       setChallengeSubmitted(true);
       setChallengeRank(result.rank);
+
+      // Also update the hooper's name and stats in the main API
+      const hooperSlug = hooperData?.slug || slug;
+      if (hooperSlug) {
+        const nameParts = customName.trim().split(/\s+/);
+        const firstName = nameParts[0] || null;
+        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
+        fetch("/api/hoopers", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            slug: hooperSlug,
+            firstName: customName.trim() ? firstName : undefined,
+            lastName: customName.trim() ? lastName : undefined,
+            seasonWins: wins,
+            seasonLosses: losses,
+            ppg: parseFloat(ppg),
+            rpg: parseFloat(rpg),
+            apg: parseFloat(apg),
+            championship: champion,
+          }),
+        }).catch(() => {}); // fire-and-forget
+      }
     } catch (error) {
       setChallengeError(error instanceof Error ? error.message : "Failed to submit to challenge");
     } finally {
