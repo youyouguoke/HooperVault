@@ -123,7 +123,9 @@ function RankIcon({ rank }: { rank: number }) {
 
 function formatTimeAgo(dateStr: string): string {
   const now = Date.now();
-  const then = new Date(dateStr).getTime();
+  // Ensure UTC parsing - D1 CURRENT_TIMESTAMP returns UTC without Z suffix
+  const utcStr = dateStr.endsWith("Z") ? dateStr : dateStr + "Z";
+  const then = new Date(utcStr).getTime();
   const diff = now - then;
   const minutes = Math.floor(diff / 60000);
   if (minutes < 1) return "just now";

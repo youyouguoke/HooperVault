@@ -262,7 +262,7 @@ export function ProfilePageInner({ lang }: { lang: "en" | "zh-CN" }) {
                     {data.hoopers.slice(0, 10).map((hooper) => {
                       const ArchIcon = ARCHETYPE_ICONS[hooper.archetype] || Dices;
                       const record = `${hooper.season_wins}-${hooper.season_losses}`;
-                      const date = new Date(hooper.created_at).toLocaleDateString(
+                      const date = new Date(hooper.created_at + (hooper.created_at.endsWith("Z") ? "" : "Z")).toLocaleDateString(
                         lang === "zh-CN" ? "zh-CN" : "en-US",
                         { month: "numeric", day: "numeric", year: "numeric" }
                       );
