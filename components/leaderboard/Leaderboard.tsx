@@ -22,6 +22,7 @@ type Hooper = {
   rpg: number;
   apg: number;
   championship: number;
+  custom_image: string | null;
   created_at: string;
 };
 
@@ -94,8 +95,8 @@ const CARTOON_AVATARS = [
   "/images/cartoon-avatars/avatar-10.svg",
 ];
 
-function getAvatar(slug: string): string {
-  return CARTOON_AVATARS[hashSlug(slug) % CARTOON_AVATARS.length];
+function getAvatar(hooper: Hooper): string {
+  return hooper.custom_image || CARTOON_AVATARS[hashSlug(hooper.slug) % CARTOON_AVATARS.length];
 }
 
 function getDisplayName(h: Hooper): string {
@@ -165,7 +166,7 @@ function TopCard({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: "
 
       {/* Avatar */}
       <img
-        src={getAvatar(hooper.slug)}
+        src={getAvatar(hooper)}
         alt={name}
         className="w-16 h-16 rounded-full object-cover border-2 mt-2"
         style={{ borderColor: `${borderColor}60` }}
@@ -245,7 +246,7 @@ function TableRow({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: 
       {/* Avatar + Name + Archetype */}
       <div className="flex items-center gap-2.5 w-44 min-w-0">
         <img
-          src={getAvatar(hooper.slug)}
+          src={getAvatar(hooper)}
           alt={name}
           className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/10"
         />

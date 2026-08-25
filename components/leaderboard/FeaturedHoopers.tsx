@@ -10,6 +10,7 @@ type Hooper = {
   archetype: string;
   first_name: string | null;
   last_name: string | null;
+  custom_image: string | null;
 };
 
 const CARTOON_AVATARS = [
@@ -38,8 +39,8 @@ function hashSlug(slug: string): number {
   return Math.abs(hash);
 }
 
-function getAvatar(slug: string): string {
-  return CARTOON_AVATARS[hashSlug(slug) % CARTOON_AVATARS.length];
+function getAvatar(hooper: Hooper): string {
+  return hooper.custom_image || CARTOON_AVATARS[hashSlug(hooper.slug) % CARTOON_AVATARS.length];
 }
 
 function getDisplayName(h: Hooper): string {
@@ -80,7 +81,7 @@ export function FeaturedHoopers({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
             >
               <div className="flex items-start gap-3 mb-4">
                 <img
-                  src={getAvatar(hooper.slug)}
+                  src={getAvatar(hooper)}
                   alt={name}
                   className="w-12 h-12 rounded-full object-cover flex-shrink-0 border border-white/10"
                 />
