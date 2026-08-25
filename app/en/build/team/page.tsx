@@ -263,13 +263,17 @@ function TeamPageInner() {
     return Math.round(Object.values(currentAttributes).reduce((a, b) => a + b, 0) / 13);
   }, [currentAttributes]);
 
+  // Track which attributes have been stolen
+  const stolenAttrs = useMemo(() => new Set(history.map(s => s.attribute)), [history]);
+
   const radarData = useMemo(() => {
     return ATTRIBUTES.map((attr) => ({
       attribute: ATTRIBUTE_LABELS[attr],
       fullMark: 100,
-      value: currentAttributes[attr],
+      // Show full value for stolen attributes, minimal base for untouched ones
+      value: stolenAttrs.has(attr) ? currentAttributes[attr] : 35,
     }));
-  }, [currentAttributes]);
+  }, [currentAttributes, stolenAttrs]);
 
   const handleResetTeam = () => {
     if (teamResetsLeft > 0 && !isSpinning && !teamLocked) {
