@@ -1,5 +1,6 @@
 import type { PagesFunction } from "@cloudflare/workers-types";
 import type { Env } from "../_shared/env";
+import { getSessionCookie, verifyJWT } from "../_shared/jwt";
 
 function generateSlug(history: string, position: string, seed: number): string {
   const base = `${position}-${seed}-${history}`;
@@ -69,11 +70,19 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     const slug = await createUniqueSlug(env.DB, history, position, seed);
 
+    // Get user_id from JWT cookie if logged in
+    let userId: string | null = null;
+    const token = getSessionCookie(request);
+    if (token) {
+      const payload = await verifyJWT(token, env.JWT_SECRET);
+      if (payload) userId = payload.sub;
+    }
+
     await env.DB
       .prepare(
-        "INSERT INTO hoopers (slug, position, mode, seed, history, overall, archetype, first_name, last_name, username, season_wins, season_losses, ppg, rpg, apg, championship) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO hoopers (slug, position, mode, seed, history, overall, archetype, first_name, last_name, username, season_wins, season_losses, ppg, rpg, apg, championship, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
       )
-      .bind(slug, position, mode, seed, history, overall, archetype, firstName || null, lastName || null, username || "游客", seasonWins || 0, seasonLosses || 0, ppg || 0, rpg || 0, apg || 0, championship ? 1 : 0)
+      .bind(slug, position, mode, seed, history, overall, archetype, firstName || null, lastName || null, username || "游客", seasonWins || 0, seasonLosses || 0, ppg || 0, rpg || 0, apg || 0, championship ? 1 : 0, userId)
       .run();
 
     return new Response(

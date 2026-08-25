@@ -150,6 +150,14 @@ function UserMenu({ lang }: { lang: "en" | "zh-CN" }) {
             </div>
           </div>
           <div className="border-t border-white/8 my-1" />
+          <Link
+            href={lang === "zh-CN" ? "/zh-CN/profile" : "/en/profile"}
+            onClick={() => setOpen(false)}
+            className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#A8A8B3] hover:bg-white/5 hover:text-white transition-colors"
+          >
+            <User className="h-4 w-4" />
+            {lang === "zh-CN" ? "个人资料" : "Profile"}
+          </Link>
           <button
             onClick={() => { setOpen(false); signOut(); }}
             className="w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#A8A8B3] hover:bg-white/5 hover:text-white transition-colors"

@@ -33,6 +33,33 @@ interface StolenSkill extends PlayerSkill {
   team: HistoricTeam;
 }
 
+function deterministicIndex(seed: number, position: string, length: number, salt = ""): number {
+  const combined = `${salt}${seed}:${position.toUpperCase()}`;
+  let hash = 0;
+  for (let i = 0; i < combined.length; i++) {
+    hash = ((hash << 5) - hash + combined.charCodeAt(i)) & 0xffffffff;
+  }
+  hash ^= hash >>> 16;
+  hash = (hash * 0x85ebca6b) & 0xffffffff;
+  hash ^= hash >>> 13;
+  hash = (hash * 0xc2b2ae35) & 0xffffffff;
+  hash ^= hash >>> 16;
+  return hash % length;
+}
+
+function generateBaseAttributes(seed: number): Record<Attribute, number> {
+  const base: Record<Attribute, number> = {
+    shooting: 75, mid_range: 75, finishing: 75, dunk: 75, passing: 75,
+    ball_handle: 75, perimeter_defense: 75, interior_defense: 75, block: 75,
+    rebound: 75, speed: 75, strength: 75, clutch: 75,
+  };
+  (Object.keys(base) as Attribute[]).forEach((attr) => {
+    const offset = deterministicIndex(seed, attr, 20, "base");
+    base[attr] = 65 + offset;
+  });
+  return base;
+}
+
 function playerOvr(player: LegendaryPlayer): number {
   return Math.round(player.skills.reduce((sum, s) => sum + s.value, 0) / player.skills.length);
 }
@@ -212,26 +239,12 @@ function TeamPageInner() {
   }, []);
 
   const currentAttributes = useMemo(() => {
-    const attrs: Record<Attribute, number> = {
-      shooting: 75,
-      mid_range: 75,
-      finishing: 75,
-      dunk: 75,
-      passing: 75,
-      ball_handle: 75,
-      perimeter_defense: 75,
-      interior_defense: 75,
-      block: 75,
-      rebound: 75,
-      speed: 75,
-      strength: 75,
-      clutch: 75,
-    };
+    const attrs = generateBaseAttributes(seed);
     history.forEach((skill) => {
       attrs[skill.attribute] = Math.min(99, attrs[skill.attribute] + skill.bonus);
     });
     return attrs;
-  }, [history]);
+  }, [history, seed]);
 
   const overall = useMemo(() => {
     return Math.round(Object.values(currentAttributes).reduce((a, b) => a + b, 0) / 13);
