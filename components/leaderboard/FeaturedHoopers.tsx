@@ -22,8 +22,8 @@ const CARTOON_AVATARS = [
   "/images/cartoon-avatars/avatar-06.jpg",
   "/images/cartoon-avatars/avatar-07.jpg",
   "/images/cartoon-avatars/avatar-08.jpg",
-  "/images/cartoon-avatars/avatar-09.svg",
-  "/images/cartoon-avatars/avatar-10.svg",
+  "/images/cartoon-avatars/avatar-09.jpg",
+  "/images/cartoon-avatars/avatar-10.jpg",
 ];
 
 function hashSlug(slug: string): number {
