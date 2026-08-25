@@ -106,19 +106,32 @@ const ARCHETYPES = [
   },
 ];
 
-// 10 diverse default result card images — one picked deterministically per build
-const DEFAULT_RESULT_IMAGES = [
-  "/images/player-avatars/michael-jordan-98.jpg",
-  "/images/player-avatars/kobe-bryant-09.jpg",
-  "/images/player-avatars/lebron-james-13.jpg",
-  "/images/player-avatars/stephen-curry-16.jpg",
-  "/images/player-avatars/shaquille-oneal-02.jpg",
-  "/images/player-avatars/kevin-garnett-08.jpg",
-  "/images/player-avatars/dwyane-wade-13.jpg",
-  "/images/player-avatars/dirk-nowitzki-07.jpg",
-  "/images/player-avatars/kawhi-leonard-14.jpg",
-  "/images/player-avatars/klay-thompson-16.jpg",
+// 10 cartoon basketball avatars — picked by slug hash for consistency
+const CARTOON_AVATARS = [
+  "/images/cartoon-avatars/avatar-01.svg",
+  "/images/cartoon-avatars/avatar-02.svg",
+  "/images/cartoon-avatars/avatar-03.svg",
+  "/images/cartoon-avatars/avatar-04.svg",
+  "/images/cartoon-avatars/avatar-05.svg",
+  "/images/cartoon-avatars/avatar-06.svg",
+  "/images/cartoon-avatars/avatar-07.svg",
+  "/images/cartoon-avatars/avatar-08.svg",
+  "/images/cartoon-avatars/avatar-09.svg",
+  "/images/cartoon-avatars/avatar-10.svg",
 ];
+
+function hashSlug(s: string): number {
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = ((hash << 5) - hash + s.charCodeAt(i)) & 0xffffffff;
+  }
+  hash ^= hash >>> 16;
+  hash = (hash * 0x85ebca6b) & 0xffffffff;
+  hash ^= hash >>> 13;
+  hash = (hash * 0xc2b2ae35) & 0xffffffff;
+  hash ^= hash >>> 16;
+  return Math.abs(hash);
+}
 
 const FIRST_NAMES = [
   "Orion", "Jax", "Kai", "Mason", "Eli", "Titan", "Duke", "Cade", "Axel", "Blaze",
@@ -554,13 +567,13 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
                       <img
                         src={simResult.customImage}
                         alt={playerName}
-                        className="absolute inset-0 w-full h-full object-top opacity-90"
+                        className="absolute inset-0 w-full h-full object-cover opacity-90"
                       />
                     ) : (
                       <img
-                        src={DEFAULT_RESULT_IMAGES[deterministicIndex(seed, position, DEFAULT_RESULT_IMAGES.length, "result-card")]}
+                        src={CARTOON_AVATARS[hashSlug(slug || "default") % CARTOON_AVATARS.length]}
                         alt={`${playerName} - ${archetypeName}`}
-                        className="absolute inset-0 w-full h-full object-top opacity-80 mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-500"
+                        className="absolute inset-0 w-full h-full object-cover opacity-90"
                       />
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#111317] via-transparent to-transparent" />
