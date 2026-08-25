@@ -70,19 +70,29 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
 
     const slug = await createUniqueSlug(env.DB, history, position, seed);
 
-    // Get user_id from JWT cookie if logged in
+    // Get user_id and name from JWT cookie if logged in
     let userId: string | null = null;
+    let jwtName: string | null = null;
     const token = getSessionCookie(request);
     if (token) {
       const payload = await verifyJWT(token, env.JWT_SECRET);
-      if (payload) userId = payload.sub;
+      if (payload) {
+        userId = payload.sub;
+        jwtName = payload.name || null;
+      }
     }
+
+    // Derive display username: explicit username > firstName+lastName > JWT name > "Guest"
+    const displayName = username
+      || [firstName, lastName].filter(Boolean).join(" ")
+      || jwtName
+      || "Guest";
 
     await env.DB
       .prepare(
         "INSERT INTO hoopers (slug, position, mode, seed, history, overall, archetype, first_name, last_name, username, season_wins, season_losses, ppg, rpg, apg, championship, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
       )
-      .bind(slug, position, mode, seed, history, overall, archetype, firstName || null, lastName || null, username || "游客", seasonWins || 0, seasonLosses || 0, ppg || 0, rpg || 0, apg || 0, championship ? 1 : 0, userId)
+      .bind(slug, position, mode, seed, history, overall, archetype, firstName || null, lastName || null, displayName, seasonWins || 0, seasonLosses || 0, ppg || 0, rpg || 0, apg || 0, championship ? 1 : 0, userId)
       .run();
 
     return new Response(
@@ -101,6 +111,14 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
   const { request, env } = context;
 
   try {
+    // Get JWT name for fallback
+    let jwtName: string | null = null;
+    const patchToken = getSessionCookie(request);
+    if (patchToken) {
+      const patchPayload = await verifyJWT(patchToken, env.JWT_SECRET);
+      if (patchPayload) jwtName = patchPayload.name || null;
+    }
+
     const body = await request.json<{
       slug: string;
       firstName?: string;
@@ -130,9 +148,14 @@ export const onRequestPatch: PagesFunction<Env> = async (context) => {
       setClauses.push("first_name = ?", "last_name = ?");
       updates.push(firstName || null, lastName || null);
     }
-    if (username !== undefined) {
+    // Update username from explicit username, or derive from firstName/lastName, or JWT name
+    if (username !== undefined || firstName !== undefined || lastName !== undefined) {
+      const derivedName = username
+        || [firstName, lastName].filter(Boolean).join(" ")
+        || jwtName
+        || "Guest";
       setClauses.push("username = ?");
-      updates.push(username || "游客");
+      updates.push(derivedName);
     }
     if (seasonWins !== undefined) { setClauses.push("season_wins = ?"); updates.push(seasonWins); }
     if (seasonLosses !== undefined) { setClauses.push("season_losses = ?"); updates.push(seasonLosses); }
