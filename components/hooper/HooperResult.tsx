@@ -330,18 +330,20 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
 
   const archetype = ARCHETYPES.find(a => a.name === archetypeName) || { name: archetypeName, icon: Dices, desc: "A solid foundation with room to grow." };
 
-  // Fallback: read name/image from localStorage if not in simResult
+  // Fallback: read name/image from localStorage ONLY for own builds (no slug or "sample")
   const [fallbackName, setFallbackName] = useState<string | null>(null);
   const [fallbackImage, setFallbackImage] = useState<string | null>(null);
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Only use localStorage fallback when viewing current build (no real slug)
+    if (slug && slug !== "sample") return;
     try {
       const n = localStorage.getItem("hoopervault_hooper_name");
       if (n && !simResult?.customName) setFallbackName(n);
       const img = localStorage.getItem("hoopervault_hooper_image");
       if (img && !simResult?.customImage) setFallbackImage(img);
     } catch {}
-  }, [simResult]);
+  }, [simResult, slug]);
 
   const playerName = simResult?.customName || fallbackName || (data?.first_name && data?.last_name ? `${data.first_name} ${data.last_name}` : generatePlayerName(seed, position));
 
