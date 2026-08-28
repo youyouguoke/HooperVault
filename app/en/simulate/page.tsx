@@ -590,7 +590,24 @@ function SimulatePageInner() {
             setChallengeRank(result.rank);
           });
         }
-      }).catch(() => {});
+      }).catch(() => {
+        // Fallback: use sendBeacon if fetch fails
+        try {
+          const blob = new Blob([JSON.stringify({
+            challengeId,
+            slug: hooperSlug,
+            overall,
+            archetype: archetypes.find(a => a.check(attributes))?.name || "Rising Prospect",
+            firstName: customName.trim() ? firstName : null,
+            lastName: customName.trim() ? lastName : null,
+            seasonWins: wins,
+            seasonLosses: losses,
+            playoffWins: playoffSeries.reduce((sum, s) => sum + s.wins, 0),
+            championship: champion,
+          })], { type: "application/json" });
+          navigator.sendBeacon("/api/challenge/submit", blob);
+        } catch {}
+      });
     }
   }, [phase, hooperData?.slug, slug, customName, wins, losses, ppg, rpg, apg, champion, customImage, challengeId]);
 
