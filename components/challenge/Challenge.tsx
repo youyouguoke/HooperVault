@@ -32,6 +32,12 @@ type Entry = {
   challenge_bonus: number;
   total_score: number;
   submitted_at: string;
+  ppg: number | null;
+  rpg: number | null;
+  apg: number | null;
+  custom_image: string | null;
+  position: string | null;
+  playoffs_json: string | null;
 };
 
 const UI = {
@@ -63,6 +69,59 @@ function t(key: keyof typeof UI, lang: "en" | "zh-CN"): string {
 function getDisplayName(h: Entry): string {
   if (h.first_name && h.last_name) return `${h.first_name} ${h.last_name}`;
   return h.hooper_slug.split("-")[0].toUpperCase() + " Builder";
+}
+
+const CARTOON_AVATARS = [
+  "/images/cartoon-avatars/avatar-01.jpg",
+  "/images/cartoon-avatars/avatar-02.jpg",
+  "/images/cartoon-avatars/avatar-03.jpg",
+  "/images/cartoon-avatars/avatar-04.jpg",
+  "/images/cartoon-avatars/avatar-05.jpg",
+  "/images/cartoon-avatars/avatar-06.jpg",
+  "/images/cartoon-avatars/avatar-07.jpg",
+  "/images/cartoon-avatars/avatar-08.jpg",
+  "/images/cartoon-avatars/avatar-09.jpg",
+  "/images/cartoon-avatars/avatar-10.jpg",
+];
+
+function hashSlug(slug: string): number {
+  let hash = 0;
+  for (let i = 0; i < slug.length; i++) {
+    hash = ((hash << 5) - hash + slug.charCodeAt(i)) & 0xffffffff;
+  }
+  hash ^= hash >>> 16;
+  hash = (hash * 0x85ebca6b) & 0xffffffff;
+  hash ^= hash >>> 13;
+  hash = (hash * 0xc2b2ae35) & 0xffffffff;
+  hash ^= hash >>> 16;
+  return Math.abs(hash);
+}
+
+function getAvatar(entry: Entry): string {
+  return entry.custom_image || CARTOON_AVATARS[hashSlug(entry.hooper_slug) % CARTOON_AVATARS.length];
+}
+
+type PlayoffsData = {
+  qualified: boolean;
+  seed: number;
+  champion: boolean;
+  series: { round: string; opponent: string; wins: number; losses: number; result: string }[];
+};
+
+function getPlayoffResult(entry: Entry): { label: string; emoji: string } | null {
+  if (entry.championship === 1) return { label: "Champion", emoji: "🏆" };
+  if (!entry.playoffs_json) return null;
+  try {
+    const playoffs: PlayoffsData = JSON.parse(entry.playoffs_json);
+    if (!playoffs.qualified) return null;
+    const roundsWon = playoffs.series.filter(s => s.result === "W").length;
+    if (roundsWon >= 3) return { label: "Finals", emoji: "🥈" };
+    if (roundsWon >= 2) return { label: "Conf. Finals", emoji: "⚡" };
+    if (roundsWon >= 1) return { label: "Semis", emoji: "🔥" };
+    return { label: "Playoffs", emoji: "🏀" };
+  } catch {
+    return null;
+  }
 }
 
 function getTier(totalScore: number): { label: string; color: string; bg: string } {
@@ -252,15 +311,31 @@ export function Challenge({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
                   </div>
                 ) : (
                   <div className="space-y-2">
+                    {/* Header row */}
+                    <div className="hidden md:flex items-center gap-3 px-4 py-2 text-[10px] text-[#A8A8B3]/60 uppercase tracking-wider">
+                      <div className="w-8 text-center">#</div>
+                      <div className="w-44">Player</div>
+                      <div className="flex-1 grid grid-cols-6 text-center">
+                        <span>Record</span><span>Win%</span><span>PPG</span><span>RPG</span><span>APG</span><span>Playoffs</span>
+                      </div>
+                      <div className="w-20 text-right">User</div>
+                      <div className="text-right">Score</div>
+                      <div className="w-16 text-right">OVR</div>
+                    </div>
                     {entries.map((entry, i) => {
                       const rank = i + 1;
                       const tier = getTier(entry.total_score);
                       const name = getDisplayName(entry);
                       const href = `/${lang}/hooper?slug=${entry.hooper_slug}`;
                       const record = `${entry.season_wins}-${entry.season_losses}`;
-                      const isChampion = entry.championship === 1;
+                      const totalGames = entry.season_wins + entry.season_losses;
+                      const winPct = totalGames > 0 ? ((entry.season_wins / totalGames) * 100).toFixed(0) : "—";
+                      const playoffResult = getPlayoffResult(entry);
                       const username = entry.username === "游客" ? (lang === "zh-CN" ? "游客" : "Guest") : (entry.username || (lang === "zh-CN" ? "游客" : "Guest"));
                       const timeAgo = formatTimeAgo(entry.submitted_at);
+                      const ppgVal = entry.ppg != null ? entry.ppg.toFixed(1) : "—";
+                      const rpgVal = entry.rpg != null ? entry.rpg.toFixed(1) : "—";
+                      const apgVal = entry.apg != null ? entry.apg.toFixed(1) : "—";
 
                       return (
                         <Link
@@ -268,42 +343,68 @@ export function Challenge({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
                           href={href}
                           className="group flex items-center gap-3 rounded-xl border border-white/5 bg-[#111317]/50 px-4 py-3 transition-all hover:border-white/10 hover:bg-[#111317]"
                         >
+                          {/* Rank */}
                           <div className="flex items-center justify-center w-8">
                             <RankIcon rank={rank} />
                           </div>
 
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-semibold text-white truncate group-hover:text-[#F2CA50] transition-colors">
-                                {name}
-                              </p>
-                              {isChampion && (
-                                <span className="inline-flex items-center gap-1 rounded-full bg-[#F2CA50]/10 px-2 py-0.5 text-[10px] font-bold text-[#F2CA50]">
-                                  <Crown className="w-3 h-3" />
-                                  {t("champion", lang)}
-                                </span>
-                              )}
+                          {/* Avatar + Name + Archetype */}
+                          <div className="flex items-center gap-2.5 w-44 min-w-0">
+                            <img
+                              src={getAvatar(entry)}
+                              alt={name}
+                              className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/10"
+                            />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-sm font-semibold text-white truncate group-hover:text-[#F2CA50] transition-colors">
+                                  {name}
+                                </p>
+                                {entry.championship === 1 && <span className="text-[10px]">🏆</span>}
+                              </div>
+                              <p className="text-[10px] text-[#A8A8B3] truncate">{entry.archetype} · {entry.position || "SG"}</p>
                             </div>
-                            <p className="text-xs text-[#A8A8B3]">
-                              {entry.archetype} · {record}
-                            </p>
                           </div>
 
-                          <div className="hidden sm:flex flex-col items-end gap-0.5">
+                          {/* Stats — middle column */}
+                          <div className="flex-1 grid grid-cols-6 items-center text-xs text-center">
+                            <span className="text-[#F2CA50] font-bold">{record}</span>
+                            <span className="text-[#A8A8B3]">{winPct}%</span>
+                            <span className="text-white">{ppgVal}</span>
+                            <span className="text-white">{rpgVal}</span>
+                            <span className="text-white">{apgVal}</span>
+                            <span className="text-[10px]">
+                              {playoffResult ? (
+                                <span title={playoffResult.label}>{playoffResult.emoji}</span>
+                              ) : (
+                                <span className="text-[#A8A8B3]/30">—</span>
+                              )}
+                            </span>
+                          </div>
+
+                          {/* Username + Time */}
+                          <div className="hidden sm:flex flex-col items-end gap-0.5 w-20">
                             <span className="text-[10px] text-[#A8A8B3]">👤 {username}</span>
                             <span className="text-[10px] text-[#A8A8B3]/60">{timeAgo}</span>
                           </div>
 
-                          <span
-                            className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
-                            style={{ background: tier.bg, color: tier.color }}
-                          >
-                            {tier.label}
-                          </span>
-
+                          {/* Score */}
                           <div className="text-right">
                             <span className="text-lg font-black" style={{ color: tier.color }}>
                               {Math.round(entry.total_score)}
+                            </span>
+                          </div>
+
+                          {/* Tier + OVR */}
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                              style={{ background: tier.bg, color: tier.color }}
+                            >
+                              {tier.label}
+                            </span>
+                            <span className="text-lg font-black w-8 text-right" style={{ color: tier.color }}>
+                              {entry.overall}
                             </span>
                           </div>
                         </Link>

@@ -41,7 +41,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       );
     }
 
-    // Get entries with simulation results
+    // Get entries with simulation results + hooper details
     const { results } = await env.DB
       .prepare(`
         SELECT 
@@ -49,7 +49,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
           ce.season_wins, ce.season_losses, ce.playoff_wins, ce.championship,
           ce.season_score, ce.build_score, ce.challenge_bonus, ce.total_score,
           ce.submitted_at,
-          COALESCE(h.username, '游客') as username
+          COALESCE(h.username, '游客') as username,
+          h.ppg, h.rpg, h.apg, h.custom_image, h.position, h.playoffs_json
         FROM challenge_entries ce
         LEFT JOIN hoopers h ON h.slug = ce.hooper_slug
         WHERE ce.challenge_id = ?
@@ -73,6 +74,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         challenge_bonus: number;
         total_score: number;
         submitted_at: string;
+        ppg: number | null;
+        rpg: number | null;
+        apg: number | null;
+        custom_image: string | null;
+        position: string | null;
+        playoffs_json: string | null;
       }>();
 
     const countResult = await env.DB
