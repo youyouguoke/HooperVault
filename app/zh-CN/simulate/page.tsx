@@ -520,7 +520,43 @@ function SimulatePageInner() {
       }),
       keepalive: true,
     }).catch(() => {});
-  }, [phase, hooperData?.slug, slug, customName, wins, losses, ppg, rpg, apg, champion, customImage]);
+
+    // Auto-submit to daily challenge if challengeId is present
+    if (challengeId) {
+      const archetypes = [
+        { name: "Two-Way Superstar", check: (a: Record<string, number>) => (a.perimeter_defense >= 80 || a.interior_defense >= 80 || a.block >= 80) && (a.shooting >= 80 || a.finishing >= 80 || a.mid_range >= 80) },
+        { name: "Legendary Slasher", check: (a: Record<string, number>) => a.finishing >= 85 && a.dunk >= 80 && a.speed >= 75 },
+        { name: "Floor General", check: (a: Record<string, number>) => a.passing >= 85 && a.ball_handle >= 80 && a.speed >= 75 },
+        { name: "Splash Legend", check: (a: Record<string, number>) => a.shooting >= 85 && a.mid_range >= 75 },
+        { name: "Rim Protector", check: (a: Record<string, number>) => a.block >= 85 && (a.interior_defense >= 80 || a.rebound >= 80) },
+        { name: "Versatile Wing", check: (a: Record<string, number>) => { const v = Object.values(a); return v.every(x => x >= 70) && v.reduce((s, x) => s + x, 0) / v.length >= 78; } },
+      ];
+      fetch("/api/challenge/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          challengeId,
+          slug: hooperSlug,
+          overall,
+          archetype: archetypes.find(a => a.check(attributes))?.name || "Rising Prospect",
+          firstName: customName.trim() ? firstName : null,
+          lastName: customName.trim() ? lastName : null,
+          seasonWins: wins,
+          seasonLosses: losses,
+          playoffWins: playoffSeries.reduce((sum, s) => sum + s.wins, 0),
+          championship: champion,
+        }),
+        keepalive: true,
+      }).then(res => {
+        if (res.ok) {
+          res.json().then(result => {
+            setChallengeSubmitted(true);
+            setChallengeRank(result.rank);
+          });
+        }
+      }).catch(() => {});
+    }
+  }, [phase, hooperData?.slug, slug, customName, wins, losses, ppg, rpg, apg, champion, customImage, challengeId]);
 
   const saveAndGoLegacy = () => {
     try {
