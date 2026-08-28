@@ -519,7 +519,38 @@ function SimulatePageInner() {
     setChallengeSubmitted(false);
     setChallengeRank(null);
     setChallengeError(null);
+    statsSavedRef.current = false;
   };
+
+  // Auto-save stats to API when simulation reaches result phase
+  const statsSavedRef = useRef(false);
+  useEffect(() => {
+    if (phase !== "result" || statsSavedRef.current) return;
+    const hooperSlug = hooperData?.slug || slug;
+    if (!hooperSlug) return;
+    statsSavedRef.current = true;
+
+    const nameParts = customName.trim().split(/\s+/);
+    const firstName = nameParts[0] || null;
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : null;
+    fetch("/api/hoopers", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        slug: hooperSlug,
+        firstName: customName.trim() ? firstName : undefined,
+        lastName: customName.trim() ? lastName : undefined,
+        seasonWins: wins,
+        seasonLosses: losses,
+        ppg: parseFloat(ppg),
+        rpg: parseFloat(rpg),
+        apg: parseFloat(apg),
+        championship: champion,
+        customImage: customImage || undefined,
+      }),
+      keepalive: true,
+    }).catch(() => {});
+  }, [phase, hooperData?.slug, slug, customName, wins, losses, ppg, rpg, apg, champion, customImage]);
 
   const saveAndGoLegacy = () => {
     try {
@@ -576,7 +607,8 @@ function SimulatePageInner() {
             championship: champion,
             customImage: customImage || undefined,
           }),
-        }).catch(() => {}); // fire-and-forget
+          keepalive: true,
+        }).catch(() => {});
       }
     } catch (e) {
       // localStorage might be full or disabled
@@ -648,7 +680,8 @@ function SimulatePageInner() {
             championship: champion,
             customImage: customImage || undefined,
           }),
-        }).catch(() => {}); // fire-and-forget
+          keepalive: true,
+        }).catch(() => {});
       }
     } catch (error) {
       setChallengeError(error instanceof Error ? error.message : "Failed to submit to challenge");
