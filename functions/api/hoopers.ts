@@ -196,11 +196,11 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
   const mode = url.searchParams.get("mode"); // "classic" | "blind" | null = all
 
   try {
-    let query = "SELECT slug, position, mode, overall, archetype, first_name, last_name, username, season_wins, season_losses, ppg, rpg, apg, championship, custom_image, playoffs_json, created_at FROM hoopers WHERE (season_wins > 0 OR season_losses > 0)";
+    let query = "SELECT slug, position, mode, overall, archetype, first_name, last_name, username, season_wins, season_losses, ppg, rpg, apg, championship, custom_image, playoffs_json, created_at FROM hoopers";
     const bindings: (string | number)[] = [];
 
     if (mode && (mode === "classic" || mode === "blind")) {
-      query += " AND mode = ?";
+      query += " WHERE mode = ?";
       bindings.push(mode);
     }
 
@@ -229,10 +229,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }>();
 
     // Get total count for pagination
-    let countQuery = "SELECT COUNT(*) as total FROM hoopers WHERE (season_wins > 0 OR season_losses > 0)";
+    let countQuery = "SELECT COUNT(*) as total FROM hoopers";
     const countBindings: string[] = [];
     if (mode && (mode === "classic" || mode === "blind")) {
-      countQuery += " AND mode = ?";
+      countQuery += " WHERE mode = ?";
       countBindings.push(mode);
     }
     const countResult = await env.DB.prepare(countQuery).bind(...countBindings).first<{ total: number }>();

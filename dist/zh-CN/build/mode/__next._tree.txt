@@ -4,4 +4,4 @@
 :HL["/_next/static/media/c47649aa31f9e140-s.p.3lxpqujs87tck.woff2","font",{"crossOrigin":"","type":"font/woff2"}]
 :HL["/images/hero-card.webp","image",{"type":"image/webp"}]
 :HL["/images/hero-card.jpg","image",{"type":"image/jpeg"}]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"zh-CN","param":null,"prefetchHints":4192,"slots":{"children":{"name":"build","param":null,"prefetchHints":4192,"slots":{"children":{"name":"mode","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}}}}}},"staleTime":300,"buildId":"Yazh2GN3kjVzVqcpNhQcX"}
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"zh-CN","param":null,"prefetchHints":4192,"slots":{"children":{"name":"build","param":null,"prefetchHints":4192,"slots":{"children":{"name":"mode","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}}}}}},"staleTime":300,"buildId":"oYO-qhH3Fnkp1YWZmbwpZ"}
