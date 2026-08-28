@@ -265,7 +265,7 @@ function SimulatePageInner() {
     // Win rate scales with OVR, clutch, and speed.
     // 90+ OVR → ~80-90%, 85-89 → ~72-80%, 80-84 → ~64-72%, 75-79 → ~55-64%, 70-74 → ~45-55%
     const baseWin = Math.min(0.92, Math.max(0.30,
-      (overall - 10 + (attributes.clutch - 60) * 0.50 + (attributes.speed - 75) * 0.10) / 100
+      (overall * 0.8 - 6 + (attributes.clutch - 70) * 0.20 + (attributes.speed - 75) * 0.05) / 100
     ));
     // Regular season is random per game so each Play Again feels different; playoffs are random too.
     const noise = Math.random();

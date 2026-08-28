@@ -232,7 +232,7 @@ function SimulatePageInner() {
   const simulateGame = useCallback((idx: number, opponentOverride?: string, strengthBoost?: number, useRandom = false): GameResult => {
     const opponent = opponentOverride || schedule[idx % schedule.length];
     const baseWin = Math.min(0.92, Math.max(0.30,
-      (overall - 10 + (attributes.clutch - 60) * 0.50 + (attributes.speed - 75) * 0.10) / 100
+      (overall * 0.8 - 6 + (attributes.clutch - 70) * 0.20 + (attributes.speed - 75) * 0.05) / 100
     ));
     // Use true randomness for playoff games so outcomes aren't fixed per seed
     const noise = useRandom ? Math.random() : (Math.sin(idx * 123.45 + seed * 0.7 + idx * 0.3) + 1) / 2;
