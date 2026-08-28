@@ -320,9 +320,8 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
   }, [hasSim, simResult, position, skills, seed]);
 
   const computedOverall = useMemo(() => {
-    const totalBonus = skills.reduce((sum, s) => sum + s.bonus, 0);
-    return Math.max(0, Math.min(99, Math.round(totalBonus / 156 * 99)));
-  }, [skills]);
+    return data?.overall ?? 0;
+  }, [data?.overall]);
   const overall = simResult?.overall ?? computedOverall;
 
   const computedArchetypeName = useMemo(() => {
