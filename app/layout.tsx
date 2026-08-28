@@ -11,18 +11,21 @@ const anton = Anton({
   variable: "--font-anton",
   subsets: ["latin"],
   weight: ["400"],
+  display: "optional",
 });
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
   subsets: ["latin"],
   weight: ["400", "600", "700"],
+  display: "optional",
 });
 
 const hankenGrotesk = Hanken_Grotesk({
   variable: "--font-hanken-grotesk",
   subsets: ["latin"],
   weight: ["400", "600", "700"],
+  display: "optional",
 });
 
 const siteUrl = "https://hoopervault.com";
@@ -108,6 +111,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <JsonLd data={websiteJsonLd} />
+        <link rel="preload" as="image" href="/images/hero-card.webp" type="image/webp" />
+        <link rel="preload" as="image" href="/images/hero-card.jpg" type="image/jpeg" />
       </head>
       <body className="min-h-full flex flex-col bg-[#0B0B12] text-white">
         <AuthProvider>

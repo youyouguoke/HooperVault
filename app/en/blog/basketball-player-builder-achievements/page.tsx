@@ -149,7 +149,7 @@ export default function AchievementsPage() {
               <div className="glass-card rounded-xl p-6 md:p-8 border-l-4 border-[#F2CA50]">
                 <h3 className="font-[family-name:var(--font-anton)] text-xl text-white uppercase tracking-wide mb-3">Achievements Are Cosmetic</h3>
                 <p className="text-[#A8A8B3] leading-relaxed">
-                  Achievements do not change your attribute ratings or season simulation results. They are badges on your player card that show the community what you have accomplished. A player with 5 achievements and a 92 Overall build is not stronger than a player with 0 achievements and a 92 Overall build — but they have more to show for it.
+                  Achievements do not change your attribute ratings or season simulation results. They are badges on your player card that show the community what you have accomplished. A player with 5 achievements and a 75 Overall build is not stronger than a player with 0 achievements and a 75 Overall build — but they have more to show for it.
                 </p>
               </div>
             </div>

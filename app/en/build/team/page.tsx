@@ -74,69 +74,72 @@ function rarityColor(rarity: string): string {
 }
 
 function CustomRadar({ data }: { data: { attribute: string; value: number }[] }) {
-  const size = 320;
+  const size = 220;
   const cx = size / 2;
   const cy = size / 2;
-  const radius = 110;
-  const levels = 4;
-  const angleFor = (index: number, total: number) => (Math.PI * 2 * index) / total - Math.PI / 2;
-  const pointFor = (index: number, total: number, value: number) => {
-    const angle = angleFor(index, total);
-    const r = (value / 100) * radius;
-    return [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
+  const radius = 90;
+  const angleFor = (i: number) => (Math.PI * 2 * i) / data.length - Math.PI / 2;
+  const pt = (i: number, v: number) => {
+    const a = angleFor(i);
+    const r = (v / 100) * radius;
+    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
   };
-  const closedPath = data
-    .map((d, i) => {
-      const [x, y] = pointFor(i, data.length, d.value);
-      return `${i === 0 ? "M" : "L"} ${x} ${y}`;
-    })
-    .join(" ") + " Z";
-  const showFill = data.length >= 3;
+  const dataPath = data.length >= 3
+    ? data.map((d, i) => `${i === 0 ? "M" : "L"} ${pt(i, d.value).join(" ")}`).join(" ") + " Z"
+    : "";
   return (
     <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
-      {[...Array(levels)].map((_, i) => {
-        const r = ((i + 1) / levels) * radius;
-        return (
-          <circle
-            key={i}
-            cx={cx}
-            cy={cy}
-            r={r}
-            fill="none"
-            stroke="rgba(255,255,255,0.08)"
-            strokeWidth={1}
-          />
-        );
+      {/* Spider web grid - 5 layers */}
+      {[20, 40, 60, 80, 100].map((v) => (
+        <polygon
+          key={v}
+          points={data.map((_, i) => pt(i, v).join(",")).join(" ")}
+          fill={v === 100 ? "rgba(255,255,255,0.03)" : "none"}
+          stroke="rgba(255,255,255,0.12)"
+          strokeWidth={v === 100 ? 1.5 : 0.8}
+        />
+      ))}
+      {/* Axis lines */}
+      {data.map((_, i) => {
+        const [x2, y2] = pt(i, 100);
+        return <line key={i} x1={cx} y1={cy} x2={x2} y2={y2} stroke="rgba(255,255,255,0.08)" strokeWidth={0.5} />;
       })}
-      {data.map((d, i) => {
-        const angle = angleFor(i, data.length);
-        const x2 = cx + radius * Math.cos(angle);
-        const y2 = cy + radius * Math.sin(angle);
-        const lx = cx + (radius + 22) * Math.cos(angle);
-        const ly = cy + (radius + 22) * Math.sin(angle);
-        return (
-          <g key={d.attribute}>
-            <line x1={cx} y1={cy} x2={x2} y2={y2} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
-            <text
-              x={lx}
-              y={ly}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="#A8A8B3"
-              fontSize={10}
-              fontFamily="var(--font-space-grotesk)"
-            >
-              {d.attribute}
-            </text>
-          </g>
-        );
-      })}
-      {showFill && (
-        <path d={closedPath} fill="#F2CA50" fillOpacity={0.22} stroke="#F2CA50" strokeWidth={2} />
+      {/* Data polygon - cyan glow */}
+      {dataPath && (
+        <>
+          <path d={dataPath} fill="rgba(0,180,200,0.08)" stroke="none" />
+          <path d={dataPath} fill="none" stroke="rgba(0,200,220,0.7)" strokeWidth={1.5} />
+        </>
       )}
+      {/* Data points */}
       {data.map((d, i) => {
-        const [x, y] = pointFor(i, data.length, d.value);
-        return <circle key={d.attribute} cx={x} cy={y} r={3} fill="#F2CA50" />;
+        const [x, y] = pt(i, d.value);
+        return d.value > 0 ? (
+          <g key={d.attribute}>
+            <circle cx={x} cy={y} r={4} fill="rgba(0,200,220,0.2)" />
+            <circle cx={x} cy={y} r={2} fill="rgba(0,220,240,0.9)" />
+          </g>
+        ) : null;
+      })}
+      {/* Labels */}
+      {data.map((d, i) => {
+        const [x, y] = pt(i, 100);
+        const a = angleFor(i);
+        return (
+          <text
+            key={d.attribute}
+            x={x + 14 * Math.cos(a)}
+            y={y + 14 * Math.sin(a)}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="rgba(255,255,255,0.6)"
+            fontSize={8}
+            fontWeight={600}
+            fontFamily="var(--font-space-grotesk)"
+          >
+            {d.attribute}
+          </text>
+        );
       })}
     </svg>
   );
@@ -260,20 +263,35 @@ function TeamPageInner() {
   }, [history, seed]);
 
   const overall = useMemo(() => {
-    return Math.round(Object.values(currentAttributes).reduce((a, b) => a + b, 0) / 13);
-  }, [currentAttributes]);
+    const totalBonus = history.reduce((sum, s) => sum + s.bonus, 0);
+    return Math.max(0, Math.min(99, Math.round(totalBonus / 156 * 99)));
+  }, [history]);
 
   // Track which attributes have been stolen
   const stolenAttrs = useMemo(() => new Set(history.map(s => s.attribute)), [history]);
 
-  // Animated radar values — transition from 0 to target for each stolen attribute
+  // Animated radar values — transition from 0 to target for each stolen attribute (bonus-only)
   const [animatedValues, setAnimatedValues] = useState<Record<string, number>>({});
+
+  // Bonus per attribute from stolen skills
+  const bonusPerAttr = useMemo(() => {
+    const map: Record<string, number> = {};
+    history.forEach((s) => {
+      map[s.attribute] = (map[s.attribute] || 0) + s.bonus;
+    });
+    return map;
+  }, [history]);
 
   useEffect(() => {
     const targets: Record<string, number> = {};
     ATTRIBUTES.forEach((attr) => {
-      targets[attr] = stolenAttrs.has(attr) ? currentAttributes[attr] : 0;
+      const bonus = bonusPerAttr[attr] || 0;
+      targets[attr] = stolenAttrs.has(attr) ? Math.round(bonus / 16 * 120) : 0;
     });
+
+    // Snapshot current values for animation start point
+    const prevSnapshot: Record<string, number> = {};
+    ATTRIBUTES.forEach((attr) => { prevSnapshot[attr] = animatedValues[attr] || 0; });
 
     // Animate in steps for smooth transition
     const steps = 12;
@@ -284,9 +302,7 @@ function TeamPageInner() {
       const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
       const frame: Record<string, number> = {};
       ATTRIBUTES.forEach((attr) => {
-        const prev = animatedValues[attr] || 0;
-        const target = targets[attr];
-        frame[attr] = Math.round(prev + (target - prev) * eased);
+        frame[attr] = Math.round(prevSnapshot[attr] + (targets[attr] - prevSnapshot[attr]) * eased);
       });
       setAnimatedValues(frame);
       if (step >= steps) clearInterval(interval);
@@ -294,15 +310,15 @@ function TeamPageInner() {
 
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [history.length, seed]);
+  }, [history.length, seed, bonusPerAttr]);
 
   const radarData = useMemo(() => {
     return ATTRIBUTES.map((attr) => ({
       attribute: ATTRIBUTE_LABELS[attr],
       fullMark: 100,
-      value: animatedValues[attr] ?? (stolenAttrs.has(attr) ? currentAttributes[attr] : 0),
+      value: Math.min(100, animatedValues[attr] ?? (stolenAttrs.has(attr) ? Math.round((bonusPerAttr[attr] || 0) / 16 * 120) : 0)),
     }));
-  }, [animatedValues, currentAttributes, stolenAttrs]);
+  }, [animatedValues, bonusPerAttr, stolenAttrs]);
 
   const handleResetTeam = () => {
     if (teamResetsLeft > 0 && !isSpinning && !teamLocked) {
@@ -403,7 +419,7 @@ function TeamPageInner() {
   });
 
   return (
-    <main className="bg-[#0B0B12] min-h-screen text-white font-sans selection:bg-[#F2CA50]/30">
+    <main className="bg-[#0B0B12] h-dvh text-white font-sans selection:bg-[#F2CA50]/30 flex flex-col">
       <header className="h-14 border-b border-white/8 bg-[#0B0B12] flex items-center justify-between px-6 lg:px-10 shrink-0">
         <div className="font-[family-name:var(--font-anton)] text-lg uppercase tracking-wider text-white">HooperVault</div>
         <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold">
@@ -464,16 +480,17 @@ function TeamPageInner() {
         </div>
       )}
 
-      <div className="grid lg:grid-cols-[1fr_540px] min-h-[calc(100vh-56px)]">
+      <div className="flex-1 grid lg:grid-cols-[1fr_540px] min-h-0">
         {/* LEFT GAMEPLAY AREA */}
-        <section className="relative p-6 lg:p-10 overflow-hidden flex flex-col">
+        <section className="relative p-4 lg:p-10 overflow-hidden flex flex-col min-h-0">
+          <div className="flex-1 lg:h-full flex flex-col min-h-0 overflow-y-auto lg:overflow-visible">
           {/* STATE 01: DRAW TEAM */}
           {state === "draw" && (
             <div className="h-full flex flex-col">
-              <div className="mb-6">
-                <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">Round {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}</div>
-                <h1 className="font-[family-name:var(--font-anton)] text-4xl lg:text-5xl uppercase tracking-wide">Draw Your Legendary Team</h1>
-                <p className="text-[#A8A8B3] text-sm mt-2">
+              <div className="mb-3 lg:mb-6">
+                <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-1 lg:mb-2">Round {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}</div>
+                <h1 className="font-[family-name:var(--font-anton)] text-2xl lg:text-5xl uppercase tracking-wide">Draw Your Legendary Team</h1>
+                <p className="text-[#A8A8B3] text-xs lg:text-sm mt-1">
                   {challengeId 
                     ? "Your journey starts with a legendary basketball era. Same seed, same pool."
                     : "Your journey starts with a legendary basketball era."
@@ -481,7 +498,7 @@ function TeamPageInner() {
                 </p>
               </div>
 
-              <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="flex-1 flex flex-col items-center lg:justify-center">
                 {!isDrawDone ? (
                   <>
                     <div className="text-center mb-8">
@@ -583,14 +600,14 @@ function TeamPageInner() {
               </div>
 
               <div className="flex items-center justify-center h-full text-center">
-                <p className="text-[#A8A8B3] text-sm">Select a player card above to steal a skill.</p>
+                <p className="text-[#A8A8B3] text-sm hidden lg:block">Select a player card above to steal a skill.</p>
               </div>
             </div>
           )}
 
           {/* STATE 03: STEAL SKILL */}
           {state === "skill" && selectedTeam && selectedPlayer && (
-            <div className="h-full flex flex-col">
+            <div className="flex flex-col">
               <div className="mb-4">
                 <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-2">Round {Math.min(round, TOTAL_ROUNDS)} / {TOTAL_ROUNDS}</div>
                 <h1 className="font-[family-name:var(--font-anton)] text-3xl lg:text-4xl uppercase tracking-wide">Steal a Skill From {showNames ? selectedPlayer.fullName : "???"}</h1>
@@ -619,7 +636,70 @@ function TeamPageInner() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+{/* MOBILE: 2-column compact skill grid */}
+              <div className="lg:hidden grid grid-cols-2 gap-2">
+                {selectedPlayer.skills.map((skill) => {
+                  const isUsed = stolenSkillKeys.has(skillKey(skill));
+                  const isAcquired = acquiredSkill?.id === skill.id;
+                  return (
+                    <button
+                      key={skill.id}
+                      onClick={() => handleStealSkill(skill)}
+                      disabled={isUsed || isSpinning}
+                      className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-left transition-all ${
+                        isAcquired
+                          ? "bg-[#F2CA50]/10 border-[#F2CA50]"
+                          : isUsed
+                          ? "bg-[#111317]/50 border-white/5 opacity-40 cursor-not-allowed"
+                          : "bg-[#111317] border-white/10 active:border-[#F2CA50]/40 active:bg-[#F2CA50]/5"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] uppercase tracking-wider text-[#A8A8B3]">{ATTRIBUTE_LABELS[skill.attribute as Attribute]}</span>
+                          <span className="font-[family-name:var(--font-space-grotesk)] text-sm font-bold text-white">+{skill.bonus}</span>
+                        </div>
+                        <div className="text-[10px] text-[#A8A8B3] truncate">{skill.name}</div>
+                      </div>
+                      <span className={`text-[8px] px-1 py-0.5 rounded shrink-0 ${
+                        skill.rarity === "legendary" ? "bg-[#F2CA50]/15 text-[#F2CA50]" :
+                        skill.rarity === "epic" ? "bg-[#6CB9FF]/15 text-[#6CB9FF]" :
+                        "bg-white/5 text-white/40"
+                      }`}>{skill.rarity}</span>
+                      {isUsed && <Lock className="h-3 w-3 text-[#A8A8B3] shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* MOBILE: inline radar below skill list */}
+              <div className="lg:hidden mt-3 flex items-center gap-3 p-3 bg-[#111317] rounded-xl border border-white/10">
+                <div className="text-center shrink-0">
+                  <div className="text-[8px] uppercase tracking-widest text-[#F2CA50]/50">OVR</div>
+                  <div className="font-[family-name:var(--font-space-grotesk)] text-3xl font-bold text-[#F2CA50]">{overall}</div>
+                </div>
+                <div className="flex-1 max-w-[220px] mx-auto">
+                  <CustomRadar data={radarData} />
+                </div>
+                <div className="text-center shrink-0">
+                  <div className="text-[8px] uppercase tracking-widest text-white/30">Skills</div>
+                  <div className="font-[family-name:var(--font-space-grotesk)] text-lg font-bold text-white/80">{history.length}/13</div>
+                </div>
+              </div>
+              {history.length > 0 && (
+                <div className="lg:hidden flex flex-wrap gap-1 mt-2">
+                  {history.map((s, i) => (
+                    <span key={i} className={`text-[9px] px-1.5 py-0.5 rounded border ${
+                      s.rarity === "legendary" ? "bg-[#F2CA50]/10 border-[#F2CA50]/30 text-[#F2CA50]" :
+                      s.rarity === "epic" ? "bg-[#6CB9FF]/10 border-[#6CB9FF]/30 text-[#6CB9FF]" :
+                      "bg-white/5 border-white/10 text-white/60"
+                    }`}>{ATTRIBUTE_LABELS[s.attribute as Attribute]} +{s.bonus}</span>
+                  ))}
+                </div>
+              )}
+
+              {/* DESKTOP: card grid (original) */}
+              <div className="hidden lg:grid grid-cols-3 gap-3">
                 {selectedPlayer.skills.map((skill) => {
                   const isUsed = stolenSkillKeys.has(skillKey(skill));
                   const isAcquired = acquiredSkill?.id === skill.id;
@@ -649,50 +729,51 @@ function TeamPageInner() {
               </div>
             </div>
           )}
+          </div>
+
+
         </section>
 
         {/* RIGHT SIDEBAR */}
         <aside className="hidden lg:flex flex-col border-l border-white/8 bg-[#111317]/50 p-6">
-          <div className="mb-6">
-            <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-3">Draft Board</div>
-            <div className="grid grid-cols-5 gap-2">
-              {draftBoard.map((slot, i) => (
-                <div
-                  key={i}
-                  className={`aspect-square rounded-lg border text-center flex items-center justify-center ${
-                    slot.filled
-                      ? `bg-${slot.rarity === "legendary" ? "[#F2CA50]" : slot.rarity === "epic" ? "[#6CB9FF]" : "[#A8A8B3]"}/10 border-${slot.rarity === "legendary" ? "[#F2CA50]" : slot.rarity === "epic" ? "[#6CB9FF]" : "[#A8A8B3]"}/30`
-                      : slot.active
-                      ? "bg-[#FF5E07]/10 border-[#FF5E07]/30"
-                      : "bg-[#111317] border-white/10"
-                  }`}
-                >
-                  {slot.filled ? (
-                    <span className="text-[10px] font-bold text-white">{ATTRIBUTE_LABELS[slot.attribute as Attribute]}</span>
-                  ) : slot.active ? (
-                    <Zap className="h-3 w-3 text-[#FF5E07]" />
-                  ) : (
-                    <span className="text-[10px] text-[#A8A8B3]">{i + 1}</span>
-                  )}
-                </div>
-              ))}
-            </div>
+          {/* OVERALL - Top */}
+          <div className="text-center mb-4">
+            <div className="text-[10px] uppercase tracking-widest text-[#F2CA50]/60 font-bold mb-1">Overall</div>
+            <div className="font-[family-name:var(--font-space-grotesk)] text-7xl font-bold text-[#F2CA50]">{overall}</div>
           </div>
 
-          <div className="mb-6">
-            <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-3">Current Build</div>
-            <div className="aspect-square max-w-[320px] mx-auto">
+          {/* RADAR - Main Focus */}
+          <div className="flex-1 flex items-center justify-center py-4">
+            <div className="w-full max-w-[420px]">
               <CustomRadar data={radarData} />
             </div>
           </div>
 
-          <div className="mt-auto">
-            <div className="text-[10px] uppercase tracking-widest text-[#F2CA50] font-bold mb-3">Overall</div>
-            <div className="font-[family-name:var(--font-space-grotesk)] text-6xl font-bold text-[#F2CA50]">{overall}</div>
-            <div className="text-[10px] text-[#A8A8B3] mt-1">Based on 13 attributes</div>
-          </div>
+          {/* DRAFT BOARD - Minimal */}
+          {history.length > 0 && (
+            <div className="mt-2">
+              <div className="text-[9px] uppercase tracking-widest text-white/30 mb-2">Stolen Skills ({history.length}/13)</div>
+              <div className="flex flex-wrap gap-1">
+                {history.map((skill, i) => (
+                  <span
+                    key={i}
+                    className={`text-[9px] px-1.5 py-0.5 rounded border ${
+                      skill.rarity === "legendary"
+                        ? "bg-[#F2CA50]/10 border-[#F2CA50]/30 text-[#F2CA50]"
+                        : skill.rarity === "epic"
+                        ? "bg-[#6CB9FF]/10 border-[#6CB9FF]/30 text-[#6CB9FF]"
+                        : "bg-white/5 border-white/10 text-white/60"
+                    }`}
+                  >
+                    {ATTRIBUTE_LABELS[skill.attribute as Attribute]} +{skill.bonus}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </aside>
       </div>
+
     </main>
   );
 }

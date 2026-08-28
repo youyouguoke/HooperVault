@@ -167,7 +167,7 @@ export default function BasketballPlayerBuilderPage() {
               <div className="glass-card rounded-xl p-6 md:p-8">
                 <h3 className="font-[family-name:var(--font-anton)] text-xl text-white uppercase tracking-wide mb-3">Start with a Player Identity</h3>
                 <p className="text-[#A8A8B3] leading-relaxed mb-4">Before drafting, decide what kind of player you want to build. A perimeter scorer needs different skills than a defensive anchor. Having a clear identity prevents scattered picks that do not reinforce each other.</p>
-                <p className="text-[#A8A8B3] leading-relaxed">There is no single best build in HooperVault. The best build is one where every skill reinforces the same play style. A 92 Overall build with internal consistency will outperform a 95 Overall build with contradictory skills.</p>
+                <p className="text-[#A8A8B3] leading-relaxed">There is no single best build in HooperVault. The best build is one where every skill reinforces the same play style. A 75 Overall build with internal consistency will outperform an 85 Overall build with contradictory skills.</p>
               </div>
 
               <div className="glass-card rounded-xl p-6 md:p-8">

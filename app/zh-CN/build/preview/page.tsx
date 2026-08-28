@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, Suspense } from "react";
+import { useMemo, useState, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
+
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Section } from "@/components/ui/Section";
@@ -142,6 +142,19 @@ const ARCHETYPES = [
   },
 ];
 
+const CARTOON_AVATARS = [
+  "/images/cartoon-avatars/avatar-01.jpg",
+  "/images/cartoon-avatars/avatar-02.jpg",
+  "/images/cartoon-avatars/avatar-03.jpg",
+  "/images/cartoon-avatars/avatar-04.jpg",
+  "/images/cartoon-avatars/avatar-05.jpg",
+  "/images/cartoon-avatars/avatar-06.jpg",
+  "/images/cartoon-avatars/avatar-07.jpg",
+  "/images/cartoon-avatars/avatar-08.jpg",
+  "/images/cartoon-avatars/avatar-09.jpg",
+  "/images/cartoon-avatars/avatar-10.jpg",
+];
+
 export default function PreviewPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#111317]" />}>
@@ -159,6 +172,35 @@ function PreviewPageInner() {
   const seedParam = parseInt(searchParams.get("seed") || "1", 10);
   const historyParam = searchParams.get("history") || "";
   const challengeId = searchParams.get("challenge");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [avatarIndex, setAvatarIndex] = useState(() => Math.floor(Math.random() * CARTOON_AVATARS.length));
+  const [customImage, setCustomImage] = useState<string | null>(null);
+  const displayImage = customImage || CARTOON_AVATARS[avatarIndex];
+  const shuffleAvatar = () => { setAvatarIndex((i) => (i + 1) % CARTOON_AVATARS.length); };
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const maxW = 400, maxH = 840;
+        let w = img.width, h = img.height;
+        if (w > maxW || h > maxH) {
+          const ratio = Math.min(maxW / w, maxH / h);
+          w = Math.round(w * ratio);
+          h = Math.round(h * ratio);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+        setCustomImage(canvas.toDataURL("image/jpeg", 0.7));
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const team = useMemo(() => getTeamById(teamId), [teamId]);
 
@@ -189,20 +231,14 @@ function PreviewPageInner() {
   }, [position, skills, seedParam]);
 
   const overall = useMemo(() => {
-    return Math.round(Object.values(attributes).reduce((a, b) => a + b, 0) / 13);
-  }, [attributes]);
+    const totalBonus = skills.reduce((sum, s) => sum + s.bonus, 0);
+    return Math.max(0, Math.min(99, Math.round(totalBonus / 156 * 99)));
+  }, [skills]);
 
   const archetype = useMemo(() => {
     return ARCHETYPES.find((a) => a.conditions(attributes)) || { name: "Rising Prospect", icon: Swords, desc: "A solid foundation with room to grow." };
   }, [attributes]);
 
-  const radarData = useMemo(() => {
-    return ATTRIBUTES.map((attr) => ({
-      attribute: ATTRIBUTE_LABELS[attr],
-      fullMark: 100,
-      value: attributes[attr],
-    }));
-  }, [attributes]);
 
   const positionNames: Record<string, string> = {
     PG: "控球后卫",
@@ -255,33 +291,24 @@ function PreviewPageInner() {
                     </div>
                   </div>
                 </div>
-                <div className="relative h-80 rounded-lg overflow-hidden mb-6 border border-white/10">
+                <div className="relative h-[630px] rounded-lg overflow-hidden mb-6 border border-white/10">
                   <img
-                    src="/images/preview-avatar.jpg"
-                    alt="Premium basketball player avatar inside a digital card interface with dramatic stadium lighting"
-                    className="w-full h-full object-top opacity-90"
+                    src={displayImage}
+                    alt="Player avatar"
+                    className="absolute inset-0 w-full h-full object-cover object-top opacity-90"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#111317] via-transparent to-transparent" />
+                  <div className="absolute bottom-3 right-3 z-20 flex gap-2">
+                    <button onClick={shuffleAvatar} className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-xs backdrop-blur-sm hover:bg-black/80 transition-colors">
+                      ↻ 换一个
+                    </button>
+                    <button onClick={() => fileInputRef.current?.click()} className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-xs backdrop-blur-sm hover:bg-black/80 transition-colors">
+                      📷 上传
+                    </button>
+                  </div>
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                 </div>
-                <div className="h-80 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={radarData}>
-                      <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                      <PolarAngleAxis
-                        dataKey="attribute"
-                        tick={{ fill: "#A8A8B3", fontSize: 11, fontFamily: "var(--font-space-grotesk)" }}
-                      />
-                      <Radar
-                        name="Attributes"
-                        dataKey="value"
-                        stroke="#F2CA50"
-                        strokeWidth={2}
-                        fill="#F2CA50"
-                        fillOpacity={0.25}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
+
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">

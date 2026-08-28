@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
+
 import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { Section } from "@/components/ui/Section";
@@ -191,9 +191,11 @@ function PreviewPageInner() {
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Default cartoon avatar picked deterministically by seed
-  const defaultImage = CARTOON_AVATARS[deterministicIndex(seedParam, position, CARTOON_AVATARS.length, "avatar")];
+  // Random initial cartoon avatar
+  const [avatarIndex, setAvatarIndex] = useState(() => Math.floor(Math.random() * CARTOON_AVATARS.length));
+  const defaultImage = CARTOON_AVATARS[avatarIndex];
   const [customImage, setCustomImage] = useState<string | null>(null);
+  const shuffleAvatar = () => { setAvatarIndex((i) => (i + 1) % CARTOON_AVATARS.length); };
   const [customName, setCustomName] = useState("");
 
   // Set default name from auth or generated name
@@ -213,11 +215,11 @@ function PreviewPageInner() {
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-        // Compress to max 200x200 JPEG for localStorage compatibility
-        const maxSize = 200;
+        // Scale to fit 400x560 box, preserve aspect ratio, no crop
+        const maxW = 400, maxH = 840;
         let w = img.width, h = img.height;
-        if (w > maxSize || h > maxSize) {
-          const ratio = Math.min(maxSize / w, maxSize / h);
+        if (w > maxW || h > maxH) {
+          const ratio = Math.min(maxW / w, maxH / h);
           w = Math.round(w * ratio);
           h = Math.round(h * ratio);
         }
@@ -252,20 +254,14 @@ function PreviewPageInner() {
   }, [position, skills, seedParam]);
 
   const overall = useMemo(() => {
-    return Math.round(Object.values(attributes).reduce((a, b) => a + b, 0) / 13);
-  }, [attributes]);
+    const totalBonus = skills.reduce((sum, s) => sum + s.bonus, 0);
+    return Math.max(0, Math.min(99, Math.round(totalBonus / 156 * 99)));
+  }, [skills]);
 
   const archetype = useMemo(() => {
     return ARCHETYPES.find((a) => a.conditions(attributes)) || { name: "Rising Prospect", icon: Swords, desc: "A solid foundation with room to grow." };
   }, [attributes]);
 
-  const radarData = useMemo(() => {
-    return ATTRIBUTES.map((attr) => ({
-      attribute: ATTRIBUTE_LABELS[attr],
-      fullMark: 100,
-      value: attributes[attr],
-    }));
-  }, [attributes]);
 
   const positionNames: Record<string, string> = {
     PG: "Point Guard",
@@ -318,37 +314,24 @@ function PreviewPageInner() {
                     </div>
                   </div>
                 </div>
-                <div className="relative h-80 rounded-lg overflow-hidden mb-6 border border-white/10 group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                <div className="relative h-[630px] rounded-lg overflow-hidden mb-6 border border-white/10">
                   <img
                     src={displayImage}
                     alt={displayName}
-                    className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                    className="absolute inset-0 w-full h-full object-cover object-top opacity-90"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#111317] via-transparent to-transparent" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="text-white text-sm font-medium bg-black/60 px-4 py-2 rounded-full">Upload Photo</span>
+                  <div className="absolute bottom-3 right-3 z-20 flex gap-2">
+                    <button onClick={(e) => { e.stopPropagation(); shuffleAvatar(); }} className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-xs backdrop-blur-sm hover:bg-black/80 transition-colors">
+                      ↻ Shuffle
+                    </button>
+                    <button onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }} className="px-3 py-1.5 rounded-lg bg-black/60 text-white text-xs backdrop-blur-sm hover:bg-black/80 transition-colors">
+                      📷 Upload
+                    </button>
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
                 </div>
-                <div className="h-80 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={radarData}>
-                      <PolarGrid stroke="rgba(255,255,255,0.1)" />
-                      <PolarAngleAxis
-                        dataKey="attribute"
-                        tick={{ fill: "#A8A8B3", fontSize: 11, fontFamily: "var(--font-space-grotesk)" }}
-                      />
-                      <Radar
-                        name="Attributes"
-                        dataKey="value"
-                        stroke="#F2CA50"
-                        strokeWidth={2}
-                        fill="#F2CA50"
-                        fillOpacity={0.25}
-                      />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
+
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">

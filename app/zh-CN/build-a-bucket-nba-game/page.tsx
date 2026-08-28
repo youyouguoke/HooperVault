@@ -582,7 +582,7 @@ export default function BuildABucketNBAGameZhPage() {
                   你的 Hooper
                 </p>
                 <div className="font-[family-name:var(--font-anton)] text-5xl text-[#F2CA50]">
-                  OVR 94
+                  OVR 82
                 </div>
               </div>
 

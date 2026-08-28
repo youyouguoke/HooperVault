@@ -560,8 +560,8 @@ export default function BuildABucketNBAGamePage() {
               </p>
               <p>
                 The best basketball player build is one where every skill reinforces the same
-                identity. A 92 Overall build with perfect internal consistency will outperform a
-                95 Overall build with contradictory picks. Think about basketball strategy, not
+                identity. A 75 Overall build with perfect internal consistency will outperform a
+                85 Overall build with contradictory picks. Think about basketball strategy, not
                 just individual attribute ratings.
               </p>
             </div>
@@ -665,7 +665,7 @@ export default function BuildABucketNBAGamePage() {
                   Your Hooper
                 </p>
                 <div className="font-[family-name:var(--font-anton)] text-5xl text-[#F2CA50]">
-                  OVR 94
+                  OVR 82
                 </div>
               </div>
 

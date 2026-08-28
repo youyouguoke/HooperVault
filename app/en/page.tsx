@@ -6,6 +6,7 @@ import { Section } from "@/components/ui/Section";
 import { Button } from "@/components/ui/Button";
 import { FeaturedHoopers } from "@/components/leaderboard/FeaturedHoopers";
 import { HomeChallenge } from "@/components/challenge/HomeChallenge";
+import { LazySection } from "@/components/ui/LazySection";
 import {
   Trophy,
   Users,
@@ -56,11 +57,17 @@ function FeaturedPlayerCard() {
   return (
     <div className="legendary-card rounded-xl p-4 w-full max-w-md transform rotate-y-[-10deg] hover:rotate-y-0 transition-transform duration-500 hover:scale-105 cursor-pointer perspective-1000 mx-auto">
       <div className="relative h-80 rounded-lg overflow-hidden mb-4 border border-white/10 bg-gradient-to-br from-[#333539] to-[#1a1c20]">
-        <img
-          src="/images/hero-card.jpg"
-          alt="A highly detailed illustration of a fictional, futuristic basketball player mid-dunk with dramatic stadium lighting."
-          className="w-full h-full object-cover opacity-90 mix-blend-luminosity"
-        />
+        <picture>
+          <source srcSet="/images/hero-card.webp" type="image/webp" />
+          <img
+            src="/images/hero-card.jpg"
+            alt="Basketball player mid-dunk with dramatic stadium lighting"
+            className="w-full h-full object-cover opacity-90 mix-blend-luminosity"
+            fetchPriority="high"
+            width={512}
+            height={640}
+          />
+        </picture>
         <div className="absolute top-4 right-4 bg-[#333539]/90 backdrop-blur border border-[#F2CA50]/50 text-[#F2CA50] font-[family-name:var(--font-space-grotesk)] text-2xl font-bold px-3 py-1 rounded">
           98
         </div>
@@ -188,13 +195,13 @@ export default function HomePage() {
               View Leaderboard <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
-          <FeaturedHoopers lang="en" />
+          <LazySection><FeaturedHoopers lang="en" /></LazySection>
         </Container>
       </Section>
 
       <Section className="border-t border-white/8 bg-[#111317]">
         <Container>
-          <HomeChallenge lang="en" />
+          <LazySection><HomeChallenge lang="en" /></LazySection>
         </Container>
       </Section>
 

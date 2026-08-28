@@ -223,14 +223,17 @@ function SimulatePageInner() {
   }, [position, skills]);
 
   const overall = useMemo(() => {
-    return Math.round(Object.values(attributes).reduce((a, b) => a + b, 0) / 13);
-  }, [attributes]);
+    const totalBonus = skills.reduce((sum, s) => sum + s.bonus, 0);
+    return Math.max(0, Math.min(99, Math.round(totalBonus / 156 * 99)));
+  }, [skills]);
 
   const schedule = useMemo(() => generateSchedule(seed), [seed]);
 
   const simulateGame = useCallback((idx: number, opponentOverride?: string, strengthBoost?: number, useRandom = false): GameResult => {
     const opponent = opponentOverride || schedule[idx % schedule.length];
-    const baseWin = (overall - 40 + (attributes.clutch - 60) * 0.3) / 100;
+    const baseWin = Math.min(0.92, Math.max(0.30,
+      (overall - 10 + (attributes.clutch - 60) * 0.50 + (attributes.speed - 75) * 0.10) / 100
+    ));
     // Use true randomness for playoff games so outcomes aren't fixed per seed
     const noise = useRandom ? Math.random() : (Math.sin(idx * 123.45 + seed * 0.7 + idx * 0.3) + 1) / 2;
     const strength = strengthBoost ?? 0;

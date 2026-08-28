@@ -179,7 +179,7 @@ export default function BuildABucketNBAGamePage() {
               <div>
                 <h2 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-4">There Is No Single Best Build</h2>
                 <p className="text-[#A8A8B3] leading-relaxed">
-                  The most important thing to understand about HooperVault is that there is no objectively best build. A 92 Overall build with perfect internal consistency — every skill reinforcing the same identity — will outperform a 95 Overall build with contradictory picks.
+                  The most important thing to understand about HooperVault is that there is no objectively best build. A 75 Overall build with perfect internal consistency — every skill reinforcing the same identity — will outperform a 85 Overall build with contradictory picks.
                 </p>
                 <p className="text-[#A8A8B3] leading-relaxed mt-4">
                   The basketball player builder rewards strategic thinking, not just picking the biggest number. Read your attributes as groups, commit to an identity, and review your season data before drafting again. That is how you build a bucket that lasts 82 games.

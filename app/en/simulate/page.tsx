@@ -254,8 +254,9 @@ function SimulatePageInner() {
   }, [position, skills, seed]);
 
   const overall = useMemo(() => {
-    return Math.round(Object.values(attributes).reduce((a, b) => a + b, 0) / 13);
-  }, [attributes]);
+    const totalBonus = skills.reduce((sum, s) => sum + s.bonus, 0);
+    return Math.max(0, Math.min(99, Math.round(totalBonus / 156 * 99)));
+  }, [skills]);
 
   const schedule = useMemo(() => generateSchedule(seed, sessionOffset), [seed, sessionOffset]);
 

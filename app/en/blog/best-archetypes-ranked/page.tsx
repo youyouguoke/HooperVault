@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 const faqs = [
   { question: "What is the best archetype in HooperVault?", answer: "Two-Way Superstar and Versatile Wing tend to produce the most consistent season records because they balance scoring with defense. However, the best archetype depends on your draft mode and play style. Splash Legend dominates in Classic mode where you can optimize shooting stacking." },
   { question: "Which archetype wins the most championships?", answer: "Archetypes with strong clutch and defensive attributes — Two-Way Superstar and Rim Protector — tend to perform best in playoff simulations. Pure scoring builds like Splash Legend can dominate the regular season but may struggle in playoff pressure without clutch investment." },
-  { question: "Is Versatile Wing the best archetype?", answer: "Versatile Wing has the highest potential Overall (96) because it has no weaknesses. But its strength is also its weakness: it does not excel at any single thing. A 92 Overall Splash Legend with perfect shooting consistency can outperform a 96 Overall Versatile Wing in the right conditions." },
+  { question: "Is Versatile Wing the best archetype?", answer: "Versatile Wing has the highest potential Overall (86) because it has no weaknesses. But its strength is also its weakness: it does not excel at any single thing. A 80 Overall Splash Legend with perfect shooting consistency can outperform a 86 Overall Versatile Wing in the right conditions." },
   { question: "What is the worst archetype in HooperVault?", answer: "There is no worst archetype — each one can produce championship builds with the right skill draft. The archetype that performs worst is usually the one that was drafted without a clear identity, resulting in scattered attributes that do not reinforce each other." },
   { question: "Does archetype affect the season simulation?", answer: "Yes. Your archetype determines your badge eligibility, which affects how your player performs in specific game situations. A Splash Legend gets shooting badges that boost perimeter performance, while a Rim Protector gets defensive badges that boost blocks and contests." },
   { question: "Can I change my archetype after drafting?", answer: "No. Your archetype is determined by your 13 skill picks and cannot be changed after the draft. If you want a different archetype, you need to start a new draft with a different skill selection strategy." },
@@ -37,12 +37,12 @@ const faqs = [
 
 // Archetype ranking based on consistency and versatility
 const RANKINGS = [
-  { rank: 1, id: "two-way-superstar", name: "Two-Way Superstar", ovr: 95, verdict: "Most consistent archetype. Balances scoring with defense, which means fewer blowout losses and closer games decided by clutch. The safest pick for players who want a reliable season record.", bestMode: "Classic & Blind" },
-  { rank: 2, id: "versatile-wing", name: "Versatile Wing", ovr: 96, verdict: "Highest potential Overall with no weaknesses. The jack-of-all-trades archetype. Excels in Chaos mode where adaptability matters more than specialization.", bestMode: "Chaos" },
-  { rank: 3, id: "splash-legend", name: "Splash Legend", ovr: 95, verdict: "The premier scoring archetype. Dominates from three-point range with deep range and quick release. Best in Classic mode where you can stack shooting attributes precisely.", bestMode: "Classic" },
-  { rank: 4, id: "floor-general", name: "Floor General", ovr: 94, verdict: "Elite playmaker who makes every teammate better. Underrated in the season simulation because the engine values assists and court vision. A Floor General with strong clutch produces surprising win totals.", bestMode: "Blind" },
-  { rank: 5, id: "legendary-slasher", name: "Legendary Slasher", ovr: 93, verdict: "Unstoppable at the rim with elite finishing, dunk, and speed. The most fun archetype to play but needs clutch investment to survive close games. Pairs well with one shooting skill for floor spacing.", bestMode: "Classic & Chaos" },
-  { rank: 6, id: "rim-protector", name: "Rim Protector", ovr: 93, verdict: "The defensive anchor. Does not score much but shuts down opponents. In the season simulation, defense wins championships — a Rim Protector with even modest scoring can produce deep playoff runs.", bestMode: "Blind" },
+  { rank: 1, id: "two-way-superstar", name: "Two-Way Superstar", ovr: 84, verdict: "Most consistent archetype. Balances scoring with defense, which means fewer blowout losses and closer games decided by clutch. The safest pick for players who want a reliable season record.", bestMode: "Classic & Blind" },
+  { rank: 2, id: "versatile-wing", name: "Versatile Wing", ovr: 86, verdict: "Highest potential Overall with no weaknesses. The jack-of-all-trades archetype. Excels in Chaos mode where adaptability matters more than specialization.", bestMode: "Chaos" },
+  { rank: 3, id: "splash-legend", name: "Splash Legend", ovr: 84, verdict: "The premier scoring archetype. Dominates from three-point range with deep range and quick release. Best in Classic mode where you can stack shooting attributes precisely.", bestMode: "Classic" },
+  { rank: 4, id: "floor-general", name: "Floor General", ovr: 82, verdict: "Elite playmaker who makes every teammate better. Underrated in the season simulation because the engine values assists and court vision. A Floor General with strong clutch produces surprising win totals.", bestMode: "Blind" },
+  { rank: 5, id: "legendary-slasher", name: "Legendary Slasher", ovr: 80, verdict: "Unstoppable at the rim with elite finishing, dunk, and speed. The most fun archetype to play but needs clutch investment to survive close games. Pairs well with one shooting skill for floor spacing.", bestMode: "Classic & Chaos" },
+  { rank: 6, id: "rim-protector", name: "Rim Protector", ovr: 80, verdict: "The defensive anchor. Does not score much but shuts down opponents. In the season simulation, defense wins championships — a Rim Protector with even modest scoring can produce deep playoff runs.", bestMode: "Blind" },
 ];
 
 export default function BestArchetypesRankedPage() {
@@ -90,7 +90,7 @@ export default function BestArchetypesRankedPage() {
                   Every archetype in HooperVault can produce a championship build. But some archetypes are more consistent than others across different draft modes and skill combinations. This ranking is based on one metric: how reliably an archetype produces winning season records in the 82-game simulator.
                 </p>
                 <p className="text-[#A8A8B3] text-lg leading-relaxed mt-4">
-                  A quick note: this ranking is not about the highest Overall. It is about which archetypes produce the best win-loss records. A 92 Overall build with perfect internal consistency will beat a 95 Overall build with scattered attributes. The archetype that makes consistency easiest to achieve ranks highest.
+                  A quick note: this ranking is not about the highest Overall. It is about which archetypes produce the best win-loss records. A 75 Overall build with perfect internal consistency will beat an 85 Overall build with scattered attributes. The archetype that makes consistency easiest to achieve ranks highest.
                 </p>
               </div>
 

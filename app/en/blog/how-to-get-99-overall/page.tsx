@@ -8,7 +8,7 @@ import { JsonLd, buildBreadcrumbList, buildFAQSchema, buildArticleSchema } from 
 
 export const metadata: Metadata = {
   title: "How to Get a 99 Overall Hooper — Full Attribute Breakdown",
-  description: "The path to 99 Overall is not about picking the highest-rated skills. Learn how the attribute system distributes points across 13 picks and which combinations produce the maximum rating.",
+  description: "Learn how Overall is calculated from total skill bonus and which strategies produce the highest ratings in HooperVault.",
   keywords: ["99 overall hooper", "max overall basketball player", "best build hoopervault", "highest rated build", "99 overall build", "basketball player builder max rating"],
   alternates: {
     canonical: "/en/blog/how-to-get-99-overall",
@@ -26,11 +26,11 @@ export const metadata: Metadata = {
 };
 
 const faqs = [
-  { question: "How do I get a 99 Overall in HooperVault?", answer: "Getting 99 Overall requires understanding how each skill distributes points across 13 attributes. You need to pick skills that stack points on the same attributes rather than spreading them thin. The Complete Superstar build is the closest path to 99 Overall." },
-  { question: "What is the highest Overall you can get in HooperVault?", answer: "The theoretical maximum is 99 Overall, but most builds land between 88 and 95. Reaching 95+ requires near-perfect skill synergy where every pick reinforces overlapping attributes." },
-  { question: "Is 99 Overall the best build?", answer: "Not necessarily. A 92 Overall build with perfect internal consistency — every skill reinforcing the same play style — can outperform a 95 Overall build with scattered attributes. The season simulation rewards consistency over raw numbers." },
-  { question: "What attributes matter most for a high Overall?", answer: "Overall is calculated as a weighted average of all 13 attributes. The attributes with the highest weight are 3PT, Mid-Range, Ball Handle, and Speed. Prioritizing these gives the biggest boost to your Overall rating." },
-  { question: "Can I get 99 Overall in Blind mode?", answer: "It is much harder in Blind mode because you cannot see the attribute distribution as you draft. Classic mode gives you full visibility to optimize for maximum Overall. Most 95+ Overall builds are created in Classic mode." },
+  { question: "How do I get a 99 Overall in HooperVault?", answer: "Getting 99 Overall requires a total skill bonus of 156 or higher — that means averaging 12+ bonus per skill across all 13 picks. Legendary skills carry the highest bonuses (10-16), so prioritizing them is key. It is possible but demands deliberate cherry-picking of the best legendary skills every round." },
+  { question: "What is the highest Overall you can get in HooperVault?", answer: "The theoretical maximum is 99 Overall (total bonus of 156). Random builds typically land around 70 Overall. Cherry-picked epic builds reach ~82, and focused legendary builds can hit 90+. Reaching 99 requires averaging 12+ bonus per skill across all 13 rounds." },
+  { question: "Is 99 Overall the best build?", answer: "Not necessarily. A 75 Overall build with perfect internal consistency — every skill reinforcing the same play style — can outperform an 85 Overall build with scattered attributes. The season simulation rewards consistency over raw numbers." },
+  { question: "What attributes matter most for a high Overall?", answer: "Overall is calculated from the total bonus of all stolen skills: total bonus ÷ 156 × 99. All 13 attributes are weighted equally — there are no hidden weights. A +16 legendary skill contributes the same to Overall regardless of which attribute it boosts. Focus on picking the highest-bonus skills available." },
+  { question: "Can I get 99 Overall in Blind mode?", answer: "It is harder in Blind mode because you cannot see skill bonuses as you draft. Classic mode lets you see each skill bonus and pick the highest ones. Most 85+ Overall builds are created in Classic mode." },
 ];
 
 export default function HowToGet99OverallPage() {
@@ -62,7 +62,7 @@ export default function HowToGet99OverallPage() {
               How to Get a 99 Overall Hooper
             </h1>
             <p className="text-[#A8A8B3] text-lg leading-relaxed">
-              The path to 99 Overall is not about picking the highest-rated skills. It is about understanding how the attribute system distributes points across 13 picks.
+              The path to 99 Overall is about picking the highest-bonus skills across 13 rounds. Legendary skills carry the biggest bonuses.
             </p>
           </div>
         </Container>
@@ -85,54 +85,38 @@ export default function HowToGet99OverallPage() {
               <div>
                 <h2 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-4">How Overall Is Calculated</h2>
                 <p className="text-[#A8A8B3] leading-relaxed">
-                  Your Overall rating is a weighted average of all 13 attributes. Not all attributes are weighted equally. The attributes that carry the most weight in the Overall calculation are:
+                  Your Overall rating is based on the total bonus from all 13 stolen skills. Each skill adds a fixed bonus to one attribute — rare skills give +6-7, epic skills give +8-10, and legendary skills give +10-16. All attributes are weighted equally. The formula is simple:
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-6">
-                  {[
-                    { attr: "3PT", weight: "High" },
-                    { attr: "Mid-Range", weight: "High" },
-                    { attr: "Ball Handle", weight: "High" },
-                    { attr: "Speed", weight: "High" },
-                    { attr: "Finishing", weight: "Medium" },
-                    { attr: "Passing", weight: "Medium" },
-                    { attr: "Perim D", weight: "Medium" },
-                    { attr: "Clutch", weight: "Medium" },
-                    { attr: "Interior D", weight: "Low" },
-                    { attr: "Block", weight: "Low" },
-                    { attr: "Rebound", weight: "Low" },
-                    { attr: "Strength", weight: "Low" },
-                    { attr: "Dunk", weight: "Low" },
-                  ].map((item) => (
-                    <div key={item.attr} className="glass-card rounded-lg p-3 text-center">
-                      <div className="text-sm font-bold text-white">{item.attr}</div>
-                      <div className={`text-xs mt-1 ${item.weight === "High" ? "text-[#F2CA50]" : item.weight === "Medium" ? "text-[#A8A8B3]" : "text-[#A8A8B3]/60"}`}>
-                        {item.weight} weight
-                      </div>
-                    </div>
-                  ))}
+                <div className="glass-card rounded-xl p-5 mt-6 text-center">
+                  <div className="text-sm text-[#A8A8B3] mb-2">OVR = Total Bonus ÷ 156 × 99</div>
+                  <div className="grid grid-cols-3 gap-4 mt-4">
+                    <div><div className="text-lg font-bold text-white">+6-7</div><div className="text-xs text-[#A8A8B3]">Rare</div></div>
+                    <div><div className="text-lg font-bold text-[#6CB9FF]">+8-10</div><div className="text-xs text-[#A8A8B3]">Epic</div></div>
+                    <div><div className="text-lg font-bold text-[#F2CA50]">+10-16</div><div className="text-xs text-[#A8A8B3]">Legendary</div></div>
+                  </div>
                 </div>
                 <p className="text-[#A8A8B3] leading-relaxed mt-6">
-                  This means stacking points on 3PT, Mid-Range, Ball Handle, and Speed gives you the biggest Overall boost per skill pick. A build with 95 in all four of these will have a higher Overall than a build with 95 in Block, Rebound, Interior Defense, and Strength — even though both have four maxed attributes.
+                  This means every skill pick contributes to Overall equally, regardless of which attribute it boosts. A +16 legendary skill on Block contributes just as much as a +16 legendary skill on 3PT. The key is picking the highest-bonus skills available each round.
                 </p>
               </div>
 
               <div>
-                <h2 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-4">The Stacking Strategy</h2>
+                <h2 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-4">How to Maximize Your Overall</h2>
                 <p className="text-[#A8A8B3] leading-relaxed mb-4">
-                  The key to a high Overall is stacking: picking multiple skills that add points to the same attributes. Here is how it works:
+                  Since Overall depends only on total bonus, the strategy is straightforward: pick the highest-bonus skills every round. Here is how:
                 </p>
                 <div className="space-y-4">
                   <div className="glass-card rounded-xl p-5">
-                    <h3 className="font-[family-name:var(--font-anton)] text-lg text-[#F2CA50] uppercase tracking-wide mb-2">Step 1: Identify High-Weight Attributes</h3>
-                    <p className="text-sm text-[#A8A8B3]">Focus on 3PT, Mid-Range, Ball Handle, and Speed. These four attributes have the most impact on your Overall.</p>
+                    <h3 className="font-[family-name:var(--font-anton)] text-lg text-[#F2CA50] uppercase tracking-wide mb-2">Step 1: Prioritize Legendary Skills</h3>
+                    <p className="text-sm text-[#A8A8B3]">Legendary skills carry the highest bonuses (10-16). Always pick the legendary option when available. A single +16 legendary skill contributes 10 OVR points.</p>
                   </div>
                   <div className="glass-card rounded-xl p-5">
-                    <h3 className="font-[family-name:var(--font-anton)] text-lg text-[#F2CA50] uppercase tracking-wide mb-2">Step 2: Find Skills That Stack</h3>
-                    <p className="text-sm text-[#A8A8B3]">Some skills add points to multiple high-weight attributes at once. These are your most efficient picks. A skill that adds +5 to both 3PT and Ball Handle is worth more Overall than a skill that adds +10 to Block alone.</p>
+                    <h3 className="font-[family-name:var(--font-anton)] text-lg text-[#F2CA50] uppercase tracking-wide mb-2">Step 2: Compare Bonus Values</h3>
+                    <p className="text-sm text-[#A8A8B3]">When choosing between skills, always pick the one with the higher bonus. A +10 epic skill on any attribute is worth more than a +6 rare skill — it does not matter which attribute gets boosted for Overall purposes.</p>
                   </div>
                   <div className="glass-card rounded-xl p-5">
-                    <h3 className="font-[family-name:var(--font-anton)] text-lg text-[#F2CA50] uppercase tracking-wide mb-2">Step 3: Fill the Gaps Strategically</h3>
-                    <p className="text-sm text-[#A8A8B3]">After 8-9 picks focused on high-weight attributes, use your remaining picks to bring any low attributes up to a minimum threshold. A 40 in any attribute drags down your Overall more than you might expect.</p>
+                    <h3 className="font-[family-name:var(--font-anton)] text-lg text-[#F2CA50] uppercase tracking-wide mb-2">Step 3: Consistency Still Matters</h3>
+                    <p className="text-sm text-[#A8A8B3]">While Overall drives the number, the season simulation rewards builds where skills reinforce a coherent playstyle. A focused 80 OVR build can outperform a scattered 85 OVR build in the 82-game season.</p>
                   </div>
                 </div>
               </div>
@@ -140,18 +124,18 @@ export default function HowToGet99OverallPage() {
               <div>
                 <h2 className="font-[family-name:var(--font-anton)] text-2xl text-white uppercase tracking-wide mb-4">Recommended Builds for Maximum Overall</h2>
                 <p className="text-[#A8A8B3] leading-relaxed mb-6">
-                  These builds are optimized for the highest possible Overall while maintaining enough consistency to perform well in the season simulation:
+                  These builds balance Overall rating with internal consistency for strong season simulation performance:
                 </p>
                 <div className="grid gap-4 md:grid-cols-2">
                   <Link href="/en/builds/complete-superstar-build" className="group glass-card rounded-xl p-5 hover:bg-white/5 transition-all">
                     <h3 className="font-[family-name:var(--font-anton)] text-lg text-white uppercase tracking-wide group-hover:text-[#F2CA50] transition-colors mb-1">Complete Superstar Build</h3>
-                    <p className="text-sm text-[#A8A8B3] mb-3">Two-Way Superstar · 98+ OVR</p>
+                    <p className="text-sm text-[#A8A8B3] mb-3">Two-Way Superstar · 85+ OVR</p>
                     <p className="text-sm text-[#A8A8B3]">The highest Overall build. Balances all attribute groups for maximum rating. Best for players who want the gold badge.</p>
                     <span className="inline-flex items-center gap-1 text-sm text-[#F2CA50] mt-3">View Build <ChevronRight className="h-4 w-4" /></span>
                   </Link>
                   <Link href="/en/builds/two-way-star-build" className="group glass-card rounded-xl p-5 hover:bg-white/5 transition-all">
                     <h3 className="font-[family-name:var(--font-anton)] text-lg text-white uppercase tracking-wide group-hover:text-[#F2CA50] transition-colors mb-1">Two-Way Star Build</h3>
-                    <p className="text-sm text-[#A8A8B3] mb-3">Two-Way Superstar · 96+ OVR</p>
+                    <p className="text-sm text-[#A8A8B3] mb-3">Two-Way Superstar · 80+ OVR</p>
                     <p className="text-sm text-[#A8A8B3]">High Overall with strong defensive contribution. Wins more games than pure offensive builds in the season simulation.</p>
                     <span className="inline-flex items-center gap-1 text-sm text-[#F2CA50] mt-3">View Build <ChevronRight className="h-4 w-4" /></span>
                   </Link>
@@ -164,7 +148,7 @@ export default function HowToGet99OverallPage() {
                   Here is the counterintuitive truth: a 99 Overall build does not always win the most games. The Overall rating is a single number that compresses 13 different attributes into one score. It does not capture internal consistency — how well those attributes work together as a system.
                 </p>
                 <p className="text-[#A8A8B3] leading-relaxed mt-4">
-                  A 92 Overall build where every skill reinforces a perimeter scorer identity — 3PT, Mid-Range, Ball Handle, Clutch — will often produce a better season record than a 95 Overall build that has high shooting but also high rebounding and interior defense that do not contribute to the scoring identity.
+                  A 75 Overall build where every skill reinforces a perimeter scorer identity — 3PT, Mid-Range, Ball Handle, Clutch — will often produce a better season record than an 85 Overall build that has high shooting but also high rebounding and interior defense that do not contribute to the scoring identity.
                 </p>
                 <p className="text-[#A8A8B3] leading-relaxed mt-4">
                   The best basketball player builder strategy is not &ldquo;maximize Overall.&rdquo; It is &ldquo;maximize consistency within a chosen identity, then let the Overall reflect that consistency.&rdquo;
