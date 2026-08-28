@@ -23,6 +23,7 @@ type Hooper = {
   apg: number;
   championship: number;
   custom_image: string | null;
+  playoffs_json: string | null;
   created_at: string;
 };
 
@@ -114,6 +115,29 @@ function getTier(overall: number): { label: string; color: string; bg: string } 
   return { label: "Rising", color: "#A8A8B3", bg: "rgba(168,168,179,0.12)" };
 }
 
+type PlayoffsData = {
+  qualified: boolean;
+  seed: number;
+  champion: boolean;
+  series: { round: string; opponent: string; wins: number; losses: number; result: string }[];
+};
+
+function getPlayoffResult(hooper: Hooper): { label: string; emoji: string } | null {
+  if (hooper.championship === 1) return { label: "Champion", emoji: "🏆" };
+  if (!hooper.playoffs_json) return null;
+  try {
+    const playoffs: PlayoffsData = JSON.parse(hooper.playoffs_json);
+    if (!playoffs.qualified) return null;
+    const roundsWon = playoffs.series.filter(s => s.result === "W").length;
+    if (roundsWon >= 3) return { label: "Finals", emoji: "🥈" };
+    if (roundsWon >= 2) return { label: "Conf. Finals", emoji: "⚡" };
+    if (roundsWon >= 1) return { label: "Semis", emoji: "🔥" };
+    return { label: "Playoffs", emoji: "🏀" };
+  } catch {
+    return null;
+  }
+}
+
 function RankIcon({ rank }: { rank: number }) {
   if (rank === 1) return <Crown className="w-5 h-5 text-[#F2CA50]" />;
   if (rank === 2) return <Medal className="w-5 h-5 text-[#C0C0C0]" />;
@@ -147,6 +171,7 @@ function TopCard({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: "
   const timeAgo = formatTimeAgo(hooper.created_at);
   const hasStats = hooper.season_wins > 0 || hooper.season_losses > 0;
   const record = `${hooper.season_wins}-${hooper.season_losses}`;
+  const playoffResult = getPlayoffResult(hooper);
 
   return (
     <Link
@@ -193,6 +218,11 @@ function TopCard({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: "
         >
           {tier.label}
         </span>
+        {playoffResult && (
+          <span className="inline-block rounded-full px-2 py-0.5 text-[10px] font-bold bg-[#F2CA50]/10 text-[#F2CA50]">
+            {playoffResult.emoji} {playoffResult.label}
+          </span>
+        )}
       </div>
       <p className="mt-1 text-xs text-[#A8A8B3] text-center">{hooper.archetype}</p>
       <p className="text-[10px] text-[#A8A8B3]/60 uppercase tracking-wider">{hooper.position}</p>
@@ -234,6 +264,7 @@ function TableRow({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: 
   const record = `${hooper.season_wins}-${hooper.season_losses}`;
   const totalGames = hooper.season_wins + hooper.season_losses;
   const winPct = totalGames > 0 ? ((hooper.season_wins / totalGames) * 100).toFixed(0) : "—";
+  const playoffResult = getPlayoffResult(hooper);
 
   return (
     <Link
@@ -264,7 +295,7 @@ function TableRow({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: 
       </div>
 
       {/* Stats — middle column */}
-      <div className="flex-1 grid grid-cols-5 items-center text-xs text-center">
+      <div className="flex-1 grid grid-cols-6 items-center text-xs text-center">
         {hasStats ? (
           <>
             <span className="text-[#F2CA50] font-bold">{record}</span>
@@ -272,9 +303,16 @@ function TableRow({ hooper, rank, lang }: { hooper: Hooper; rank: number; lang: 
             <span className="text-white">{hooper.ppg.toFixed(1)}</span>
             <span className="text-white">{hooper.rpg.toFixed(1)}</span>
             <span className="text-white">{hooper.apg.toFixed(1)}</span>
+            <span className="text-[10px]">
+              {playoffResult ? (
+                <span title={playoffResult.label}>{playoffResult.emoji}</span>
+              ) : (
+                <span className="text-[#A8A8B3]/30">—</span>
+              )}
+            </span>
           </>
         ) : (
-          <span className="col-span-5 text-[#A8A8B3]/40 text-[10px]">—</span>
+          <span className="col-span-6 text-[#A8A8B3]/40 text-[10px]">—</span>
         )}
       </div>
 
@@ -425,12 +463,13 @@ export function Leaderboard({ lang = "en" }: { lang?: "en" | "zh-CN" }) {
               <div className="flex items-center gap-3 px-4 py-2 text-[10px] uppercase tracking-wider text-[#A8A8B3]/60">
                 <div className="w-8 text-center">#</div>
                 <div className="w-44">Player</div>
-                <div className="flex-1 grid grid-cols-5 text-center">
+                <div className="flex-1 grid grid-cols-6 text-center">
                   <span>Record</span>
                   <span>Win%</span>
                   <span>PPG</span>
                   <span>RPG</span>
                   <span>APG</span>
+                  <span>Playoff</span>
                 </div>
                 <div className="hidden sm:block w-20 text-right">User</div>
                 <div className="flex items-center gap-2"><span className="w-12">Tier</span><span className="w-8 text-right">OVR</span></div>

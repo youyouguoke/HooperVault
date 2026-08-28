@@ -1,4 +1,4 @@
-:HL["/_next/static/chunks/1_k99fo88_g7i.css","style"]
+:HL["/_next/static/chunks/22z7fru09n_tu.css","style"]
 :HL["/images/hero-card.webp","image",{"type":"image/webp"}]
 :HL["/images/hero-card.jpg","image",{"type":"image/jpeg"}]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"/_not-found","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"awstvvHLOtv1vfKSxcGZh"}
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"/_not-found","param":null,"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"Yazh2GN3kjVzVqcpNhQcX"}

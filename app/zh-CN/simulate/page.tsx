@@ -511,6 +511,12 @@ function SimulatePageInner() {
         apg: parseFloat(apg),
         championship: champion,
         customImage: customImage || undefined,
+        playoffsJson: JSON.stringify({
+          qualified: qualifiedForPlayoffs,
+          seed: playoffSeedValue,
+          champion,
+          series: playoffSeries.map(s => ({ round: s.round, opponent: s.opponent, wins: s.wins, losses: s.losses, result: s.result })),
+        }),
       }),
       keepalive: true,
     }).catch(() => {});
