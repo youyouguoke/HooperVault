@@ -331,13 +331,11 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
 
   const archetype = ARCHETYPES.find(a => a.name === archetypeName) || { name: archetypeName, icon: Dices, desc: "A solid foundation with room to grow." };
 
-  // Fallback: read name/image from localStorage ONLY for own builds (no slug or "sample")
+  // Fallback: read name/image from localStorage for all builds
   const [fallbackName, setFallbackName] = useState<string | null>(null);
   const [fallbackImage, setFallbackImage] = useState<string | null>(null);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    // Only use localStorage fallback when viewing current build (no real slug)
-    if (slug && slug !== "sample") return;
     try {
       const n = localStorage.getItem("hoopervault_hooper_name");
       if (n && !simResult?.customName) setFallbackName(n);
@@ -346,7 +344,7 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
     } catch {}
   }, [simResult, slug]);
 
-  const playerName = simResult?.customName || fallbackName || (data?.first_name && data?.last_name ? `${data.first_name} ${data.last_name}` : generatePlayerName(seed, position));
+  const playerName = simResult?.customName || (data?.first_name && data?.last_name ? `${data.first_name} ${data.last_name}` : null) || fallbackName || generatePlayerName(seed, position);
 
   // Dynamically update OG meta tags when simulation data is available
   useEffect(() => {
@@ -579,9 +577,9 @@ export function HooperResult({ slug, lang = "en" }: { slug: string; lang?: "en" 
               <div className="lg:col-span-5">
                 <div ref={cardRef} className="legendary-card rounded-2xl overflow-hidden relative">
                   <div className="h-[420px] relative bg-gradient-to-br from-[#333539] via-[#1a1c20] to-[#111317] flex items-center justify-center overflow-hidden">
-                    {(simResult?.customImage || fallbackImage || data?.custom_image) ? (
+                    {(simResult?.customImage || data?.custom_image || fallbackImage) ? (
                       <img
-                        src={simResult?.customImage || fallbackImage || data?.custom_image || ""}
+                        src={simResult?.customImage || data?.custom_image || fallbackImage || ""}
                         alt={playerName}
                         className="absolute inset-0 w-full h-full object-cover object-top opacity-90"
                       />
